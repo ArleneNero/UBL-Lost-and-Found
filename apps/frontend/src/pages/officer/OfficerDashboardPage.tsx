@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Clock } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Button } from '@/components/ui/Button';
@@ -56,8 +56,39 @@ export const OfficerDashboardPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Metrics Section */}
-      <DashboardMetricsSection metrics={metrics} isLoading={isLoading} />
+      {/* Metrics Section with interactive Laporan Menunggu */}
+      <DashboardMetricsSection
+        metrics={metrics}
+        isLoading={isLoading}
+        onPendingReportsClick={() => navigate(RoutePaths.OFFICER_REPORTS)}
+      />
+
+      {/* Laporan Menunggu Action Banner */}
+      {!isLoading && metrics.totalPendingReports > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[var(--lf-warning-soft)] border border-[rgba(181,71,8,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-ink)]">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-white text-[var(--lf-warning)] flex items-center justify-center shrink-0 shadow-2xs">
+              <Clock className="w-4 h-4 text-[var(--lf-warning)]" />
+            </div>
+            <div>
+              <span className="font-bold text-[var(--lf-ink)]">
+                Terdapat {metrics.totalPendingReports} Laporan Mahasiswa Menunggu Verifikasi Fisik
+              </span>
+              <p className="text-[var(--lf-muted)] mt-0.5">
+                Laporan barang temuan telah dikirimkan mahasiswa dan menunggu serah terima barang fisik di pos ini.
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate(RoutePaths.OFFICER_REPORTS)}
+            className="shrink-0 bg-white hover:bg-amber-50 border-amber-200"
+          >
+            Periksa Laporan
+          </Button>
+        </div>
+      )}
 
       {/* Search & Action Section */}
       <DashboardSearchActions

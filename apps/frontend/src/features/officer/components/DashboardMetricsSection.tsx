@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, CheckCircle2, Clock } from 'lucide-react';
+import { Package, CheckCircle2, Clock, ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { DashboardMetrics } from '../selectors/dashboardSelectors';
@@ -7,11 +7,13 @@ import { DashboardMetrics } from '../selectors/dashboardSelectors';
 export interface DashboardMetricsSectionProps {
   metrics: DashboardMetrics;
   isLoading: boolean;
+  onPendingReportsClick?: () => void;
 }
 
 export const DashboardMetricsSection: React.FC<DashboardMetricsSectionProps> = ({
   metrics,
   isLoading,
+  onPendingReportsClick,
 }) => {
   if (isLoading) {
     return (
@@ -53,15 +55,35 @@ export const DashboardMetricsSection: React.FC<DashboardMetricsSectionProps> = (
         </div>
       </Card>
 
-      {/* Laporan Menunggu */}
-      <Card className="flex items-center gap-4 p-5 border-l-4 border-l-[var(--lf-warning)]">
-        <div className="w-12 h-12 rounded-[14px] bg-[var(--lf-warning-soft)] text-[var(--lf-warning)] flex items-center justify-center shrink-0">
-          <Clock className="w-6 h-6" />
+      {/* Laporan Menunggu with interactive action and empty state */}
+      <Card
+        onClick={onPendingReportsClick}
+        className={`flex items-center justify-between p-5 border-l-4 border-l-[var(--lf-warning)] ${
+          onPendingReportsClick ? 'cursor-pointer hover:border-[var(--lf-warning)] hover:shadow-xs transition-all select-none group' : ''
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-[14px] bg-[var(--lf-warning-soft)] text-[var(--lf-warning)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            <Clock className="w-6 h-6" />
+          </div>
+          <div>
+            <span className="text-xs font-semibold text-[var(--lf-muted)]">Laporan Menunggu</span>
+            <div className="text-2xl font-bold text-[var(--lf-ink)]">{metrics.totalPendingReports}</div>
+            <div className="text-[11px] text-[var(--lf-muted)] mt-0.5">
+              {metrics.totalPendingReports > 0 ? (
+                <span className="text-[var(--lf-warning)] font-medium">Perlu verifikasi fisik</span>
+              ) : (
+                <span className="text-[var(--lf-muted)] font-normal">Tidak ada laporan menunggu</span>
+              )}
+            </div>
+          </div>
         </div>
-        <div>
-          <span className="text-xs font-semibold text-[var(--lf-muted)]">Laporan Menunggu</span>
-          <div className="text-2xl font-bold text-[var(--lf-ink)]">{metrics.totalPendingReports}</div>
-        </div>
+        {onPendingReportsClick && (
+          <div className="flex items-center text-xs font-semibold text-[var(--lf-warning)] group-hover:translate-x-0.5 transition-transform">
+            <span className="hidden sm:inline mr-1">Buka</span>
+            <ArrowRight className="w-4 h-4" />
+          </div>
+        )}
       </Card>
     </div>
   );
