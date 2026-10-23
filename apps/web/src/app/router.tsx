@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+﻿import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { PublicLayout } from '@/components/layouts/PublicLayout';
 import { OfficerLayout } from '@/components/layouts/OfficerLayout';
 import { LandingPage } from '@/pages/LandingPage';
@@ -8,6 +8,8 @@ import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
 import { OfficerRegisterItemPage } from '@/pages/officer/OfficerRegisterItemPage';
 import { OfficerReportsPage } from '@/pages/officer/OfficerReportsPage';
 import { OfficerReportDetailPage } from '@/pages/officer/OfficerReportDetailPage';
+import { OfficerItemDetailPage } from '@/pages/officer/OfficerItemDetailPage';
+import { OfficerAccountPage } from '@/pages/officer/OfficerAccountPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutePaths } from '@/constants/routes';
@@ -37,11 +39,11 @@ export const router = createBrowserRouter(
         { index: true, element: <Navigate to={RoutePaths.OFFICER_DASHBOARD} replace /> },
         { path: 'dashboard', element: <OfficerDashboardPage /> },
         { path: 'inventaris', element: <OfficerInventoryPage /> },
-        { path: 'inventaris/:id', element: <PlaceholderPage title="Detail Inventaris (Step 3)" /> },
+        { path: 'inventaris/:id', element: <OfficerItemDetailPage /> },
         { path: 'catat-barang', element: <OfficerRegisterItemPage /> },
         { path: 'laporan', element: <OfficerReportsPage /> },
         { path: 'laporan/:id', element: <OfficerReportDetailPage /> },
-        { path: 'akun', element: <PlaceholderPage title="Pengaturan Akun (Step 3)" /> },
+        { path: 'akun', element: <OfficerAccountPage /> },
       ],
     },
 

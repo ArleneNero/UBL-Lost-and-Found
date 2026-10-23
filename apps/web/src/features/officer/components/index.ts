@@ -13,3 +13,5 @@ export * from './ReportItemCard';
 export * from './ReportListTable';
 export * from './ReceivePhysicalModal';
 export * from './RejectReportModal';
+export * from './ReturnItemModal';
+export * from './DistributeItemModal';
