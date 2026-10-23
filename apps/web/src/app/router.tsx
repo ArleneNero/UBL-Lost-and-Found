@@ -4,6 +4,7 @@ import { OfficerLayout } from '@/components/layouts/OfficerLayout';
 import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { OfficerDashboardPage } from '@/pages/officer/OfficerDashboardPage';
+import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutePaths } from '@/constants/routes';
@@ -31,7 +32,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to={RoutePaths.OFFICER_DASHBOARD} replace /> },
       { path: 'dashboard', element: <OfficerDashboardPage /> },
-      { path: 'inventaris', element: <PlaceholderPage title="Inventaris Petugas (Tahap 3)" /> },
+      { path: 'inventaris', element: <OfficerInventoryPage /> },
+      { path: 'inventaris/:id', element: <PlaceholderPage title="Detail Inventaris (Belum Diimplementasikan)" /> },
+      { path: 'catat-barang', element: <PlaceholderPage title="Form Catat Barang (Belum Diimplementasikan)" /> },
       { path: 'laporan', element: <PlaceholderPage title="Laporan Masuk (Belum Diimplementasikan)" /> },
       { path: 'akun', element: <PlaceholderPage title="Pengaturan Akun (Belum Diimplementasikan)" /> },
     ],

@@ -1,6 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FoundItem } from '@/types/domain';
-import { DashboardMetrics } from '../selectors/dashboardSelectors';
+import { services } from '@/services/registry';
+import {
+  selectDashboardMetrics,
+  selectRecentItems,
+  DashboardMetrics,
+} from '../selectors/dashboardSelectors';
 
 export interface UseOfficerDashboardReturn {
   metrics: DashboardMetrics;
@@ -14,26 +19,57 @@ export interface UseOfficerDashboardReturn {
 }
 
 export function useOfficerDashboard(): UseOfficerDashboardReturn {
-  const [items] = useState<FoundItem[]>([]);
-  const [metrics] = useState<DashboardMetrics>({
+  const [items, setItems] = useState<FoundItem[]>([]);
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalStored: 0,
     totalReturned: 0,
     totalPendingReports: 0,
   });
-  const [isLoading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const refetch = useCallback(async () => {}, []);
+  const loadDashboardData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [itemsRes, subsRes] = await Promise.all([
+        services.items.getOfficerItems({ limit: 50 }),
+        services.submissions.getSubmissions({ limit: 50 }),
+      ]);
+
+      setItems(itemsRes.items);
+      const computed = selectDashboardMetrics(itemsRes.items, subsRes.items);
+      setMetrics(computed);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal memuat data dashboard');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  const recentItems = selectRecentItems(items, 5);
+
+  const filteredRecentItems = searchQuery.trim()
+    ? recentItems.filter(
+        (i) =>
+          i.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          i.inventoryCode.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : recentItems;
 
   return {
     metrics,
-    recentItems: items,
-    filteredRecentItems: items,
+    recentItems,
+    filteredRecentItems,
     isLoading,
     error,
     searchQuery,
     setSearchQuery,
-    refetch,
+    refetch: loadDashboardData,
   };
 }
