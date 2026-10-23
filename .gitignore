@@ -1,0 +1,30 @@
+# Markdown documentation
+**/*.md
+**/*.mdx
+
+# AI and agent internal files
+.agent-internal/
+.agents/
+.claude/
+.gemini/
+.cursor/
+.copilot/
+
+# Logs
+logs
+*.log
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Production build outputs
+dist/
+**/dist/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Environment / Secrets
+**/.env
+**/.env.*
+!**/.env.example

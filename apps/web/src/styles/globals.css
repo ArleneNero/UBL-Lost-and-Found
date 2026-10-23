@@ -1,0 +1,49 @@
+@import "./tokens.css";
+@import "tailwindcss";
+
+@theme {
+  --color-lf-blue: var(--lf-blue);
+  --color-lf-action: var(--lf-action);
+  --color-lf-soft: var(--lf-soft);
+  --color-lf-canvas: var(--lf-canvas);
+  --color-lf-card: var(--lf-card);
+  --color-lf-ink: var(--lf-ink);
+  --color-lf-muted: var(--lf-muted);
+  --color-lf-border: var(--lf-border);
+  --color-lf-border-strong: var(--lf-border-strong);
+  
+  --color-lf-success: var(--lf-success);
+  --color-lf-success-soft: var(--lf-success-soft);
+  --color-lf-warning: var(--lf-warning);
+  --color-lf-warning-soft: var(--lf-warning-soft);
+  --color-lf-error: var(--lf-error);
+  --color-lf-error-soft: var(--lf-error-soft);
+
+  --font-sans: var(--font-family-base);
+
+  --radius-primary-btn: var(--radius-primary-btn);
+  --radius-btn: var(--radius-btn);
+  --radius-input: var(--radius-input);
+  --radius-card: var(--radius-card);
+  --radius-modal: var(--radius-modal);
+  --radius-pill: var(--radius-pill);
+}
+
+/* Custom Utilities for Figma Tokens */
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--lf-canvas);
+  color: var(--lf-ink);
+  min-height: 100vh;
+}
+
+/* Base button primary gradient */
+.btn-primary-gradient {
+  background: var(--lf-gradient-primary);
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary-gradient:hover:not(:disabled) {
+  background: var(--lf-gradient-primary-hover);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.25);
+}
