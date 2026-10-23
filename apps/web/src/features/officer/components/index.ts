@@ -6,3 +6,6 @@ export * from './InventoryFilters';
 export * from './InventoryTable';
 export * from './InventoryCardList';
 export * from './ItemVisibilityToggle';
+export * from './ItemPhotoUploader';
+export * from './RegisterItemSidebar';
+export * from './RegisterItemSuccess';

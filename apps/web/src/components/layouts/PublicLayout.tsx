@@ -37,7 +37,7 @@ export const PublicLayout: React.FC = () => {
           {/* Logo & Subtitle */}
           <NavLink to={RoutePaths.LANDING} className="flex items-center gap-3">
             <img
-              src="/assets/branding/Logo_LostnFound.png"
+              src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
               alt="UBL LostnFound Logo"
               className="w-9 h-9 object-contain"
             />

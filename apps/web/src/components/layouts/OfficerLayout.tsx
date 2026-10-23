@@ -34,7 +34,7 @@ export const OfficerLayout: React.FC = () => {
         {/* Brand Header */}
         <div className="p-5 border-b border-[var(--lf-border)] flex items-center gap-3">
           <img
-            src="/assets/branding/Logo_LostnFound.png"
+            src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
             alt="UBL LostnFound"
             className="w-9 h-9 object-contain"
           />
@@ -100,7 +100,7 @@ export const OfficerLayout: React.FC = () => {
         <header className="lg:hidden bg-white border-b border-[var(--lf-border)] px-4 py-3 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-2.5">
             <img
-              src="/assets/branding/Logo_LostnFound.png"
+              src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
               alt="UBL LostnFound"
               className="w-8 h-8 object-contain"
             />

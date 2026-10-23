@@ -18,7 +18,7 @@ export const LandingPage: React.FC = () => {
         {/* Hero Illustration */}
         <div className="w-full md:w-5/12 max-w-xs md:max-w-sm flex justify-center">
           <img
-            src="/assets/illustrations/landing/Kotak Barang Hilang dan Ditemukan.png"
+            src={`${import.meta.env.BASE_URL}assets/illustrations/landing/Kotak%20Barang%20Hilang%20dan%20Ditemukan.png`}
             alt="Ilustrasi Kotak Barang Temuan"
             className="w-full h-auto max-h-[240px] md:max-h-[280px] object-contain select-none"
           />

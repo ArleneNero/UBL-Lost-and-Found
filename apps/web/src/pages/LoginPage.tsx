@@ -25,7 +25,7 @@ export const LoginPage: React.FC = () => {
     <div className="max-w-md mx-auto px-4 py-8 flex flex-col gap-6">
       <div className="text-center flex flex-col items-center">
         <img
-          src="/assets/branding/Logo_LostnFound.png"
+          src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
           alt="UBL LostnFound"
           className="w-12 h-12 object-contain mb-3"
         />
