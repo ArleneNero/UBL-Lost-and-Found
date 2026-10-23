@@ -6,6 +6,8 @@ import { LoginPage } from '@/pages/LoginPage';
 import { OfficerDashboardPage } from '@/pages/officer/OfficerDashboardPage';
 import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
 import { OfficerRegisterItemPage } from '@/pages/officer/OfficerRegisterItemPage';
+import { OfficerReportsPage } from '@/pages/officer/OfficerReportsPage';
+import { OfficerReportDetailPage } from '@/pages/officer/OfficerReportDetailPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutePaths } from '@/constants/routes';
@@ -37,7 +39,8 @@ export const router = createBrowserRouter(
         { path: 'inventaris', element: <OfficerInventoryPage /> },
         { path: 'inventaris/:id', element: <PlaceholderPage title="Detail Inventaris (Step 3)" /> },
         { path: 'catat-barang', element: <OfficerRegisterItemPage /> },
-        { path: 'laporan', element: <PlaceholderPage title="Laporan Masuk (Step 2)" /> },
+        { path: 'laporan', element: <OfficerReportsPage /> },
+        { path: 'laporan/:id', element: <OfficerReportDetailPage /> },
         { path: 'akun', element: <PlaceholderPage title="Pengaturan Akun (Step 3)" /> },
       ],
     },

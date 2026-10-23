@@ -9,3 +9,7 @@ export * from './ItemVisibilityToggle';
 export * from './ItemPhotoUploader';
 export * from './RegisterItemSidebar';
 export * from './RegisterItemSuccess';
+export * from './ReportItemCard';
+export * from './ReportListTable';
+export * from './ReceivePhysicalModal';
+export * from './RejectReportModal';
