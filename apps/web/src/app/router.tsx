@@ -9,40 +9,45 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutePaths } from '@/constants/routes';
 
-export const router = createBrowserRouter([
-  // Public & Guest Routes
-  {
-    path: RoutePaths.LANDING,
-    element: <PublicLayout />,
-    children: [
-      { index: true, element: <LandingPage /> },
-      { path: RoutePaths.GUEST_HOME, element: <PlaceholderPage title="Beranda Tamu (Belum Diimplementasikan)" /> },
-      { path: RoutePaths.CATALOG, element: <PlaceholderPage title="Katalog Barang (Belum Diimplementasikan)" /> },
-      { path: RoutePaths.ITEM_DETAIL, element: <PlaceholderPage title="Detail Barang (Belum Diimplementasikan)" /> },
-      { path: RoutePaths.POSTS, element: <PlaceholderPage title="Pos Pelayanan (Belum Diimplementasikan)" /> },
-      { path: RoutePaths.GUIDE, element: <PlaceholderPage title="Panduan (Belum Diimplementasikan)" /> },
-      { path: RoutePaths.LOGIN, element: <LoginPage /> },
-    ],
-  },
+export const router = createBrowserRouter(
+  [
+    // Public & Guest Routes
+    {
+      path: RoutePaths.LANDING,
+      element: <PublicLayout />,
+      children: [
+        { index: true, element: <LandingPage /> },
+        { path: RoutePaths.GUEST_HOME, element: <PlaceholderPage title="Beranda Tamu (Belum Diimplementasikan)" /> },
+        { path: RoutePaths.CATALOG, element: <PlaceholderPage title="Katalog Barang (Belum Diimplementasikan)" /> },
+        { path: RoutePaths.ITEM_DETAIL, element: <PlaceholderPage title="Detail Barang (Belum Diimplementasikan)" /> },
+        { path: RoutePaths.POSTS, element: <PlaceholderPage title="Pos Pelayanan (Belum Diimplementasikan)" /> },
+        { path: RoutePaths.GUIDE, element: <PlaceholderPage title="Panduan (Belum Diimplementasikan)" /> },
+        { path: RoutePaths.LOGIN, element: <LoginPage /> },
+      ],
+    },
 
-  // Officer / Petugas Routes
-  {
-    path: '/petugas',
-    element: <OfficerLayout />,
-    children: [
-      { index: true, element: <Navigate to={RoutePaths.OFFICER_DASHBOARD} replace /> },
-      { path: 'dashboard', element: <OfficerDashboardPage /> },
-      { path: 'inventaris', element: <OfficerInventoryPage /> },
-      { path: 'inventaris/:id', element: <PlaceholderPage title="Detail Inventaris (Belum Diimplementasikan)" /> },
-      { path: 'catat-barang', element: <PlaceholderPage title="Form Catat Barang (Belum Diimplementasikan)" /> },
-      { path: 'laporan', element: <PlaceholderPage title="Laporan Masuk (Belum Diimplementasikan)" /> },
-      { path: 'akun', element: <PlaceholderPage title="Pengaturan Akun (Belum Diimplementasikan)" /> },
-    ],
-  },
+    // Officer / Petugas Routes
+    {
+      path: '/petugas',
+      element: <OfficerLayout />,
+      children: [
+        { index: true, element: <Navigate to={RoutePaths.OFFICER_DASHBOARD} replace /> },
+        { path: 'dashboard', element: <OfficerDashboardPage /> },
+        { path: 'inventaris', element: <OfficerInventoryPage /> },
+        { path: 'inventaris/:id', element: <PlaceholderPage title="Detail Inventaris (Belum Diimplementasikan)" /> },
+        { path: 'catat-barang', element: <PlaceholderPage title="Form Catat Barang (Belum Diimplementasikan)" /> },
+        { path: 'laporan', element: <PlaceholderPage title="Laporan Masuk (Belum Diimplementasikan)" /> },
+        { path: 'akun', element: <PlaceholderPage title="Pengaturan Akun (Belum Diimplementasikan)" /> },
+      ],
+    },
 
-  // Fallback 404 Route
+    // Fallback 404 Route
+    {
+      path: '*',
+      element: <NotFoundPage />,
+    },
+  ],
   {
-    path: '*',
-    element: <NotFoundPage />,
-  },
-]);
+    basename: import.meta.env.BASE_URL,
+  }
+);
