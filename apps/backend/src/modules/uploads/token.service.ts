@@ -56,19 +56,19 @@ export class UploadTokenService {
       throw err;
     }
 
-    if (payload.userId !== expectedUserId) {
-      const err = new Error("Upload token bukan milik akun yang sedang login");
-      (err as any).statusCode = 403;
-      (err as any).code = "FORBIDDEN";
-      throw err;
-    }
-
     if (payload.purpose !== expectedPurpose) {
       const err = new Error(
         `Tujuan token tidak sesuai (diharapkan: ${expectedPurpose}, aktual: ${payload.purpose})`
       );
       (err as any).statusCode = 422;
       (err as any).code = "INVALID_PURPOSE";
+      throw err;
+    }
+
+    if (payload.userId !== expectedUserId) {
+      const err = new Error("Upload token bukan milik akun yang sedang login");
+      (err as any).statusCode = 403;
+      (err as any).code = "FORBIDDEN";
       throw err;
     }
 

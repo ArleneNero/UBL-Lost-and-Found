@@ -6,6 +6,7 @@ import { postsRoutes } from "./modules/posts/posts.routes.js";
 import { itemsRoutes } from "./modules/items/items.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { uploadsRoutes } from "./modules/uploads/uploads.routes.js";
+import { officerRoutes } from "./modules/officer/officer.routes.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -68,6 +69,7 @@ export function buildApp(): FastifyInstance {
   app.register(itemsRoutes, { prefix: "/api/v1" });
   app.register(authRoutes, { prefix: "/api/v1" });
   app.register(uploadsRoutes, { prefix: "/api/v1" });
+  app.register(officerRoutes, { prefix: "/api/v1" });
 
   return app;
 }
