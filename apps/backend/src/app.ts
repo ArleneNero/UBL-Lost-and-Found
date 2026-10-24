@@ -5,6 +5,7 @@ import { env } from "./config/env.js";
 import { postsRoutes } from "./modules/posts/posts.routes.js";
 import { itemsRoutes } from "./modules/items/items.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { uploadsRoutes } from "./modules/uploads/uploads.routes.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -21,6 +22,15 @@ export function buildApp(): FastifyInstance {
     genReqId: (req) => (req.headers["x-request-id"] as string) || randomUUID(),
     requestIdHeader: "x-request-id",
   });
+
+  // Support binary content types for direct image PUT simulation
+  app.addContentTypeParser(
+    ["image/jpeg", "image/png", "image/webp", "application/octet-stream"],
+    { parseAs: "buffer" },
+    (_req, body, done) => {
+      done(null, body);
+    }
+  );
 
   // CORS
   app.register(cors, {
@@ -57,6 +67,7 @@ export function buildApp(): FastifyInstance {
   app.register(postsRoutes, { prefix: "/api/v1" });
   app.register(itemsRoutes, { prefix: "/api/v1" });
   app.register(authRoutes, { prefix: "/api/v1" });
+  app.register(uploadsRoutes, { prefix: "/api/v1" });
 
   return app;
 }
