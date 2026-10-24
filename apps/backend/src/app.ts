@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import { randomUUID } from "crypto";
 import { env } from "./config/env.js";
 import { postsRoutes } from "./modules/posts/posts.routes.js";
+import { itemsRoutes } from "./modules/items/items.routes.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -46,6 +47,7 @@ export function buildApp(): FastifyInstance {
 
   // Public APIs (/api/v1)
   app.register(postsRoutes, { prefix: "/api/v1" });
+  app.register(itemsRoutes, { prefix: "/api/v1" });
 
   return app;
 }
