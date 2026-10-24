@@ -1,4 +1,4 @@
-﻿import { z } from "zod";
+import { z } from "zod";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -14,6 +14,8 @@ const envSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),
   R2_PUBLIC_URL: z.string().optional(),
+  AUTH_SECRET: z.string().default("dev-neon-auth-secret-key-min-32-chars-long!"),
+  NEON_AUTH_BASE_URL: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
