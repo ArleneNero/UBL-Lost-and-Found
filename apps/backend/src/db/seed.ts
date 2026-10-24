@@ -1,5 +1,5 @@
-﻿import { db, pool } from "./index.js";
-import { users, servicePosts } from "./schema.js";
+import { db, pool } from "./index.js";
+import { users, servicePosts, servicePostPhotos } from "./schema.js";
 import { eq } from "drizzle-orm";
 
 async function seed() {
@@ -49,6 +49,25 @@ async function seed() {
     console.log(`✅ Created Service Post: ${post.name} (Post ID: ${post.postId})`);
   } else {
     console.log(`ℹ️ Service Post already exists: ${post.name} (Post ID: ${post.postId})`);
+  }
+
+  // 3. Check or insert Service Post Photo
+  const existingPhoto = await db.query.servicePostPhotos.findFirst({
+    where: eq(servicePostPhotos.postId, post.postId),
+  });
+
+  if (!existingPhoto) {
+    const [photo] = await db
+      .insert(servicePostPhotos)
+      .values({
+        postId: post.postId,
+        storagePath: "posts/pos-pengajaran-cover.webp",
+        position: 1,
+      })
+      .returning();
+    console.log(`✅ Seeded photo for Post ${post.name} (Photo ID: ${photo.photoId})`);
+  } else {
+    console.log(`ℹ️ Photo already exists for Post ${post.name}`);
   }
 
   console.log("✨ Clean seed completed successfully. (0 items seeded, clean slate)");
