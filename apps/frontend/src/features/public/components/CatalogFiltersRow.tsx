@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 const CATEGORIES = ['ALL', 'Elektronik', 'Tas', 'Dompet', 'Kunci', 'KTM', 'Lainnya'];
 
@@ -24,7 +24,7 @@ export const CatalogFiltersRow: React.FC<CatalogFiltersRowProps> = ({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
       <div className="flex flex-wrap items-center gap-2.5">
-        {/* Pos Filter */}
+        {/* Pos Filter: Hanya Pos Pengajaran */}
         <select
           value={postIdFilter ?? ''}
           aria-label="Filter Pos"
@@ -33,8 +33,6 @@ export const CatalogFiltersRow: React.FC<CatalogFiltersRowProps> = ({
         >
           <option value="">Semua Pos</option>
           <option value="1">Pos Pengajaran</option>
-          <option value="2">Pos Perpustakaan</option>
-          <option value="3">Pos Lab Komputer</option>
         </select>
 
         {/* Category Filter */}

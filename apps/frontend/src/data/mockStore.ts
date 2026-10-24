@@ -1,4 +1,4 @@
-import {
+﻿import {
   InventoryOfficerDto,
   FoundSubmissionDto,
   ServicePostPublicDto,
@@ -30,44 +30,12 @@ export const INITIAL_MOCK_STATE: MockState = {
     {
       post_id: 1,
       name: 'Pos Pengajaran',
-      location_description: 'Gedung Induk Lantai 1, Ruang Pengajaran',
+      location_description: 'Gedung Unit 4 Lantai 1, Ruang Pengajaran',
       opening_hours: 'Senin - Jumat, 08.00 - 16.00 WIB',
-      directions: 'Masuk melalui lobi utama Gedung Induk, pos berada di sebelah barat lift.',
+      directions: 'Masuk melalui lobi Gedung Unit 4, pos berada di sebelah barat lift.',
       photos: [
         {
           photo_id: 'photo-pos-1',
-          position: 1,
-          is_cover: true,
-          url: `${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`,
-          expires_at: '2026-12-31T23:59:59Z',
-        },
-      ],
-    },
-    {
-      post_id: 2,
-      name: 'Pos Perpustakaan',
-      location_description: 'Gedung Perpustakaan Lantai 2',
-      opening_hours: 'Senin - Jumat, 08.30 - 15.30 WIB',
-      directions: 'Masuk melalui Gedung Perpustakaan, meja layanan sirkulasi lantai 2.',
-      photos: [
-        {
-          photo_id: 'photo-pos-2',
-          position: 1,
-          is_cover: true,
-          url: `${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`,
-          expires_at: '2026-12-31T23:59:59Z',
-        },
-      ],
-    },
-    {
-      post_id: 3,
-      name: 'Pos Lab Komputer',
-      location_description: 'Gedung 5 Lantai 3',
-      opening_hours: 'Senin - Jumat, 08.00 - 17.00 WIB',
-      directions: 'Ruang teknisi utama laboratorium komputer Gedung 5.',
-      photos: [
-        {
-          photo_id: 'photo-pos-3',
           position: 1,
           is_cover: true,
           url: `${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`,
@@ -110,8 +78,8 @@ export const INITIAL_MOCK_STATE: MockState = {
       found_location: 'Lab Komputer 3',
       found_on: '2026-10-12',
       received_at: '2026-10-12T12:00:00Z',
-      storage_post_id: 3,
-      post: { post_id: 3, name: 'Pos Lab Komputer' },
+      storage_post_id: 1,
+      post: { post_id: 1, name: 'Pos Pengajaran' },
       status: 'STORED',
       is_visible: true,
       source_submission_id: null,
@@ -131,7 +99,7 @@ export const INITIAL_MOCK_STATE: MockState = {
       item_name: 'AirPods Pro',
       category: 'Elektronik',
       public_description: 'Earbuds putih beserta wadah pengisi daya.',
-      found_location: 'Gedung Induk Lt. 2',
+      found_location: 'Gedung Unit 4 Lt. 2',
       found_on: '2026-10-12',
       received_at: '2026-10-12T14:00:00Z',
       storage_post_id: 1,
@@ -158,8 +126,8 @@ export const INITIAL_MOCK_STATE: MockState = {
       found_location: 'Perpustakaan Lt. 2',
       found_on: '2026-10-12',
       received_at: '2026-10-12T08:00:00Z',
-      storage_post_id: 2,
-      post: { post_id: 2, name: 'Pos Perpustakaan' },
+      storage_post_id: 1,
+      post: { post_id: 1, name: 'Pos Pengajaran' },
       status: 'STORED',
       is_visible: true,
       source_submission_id: null,

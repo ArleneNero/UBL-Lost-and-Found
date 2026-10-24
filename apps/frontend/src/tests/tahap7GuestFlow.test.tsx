@@ -69,7 +69,7 @@ describe('Tahap 7 - Milestone F/C Guest Public Flow', () => {
       await waitFor(() => {
         expect(screen.getByText('AirPods Pro')).toBeDefined();
         expect(screen.getByText(/Earbuds putih beserta wadah pengisi daya/i)).toBeDefined();
-        expect(screen.getAllByText('Pengajaran').length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/Pengajaran/).length).toBeGreaterThan(0);
       });
 
       // Assert private notes are NEVER rendered
@@ -110,7 +110,7 @@ describe('Tahap 7 - Milestone F/C Guest Public Flow', () => {
   });
 
   describe('F/C.4: Posts and Guide Pages', () => {
-    it('renders service posts list accurately', async () => {
+    it('renders service posts list accurately for Pos Pengajaran', async () => {
       render(
         <MemoryRouter>
           <PostsPage />
@@ -119,9 +119,8 @@ describe('Tahap 7 - Milestone F/C Guest Public Flow', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Pos Pelayanan')).toBeDefined();
-        expect(screen.getByText('Pengajaran')).toBeDefined();
-        expect(screen.getByText('Perpustakaan')).toBeDefined();
-        expect(screen.getByText('Lab Komputer')).toBeDefined();
+        expect(screen.getByText('Pos Pengajaran')).toBeDefined();
+        expect(screen.getByText(/Gedung Unit 4 Lantai 1, Ruang Pengajaran/i)).toBeDefined();
       });
     });
 

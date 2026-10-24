@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Clock, Building2, Info } from 'lucide-react';
+import { MapPin, Clock, Building2, Info, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { services } from '@/services/registry';
@@ -28,89 +28,104 @@ export const PostsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto px-4 lg:px-12 py-8 flex flex-col gap-8">
-      {/* Header (Figma 03.P03) */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--lf-ink)]">
-          Pos Pelayanan
-        </h1>
-        <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-1">
-          Cari lokasi penyimpanan sebelum datang.
-        </p>
-      </div>
-
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map((n) => (
-            <div key={n} className="bg-white rounded-2xl border border-[var(--lf-border)] p-6 space-y-4">
-              <Skeleton height={140} className="w-full rounded-xl" />
-              <Skeleton height={20} width="60%" />
-              <Skeleton height={14} width="80%" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {posts.map((post) => {
-            const shortName = post.name.replace(/^Pos\s+/i, '');
-            return (
-              <div
-                key={post.id}
-                className="bg-white rounded-2xl border border-[var(--lf-border)] p-5 flex flex-col justify-between gap-5 hover:border-[var(--lf-action)] hover:shadow-xs transition-all duration-150"
-              >
-                <div className="space-y-4">
-                  <div className="aspect-16/9 w-full rounded-xl bg-[var(--lf-surface)] overflow-hidden border border-[var(--lf-border)] flex items-center justify-center">
-                    <Building2 className="w-8 h-8 text-[var(--lf-muted)] opacity-60" />
-                  </div>
-
-                  <div>
-                    <h2 className="text-base font-bold text-[var(--lf-ink)]">{shortName}</h2>
-                    <p className="text-xs text-[var(--lf-muted)] mt-0.5">Lokasi &amp; jam layanan</p>
-                  </div>
-
-                  <div className="space-y-2 text-xs border-t border-[var(--lf-border)] pt-3 text-[var(--lf-muted)]">
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-[var(--lf-action)] shrink-0 mt-0.5" />
-                      <span>{post.location}</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Clock className="w-3.5 h-3.5 text-[var(--lf-action)] shrink-0 mt-0.5" />
-                      <span>{post.openingHours}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-[var(--lf-border)]">
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => navigate(`${RoutePaths.CATALOG}?post=${post.id}`)}
-                    className="w-full justify-center text-xs font-semibold"
-                  >
-                    Lihat Barang di Pos Ini
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Bottom Info Banner (Figma 03.P03) */}
-      <div className="p-5 bg-white rounded-2xl border border-[var(--lf-border)] flex items-start gap-3.5">
-        <div className="w-9 h-9 rounded-full bg-[var(--lf-soft)] text-[var(--lf-action)] flex items-center justify-center shrink-0">
-          <Info className="w-5 h-5" />
-        </div>
+    <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8 flex flex-col gap-8">
+      {/* Back button & Header */}
+      <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--lf-muted)] hover:text-[var(--lf-ink)] w-fit cursor-pointer transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Kembali</span>
+        </button>
         <div>
-          <h3 className="text-sm font-bold text-[var(--lf-ink)]">
-            Satu katalog, tiga pos
-          </h3>
-          <p className="text-xs text-[var(--lf-muted)] mt-0.5 leading-relaxed">
-            Barang tetap disimpan di unit yang menerima, bukan dipindahkan ke satu tempat.
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--lf-ink)]">
+            Pos Pelayanan
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-1">
+            Lokasi resmi penyimpanan dan verifikasi fisik barang temuan kampus.
           </p>
         </div>
       </div>
+
+      {isLoading ? (
+        <div className="bg-white rounded-2xl border border-[var(--lf-border)] p-6 space-y-4 max-w-2xl">
+          <Skeleton height={180} className="w-full rounded-xl" />
+          <Skeleton height={24} width="50%" />
+          <Skeleton height={16} width="80%" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+          {posts.map((post) => (
+            <div
+              key={post.id}
+              className="bg-white rounded-2xl border border-[var(--lf-border)] p-6 flex flex-col justify-between gap-6 hover:border-[var(--lf-action)] hover:shadow-xs transition-all duration-150"
+            >
+              <div className="space-y-5">
+                <div className="aspect-16/9 w-full rounded-xl bg-[var(--lf-surface)] overflow-hidden border border-[var(--lf-border)] flex items-center justify-center">
+                  <Building2 className="w-12 h-12 text-[var(--lf-muted)] opacity-60" />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2.5">
+                    <h2 className="text-lg font-bold text-[var(--lf-ink)]">{post.name}</h2>
+                    <span className="text-[11px] font-semibold text-[#12B76A] bg-[#ECFDF3] px-2.5 py-0.5 rounded-full">
+                      Pos Aktif
+                    </span>
+                  </div>
+                  <p className="text-xs text-[var(--lf-muted)] mt-1">
+                    Pusat layanan informasi & verifikasi fisik barang temuan
+                  </p>
+                </div>
+
+                <div className="space-y-3 text-xs border-t border-[var(--lf-border)] pt-4 text-[var(--lf-muted)]">
+                  <div className="flex items-start gap-2.5">
+                    <MapPin className="w-4 h-4 text-[var(--lf-action)] shrink-0 mt-0.5" />
+                    <span className="text-[var(--lf-ink)] font-medium leading-relaxed">
+                      {post.location}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2.5">
+                    <Clock className="w-4 h-4 text-[var(--lf-action)] shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">{post.openingHours}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-[var(--lf-border)]">
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => navigate(`${RoutePaths.CATALOG}?post=${post.id}`)}
+                  className="w-full justify-center text-xs font-semibold py-2.5"
+                >
+                  Lihat Barang di Pos Ini
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          {/* Info Card Samping */}
+          <div className="p-6 bg-white rounded-2xl border border-[var(--lf-border)] flex flex-col gap-4">
+            <div className="w-10 h-10 rounded-xl bg-[var(--lf-soft)] text-[var(--lf-action)] flex items-center justify-center shrink-0">
+              <Info className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-[var(--lf-ink)]">
+                Layanan Terpusat di Pos Pengajaran
+              </h3>
+              <p className="text-xs text-[var(--lf-muted)] mt-1 leading-relaxed">
+                Saat ini seluruh barang temuan di lingkungan Universitas Budi Luhur disimpan dan diverifikasi secara terpusat di Ruang Pengajaran Gedung Unit 4 Lantai 1.
+              </p>
+            </div>
+            <div className="text-xs text-[var(--lf-muted)] bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0] space-y-1.5 leading-relaxed">
+              <p className="font-semibold text-[var(--lf-ink)]">Petunjuk kedatangan:</p>
+              <p>Bawa identitas diri (KTM/KTP) dan bukti atau penjelasan ciri khusus barang kepada petugas jaga.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+ï»¿import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { services } from '@/services/registry';
@@ -6,7 +6,7 @@ import { mockStore } from '@/data/mockStore';
 import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
 import { OfficerDashboardPage } from '@/pages/officer/OfficerDashboardPage';
 
-describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
+describe('Tahap 3 â€” Mock Data, Services & Officer Inventory', () => {
   beforeEach(() => {
     mockStore.reset();
   });
@@ -18,7 +18,7 @@ describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
 
     expect(itemsRes.items.length).toBeGreaterThan(0);
     expect(subsRes.items.length).toBeGreaterThan(0);
-    expect(postsRes.length).toBe(3);
+    expect(postsRes.length).toBe(1);
   });
 
   it('renders OfficerInventoryPage with mock items and search filters', async () => {
