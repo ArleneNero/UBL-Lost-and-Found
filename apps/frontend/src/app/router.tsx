@@ -2,6 +2,11 @@
 import { PublicLayout } from '@/components/layouts/PublicLayout';
 import { OfficerLayout } from '@/components/layouts/OfficerLayout';
 import { LandingPage } from '@/pages/LandingPage';
+import { GuestHomePage } from '@/pages/GuestHomePage';
+import { CatalogPage } from '@/pages/CatalogPage';
+import { ItemDetailPage } from '@/pages/ItemDetailPage';
+import { PostsPage } from '@/pages/PostsPage';
+import { GuidePage } from '@/pages/GuidePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { OfficerDashboardPage } from '@/pages/officer/OfficerDashboardPage';
 import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
@@ -11,7 +16,6 @@ import { OfficerReportDetailPage } from '@/pages/officer/OfficerReportDetailPage
 import { OfficerItemDetailPage } from '@/pages/officer/OfficerItemDetailPage';
 import { OfficerAccountPage } from '@/pages/officer/OfficerAccountPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
-import { PlaceholderPage } from '@/pages/PlaceholderPage';
 import { RoutePaths } from '@/constants/routes';
 
 export const router = createBrowserRouter(
@@ -22,11 +26,11 @@ export const router = createBrowserRouter(
       element: <PublicLayout />,
       children: [
         { index: true, element: <LandingPage /> },
-        { path: RoutePaths.GUEST_HOME, element: <PlaceholderPage title="Beranda Tamu (Belum Diimplementasikan)" /> },
-        { path: RoutePaths.CATALOG, element: <PlaceholderPage title="Katalog Barang (Belum Diimplementasikan)" /> },
-        { path: RoutePaths.ITEM_DETAIL, element: <PlaceholderPage title="Detail Barang (Belum Diimplementasikan)" /> },
-        { path: RoutePaths.POSTS, element: <PlaceholderPage title="Pos Pelayanan (Belum Diimplementasikan)" /> },
-        { path: RoutePaths.GUIDE, element: <PlaceholderPage title="Panduan (Belum Diimplementasikan)" /> },
+        { path: RoutePaths.GUEST_HOME, element: <GuestHomePage /> },
+        { path: RoutePaths.CATALOG, element: <CatalogPage /> },
+        { path: RoutePaths.ITEM_DETAIL, element: <ItemDetailPage /> },
+        { path: RoutePaths.POSTS, element: <PostsPage /> },
+        { path: RoutePaths.GUIDE, element: <GuidePage /> },
         { path: RoutePaths.LOGIN, element: <LoginPage /> },
       ],
     },
