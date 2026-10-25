@@ -10,6 +10,8 @@ import { InMemorySubmissionService } from './in-memory/InMemorySubmissionService
 import { InMemoryPostService } from './in-memory/InMemoryPostService';
 import { InMemoryAuthService } from './in-memory/InMemoryAuthService';
 import { InMemoryUploadService } from './in-memory/InMemoryUploadService';
+import { HttpItemService } from './http/HttpItemService';
+import { HttpUploadService } from './http/HttpUploadService';
 
 export type ServiceMode = 'in-memory' | 'http';
 
@@ -23,8 +25,9 @@ export interface ServiceContainer {
 }
 
 class ServiceRegistry {
-  private currentMode: ServiceMode = 'in-memory';
+  private currentMode: ServiceMode;
   private inMemoryContainer: ServiceContainer;
+  private httpContainer: ServiceContainer;
 
   constructor() {
     this.inMemoryContainer = {
@@ -35,18 +38,22 @@ class ServiceRegistry {
       upload: new InMemoryUploadService(),
       mode: 'in-memory',
     };
+
+    this.httpContainer = {
+      items: new HttpItemService(),
+      submissions: new InMemorySubmissionService(),
+      posts: new InMemoryPostService(),
+      auth: new InMemoryAuthService(),
+      upload: new HttpUploadService(),
+      mode: 'http',
+    };
+
+    const isMock = import.meta.env.VITE_USE_MOCK !== 'false';
+    this.currentMode = isMock ? 'in-memory' : 'http';
   }
 
   public getServices(): ServiceContainer {
-    if (this.currentMode === 'in-memory') {
-      return this.inMemoryContainer;
-    }
-
-    // In HTTP mode: explicitly throw if real HTTP adapters are not configured yet,
-    // avoiding silent fallback to fake mock data (rule F/A.3.2)
-    throw new Error(
-      'HTTP Adapter belum aktif. Gunakan in-memory mode untuk demonstrasi Frontend MVP.'
-    );
+    return this.currentMode === 'http' ? this.httpContainer : this.inMemoryContainer;
   }
 
   public setMode(mode: ServiceMode): void {
@@ -59,4 +66,9 @@ class ServiceRegistry {
 }
 
 export const registry = new ServiceRegistry();
-export const services = registry.getServices();
+
+export const services: ServiceContainer = new Proxy({} as ServiceContainer, {
+  get: (_target, prop: keyof ServiceContainer) => {
+    return registry.getServices()[prop];
+  },
+});
