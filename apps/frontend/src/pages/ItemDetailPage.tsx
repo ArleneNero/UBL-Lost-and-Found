@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, PackageOpen } from 'lucide-react';
+import { ArrowLeft, MapPin, Package, PackageOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { RoutePaths } from '@/constants/routes';
@@ -12,6 +12,7 @@ export const ItemDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [item, setItem] = useState<FoundItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -78,8 +79,24 @@ export const ItemDetailPage: React.FC = () => {
       {/* Detail Two Column Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Left: Authentic Item Photo */}
-        <div className="aspect-4/3 w-full rounded-2xl bg-[#F8FAFC] overflow-hidden border border-[var(--lf-border)] flex items-center justify-center shadow-xs">
-          <img src={item.photoUrl} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
+        <div className="aspect-4/3 w-full rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/60 overflow-hidden border border-[var(--lf-border)] flex items-center justify-center shadow-xs">
+          {imgError || !item.photoUrl ? (
+            <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-white shadow-2xs border border-[#E4E7EC] flex items-center justify-center text-[#1570EF]">
+                <Package className="w-7 h-7" />
+              </div>
+              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{item.category}</span>
+              <span className="text-[11px] text-[var(--lf-muted)]">Foto fisik terverifikasi di pos pelayanan</span>
+            </div>
+          ) : (
+            <img
+              src={item.photoUrl}
+              alt={item.name}
+              loading="lazy"
+              onError={() => setImgError(true)}
+              className="w-full h-full object-cover"
+            />
+          )}
         </div>
 
         {/* Right: Item Metadata & Actions */}

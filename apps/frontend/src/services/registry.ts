@@ -12,6 +12,7 @@ import { InMemoryAuthService } from './in-memory/InMemoryAuthService';
 import { InMemoryUploadService } from './in-memory/InMemoryUploadService';
 import { HttpItemService } from './http/HttpItemService';
 import { HttpUploadService } from './http/HttpUploadService';
+import { HttpPostService } from './http/HttpPostService';
 
 export type ServiceMode = 'in-memory' | 'http';
 
@@ -42,7 +43,7 @@ class ServiceRegistry {
     this.httpContainer = {
       items: new HttpItemService(),
       submissions: new InMemorySubmissionService(),
-      posts: new InMemoryPostService(),
+      posts: new HttpPostService(),
       auth: new InMemoryAuthService(),
       upload: new HttpUploadService(),
       mode: 'http',

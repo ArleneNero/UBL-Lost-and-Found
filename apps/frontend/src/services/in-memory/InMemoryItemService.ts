@@ -12,7 +12,7 @@ import { InventoryOfficerDto } from '@/types/api';
 export class InMemoryItemService implements IItemService {
   async getItems(params?: GetItemsParams): Promise<PaginatedResult<FoundItem>> {
     const rawPage = params?.page || 1;
-    const limit = params?.limit || 10;
+    const limit = params?.limit || 8;
     const search = params?.search?.toLowerCase();
     const category = params?.category;
     const postId = params?.postId;

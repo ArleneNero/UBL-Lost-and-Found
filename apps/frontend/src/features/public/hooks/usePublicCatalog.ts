@@ -21,7 +21,7 @@ export interface UsePublicCatalogReturn {
   refetch: () => Promise<void>;
 }
 
-export function usePublicCatalog(initialLimit = 10): UsePublicCatalogReturn {
+export function usePublicCatalog(initialLimit = 8): UsePublicCatalogReturn {
   const [items, setItems] = useState<FoundItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,13 +32,19 @@ export function usePublicCatalog(initialLimit = 10): UsePublicCatalogReturn {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const fetchItems = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const res = await services.items.getItems({
-        search: searchQuery.trim() || undefined,
+        search: debouncedSearch.trim() || undefined,
         category: categoryFilter !== 'ALL' ? categoryFilter : undefined,
         postId: postIdFilter,
         sort: sortOrder,
@@ -53,7 +59,7 @@ export function usePublicCatalog(initialLimit = 10): UsePublicCatalogReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, categoryFilter, postIdFilter, sortOrder, page, initialLimit]);
+  }, [debouncedSearch, categoryFilter, postIdFilter, sortOrder, page, initialLimit]);
 
   useEffect(() => {
     fetchItems();

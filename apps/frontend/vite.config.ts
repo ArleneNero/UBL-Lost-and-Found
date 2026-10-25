@@ -6,7 +6,6 @@ import path from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: process.env.VITE_BASE_PATH || '/UBL-Lost-and-Found/',
   plugins: [
     tailwindcss(),
     react(),
@@ -17,7 +16,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 5173,
   },
   test: {
     globals: true,

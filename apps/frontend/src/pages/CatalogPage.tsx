@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, PackageOpen } from 'lucide-react';
+import { Search, PackageOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { usePublicCatalog } from '@/features/public/hooks/usePublicCatalog';
 import { PublicItemCard } from '@/features/public/components/PublicItemCard';
@@ -20,8 +20,11 @@ export const CatalogPage: React.FC = () => {
     setSortOrder,
     postIdFilter,
     setPostIdFilter,
+    page,
+    setPage,
+    totalPages,
     totalItems,
-  } = usePublicCatalog(20);
+  } = usePublicCatalog(8);
 
   useEffect(() => {
     const q = searchParams.get('q');
@@ -108,15 +111,60 @@ export const CatalogPage: React.FC = () => {
         </div>
       )}
 
-      {/* Button Muat Lebih Banyak */}
-      <div className="flex justify-start pt-2">
-        <button
-          type="button"
-          className="rounded-xl border border-[#D0D5DD] bg-white px-5 py-2.5 text-xs font-semibold text-[#344054] shadow-xs hover:bg-gray-50 transition-colors cursor-pointer"
-        >
-          Muat lebih banyak
-        </button>
-      </div>
+      {/* Pagination Numerik */}
+      {totalPages > 1 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-6 border-t border-[var(--lf-border)] text-xs text-[#344054]">
+          <button
+            type="button"
+            disabled={page <= 1}
+            onClick={() => {
+              if (page > 1) {
+                setPage(page - 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#D0D5DD] bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Sebelumnya</span>
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => {
+                  setPage(p);
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className={`w-9 h-9 rounded-xl font-semibold transition-colors cursor-pointer ${
+                  p === page
+                    ? 'bg-[#1570EF] text-white shadow-xs'
+                    : 'bg-white hover:bg-gray-50 text-[#344054] border border-[#D0D5DD]'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            disabled={page >= totalPages}
+            onClick={() => {
+              if (page < totalPages) {
+                setPage(page + 1);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#D0D5DD] bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
+          >
+            <span>Selanjutnya</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

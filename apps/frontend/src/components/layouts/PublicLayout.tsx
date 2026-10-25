@@ -1,32 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { Home, Search, PlusCircle, MapPin, ArrowRight } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { GuestReportNoticeModal } from '@/features/public/components/GuestReportNoticeModal';
 
 interface NavItem {
   name: string;
   path: string;
   icon: React.ComponentType<{ className?: string }>;
+  isActionModal?: boolean;
 }
 
 const guestNavItems: NavItem[] = [
   { name: 'Beranda', path: RoutePaths.GUEST_HOME, icon: Home },
   { name: 'Cari Barang', path: RoutePaths.CATALOG, icon: Search },
-  { name: 'Lapor Temuan', path: RoutePaths.STUDENT_REPORT_FOUND, icon: PlusCircle },
+  { name: 'Lapor Temuan', path: '#lapor', icon: PlusCircle, isActionModal: true },
   { name: 'Pos Pelayanan', path: RoutePaths.POSTS, icon: MapPin },
 ];
 
 export const PublicLayout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const isLanding = location.pathname === RoutePaths.LANDING;
 
   const isNavActive = (itemPath: string) => {
     if (itemPath === RoutePaths.GUEST_HOME) {
       return location.pathname === RoutePaths.GUEST_HOME;
     }
-    return location.pathname.startsWith(itemPath);
+    if (itemPath.startsWith('/')) {
+      return location.pathname.startsWith(itemPath);
+    }
+    return false;
   };
 
   return (
@@ -37,7 +43,7 @@ export const PublicLayout: React.FC = () => {
           {/* Logo & Subtitle */}
           <NavLink to={RoutePaths.LANDING} className="flex items-center gap-3">
             <img
-              src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
+              src="/assets/branding/Logo_LostnFound.png"
               alt="UBL LostnFound Logo"
               className="w-9 h-9 object-contain"
             />
@@ -55,6 +61,18 @@ export const PublicLayout: React.FC = () => {
           {!isLanding && (
             <nav className="hidden md:flex items-center gap-6">
               {guestNavItems.map((item) => {
+                if (item.isActionModal) {
+                  return (
+                    <button
+                      key={item.name}
+                      type="button"
+                      onClick={() => setIsNoticeOpen(true)}
+                      className="text-sm transition-colors py-1 text-[#475467] font-medium hover:text-[#1570EF] cursor-pointer"
+                    >
+                      {item.name}
+                    </button>
+                  );
+                }
                 const active = isNavActive(item.path);
                 return (
                   <NavLink
@@ -95,11 +113,30 @@ export const PublicLayout: React.FC = () => {
         <Outlet />
       </main>
 
+      {/* Guest Notice Modal */}
+      <GuestReportNoticeModal
+        isOpen={isNoticeOpen}
+        onClose={() => setIsNoticeOpen(false)}
+      />
+
       {/* Mobile Bottom Navigation - Only active in Guest subpages per Figma */}
       {!isLanding && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--lf-border)] h-[64px] z-40 flex items-center justify-around px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
           {guestNavItems.map((item) => {
             const Icon = item.icon;
+            if (item.isActionModal) {
+              return (
+                <button
+                  key={`mobile-${item.name}`}
+                  type="button"
+                  onClick={() => setIsNoticeOpen(true)}
+                  className="flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors select-none text-[var(--lf-muted)] hover:text-[#1570EF] cursor-pointer"
+                >
+                  <Icon className="w-5 h-5 text-[var(--lf-muted)]" />
+                  <span className="text-[10px] leading-none">{item.name}</span>
+                </button>
+              );
+            }
             const active = isNavActive(item.path);
             return (
               <NavLink

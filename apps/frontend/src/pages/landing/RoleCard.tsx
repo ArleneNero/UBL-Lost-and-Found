@@ -7,7 +7,9 @@ interface RoleCardProps {
   iconSrc?: string;
   iconFallback?: React.ReactNode;
   iconBgColor?: string;
-  onClick: () => void;
+  badge?: string;
+  disabled?: boolean;
+  onClick?: () => void;
 }
 
 export const RoleCard: React.FC<RoleCardProps> = ({
@@ -16,20 +18,30 @@ export const RoleCard: React.FC<RoleCardProps> = ({
   iconSrc,
   iconFallback,
   iconBgColor = 'bg-[var(--lf-soft)]',
+  badge,
+  disabled = false,
   onClick,
 }) => {
+  const handleClick = () => {
+    if (!disabled && onClick) onClick();
+  };
+
   return (
     <div
       role="button"
-      tabIndex={0}
-      onClick={onClick}
+      tabIndex={disabled ? -1 : 0}
+      onClick={handleClick}
       onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
+        if (!disabled && (e.key === 'Enter' || e.key === ' ')) {
           e.preventDefault();
-          onClick();
+          handleClick();
         }
       }}
-      className="bg-white rounded-2xl border border-[var(--lf-border)] p-4 flex items-center justify-between gap-3 cursor-pointer hover:border-[var(--lf-action)] hover:shadow-xs transition-all duration-150 select-none group min-h-[96px]"
+      className={`bg-white rounded-2xl border border-[var(--lf-border)] p-4 flex items-center justify-between gap-3 select-none group min-h-[96px] ${
+        disabled
+          ? 'opacity-85 cursor-not-allowed'
+          : 'cursor-pointer hover:border-[var(--lf-action)] hover:shadow-xs transition-all duration-150'
+      }`}
     >
       <div className="flex items-center gap-3.5 min-w-0">
         <div className={`w-12 h-12 rounded-xl ${iconBgColor} flex items-center justify-center shrink-0 overflow-hidden`}>
@@ -40,9 +52,16 @@ export const RoleCard: React.FC<RoleCardProps> = ({
           )}
         </div>
         <div className="min-w-0">
-          <h3 className="text-sm font-bold text-[var(--lf-ink)] group-hover:text-[var(--lf-action)] transition-colors truncate">
-            {title}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-[var(--lf-ink)] group-hover:text-[var(--lf-action)] transition-colors truncate">
+              {title}
+            </h3>
+            {badge && (
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                {badge}
+              </span>
+            )}
+          </div>
           <p className="text-xs text-[var(--lf-muted)] line-clamp-2 mt-0.5 leading-snug">
             {description}
           </p>

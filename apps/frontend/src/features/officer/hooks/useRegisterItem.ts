@@ -64,6 +64,16 @@ export function useRegisterItem() {
     if (!validate()) return false;
     setIsSubmitting(true);
     try {
+      let photoToken = `mock-upload-token-${Date.now()}`;
+      if (photo && services.upload) {
+        try {
+          const uploadRes = await services.upload.uploadPhoto(photo, 'ITEM_PHOTO');
+          photoToken = uploadRes.uploadToken;
+        } catch {
+          // Fallback if unauthenticated or in offline mock
+        }
+      }
+
       const res = await services.items.createItem({
         name: formData.name.trim(),
         category: formData.category,
@@ -71,7 +81,7 @@ export function useRegisterItem() {
         foundLocation: formData.foundLocation.trim() || undefined,
         foundDate: formData.foundDate || undefined,
         privateNotes: formData.privateNotes.trim() || undefined,
-        photoToken: `mock-upload-token-${Date.now()}`,
+        photoToken,
       });
       setCreatedItem(res);
       return true;

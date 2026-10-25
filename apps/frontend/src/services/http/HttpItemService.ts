@@ -22,11 +22,12 @@ export class HttpItemService implements IItemService {
   async getItems(params?: GetItemsParams): Promise<PaginatedResult<FoundItem>> {
     const qp = new URLSearchParams();
     if (params?.page) qp.set('page', String(params.page));
-    if (params?.limit) qp.set('limit', String(params.limit));
-    if (params?.search) qp.set('search', params.search);
+    qp.set('limit', String(params?.limit ? Math.min(params.limit, 10) : 8));
+    if (params?.search) qp.set('q', params.search);
     if (params?.category && params.category !== 'ALL') qp.set('category', params.category);
     if (params?.postId) qp.set('post_id', String(params.postId));
-    if (params?.sort) qp.set('sort', params.sort);
+    const sortVal = params?.sort === 'oldest' ? 'received_at_asc' : 'received_at_desc';
+    qp.set('sort', sortVal);
 
     const qs = qp.toString();
     const endpoint = `/items${qs ? `?${qs}` : ''}`;
