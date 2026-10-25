@@ -1,4 +1,4 @@
-﻿import {
+import {
   IItemService,
   GetItemsParams,
   GetOfficerItemsParams,
@@ -10,6 +10,8 @@ import {
   ApiListResponse,
   ApiDataResponse,
   FoundItemPublicDto,
+  InventoryOfficerDto,
+  ItemCreateRequestDto,
 } from '@/types/api';
 import { apiClient, ApiError } from './apiClient';
 
@@ -58,8 +60,29 @@ export class HttpItemService implements IItemService {
     return this.getPublicItemById(id);
   }
 
-  async createItem(_input: CreateItemInput): Promise<FoundItem> {
-    throw new Error('Operasi createItem diimplementasikan pada F/F.3.1');
+  /**
+   * F/F.3.1: Integrasi direct item registration POST /api/v1/officer/items
+   */
+  async createItem(input: CreateItemInput): Promise<FoundItem> {
+    const payload: ItemCreateRequestDto = {
+      item_name: input.name,
+      category: input.category,
+      public_description: input.description,
+      found_location: input.foundLocation || null,
+      found_on: input.foundDate || null,
+      private_verification_notes: input.privateNotes || null,
+      item_photo_upload_tokens: [input.photoToken],
+    };
+
+    const res = await apiClient<ApiDataResponse<InventoryOfficerDto>>(
+      '/officer/items',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+
+    return mapItemDtoToDomain(res.data);
   }
 
   async getOfficerItems(params?: GetOfficerItemsParams): Promise<PaginatedResult<FoundItem>> {
