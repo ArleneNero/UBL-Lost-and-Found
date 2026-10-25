@@ -33,7 +33,7 @@ Sistem Informasi Manajemen, Inventarisasi, dan Pelaporan Barang Temuan Terpadu b
   * Melihat detail publik barang (karakteristik umum).
   * *Catatan:* Tidak memiliki akses ke catatan verifikasi rahasia atau identitas penemu.
 * **Mahasiswa (Student / Terautentikasi):**
-  * Login akun kampus via Clerk Authentication.
+  * Login akun kampus via Neon Auth (Managed Better Auth).
   * Membuat laporan penemuan barang secara mandiri.
   * Memantau status laporan dan riwayat interaksi dengan pos operasional.
 * **Petugas (Officer / Berwenang):**
@@ -72,7 +72,7 @@ UBL-LostnFound/
 | **Backend** | Runtime & Core | Node.js v20+, Fastify v5.2+ | Server web mikro asinkron berkinerja tinggi |
 | | ORM & Query | Drizzle ORM v0.38+, Drizzle Kit | SQL-like query builder type-safe tanpa overhead berat |
 | | Database | Neon Serverless PostgreSQL | Database relasional cloud dengan instant branching |
-| | Auth & Identity | Clerk Auth (JWT server-side) | Verifikasi identitas aman dan pemetaan role lokal |
+| | Auth & Identity | Neon Auth (Managed Better Auth) | Autentikasi modern berbasis session/JWT terverifikasi server-side |
 | | Object Storage | Cloudflare R2 (`@aws-sdk/client-s3`) | S3-compatible private storage tanpa biaya data transfer |
 | | Validasi DTO | Zod v3.24+ | Validasi skema runtime untuk request body, query, dan env |
 | | Testing | Vitest v3.0+ | 12 Test Suites, 94 unit/integration/security tests |
@@ -84,7 +84,7 @@ UBL-LostnFound/
 Pengembangan sistem tidak didasarkan pada asumsi, melainkan berpatokan ketat pada dokumen spesifikasi kanonikal:
 1. **OpenAPI v1.0 Specification (`openapi-v1.0.yaml`):** Menentukan seluruh kontrak 22 HTTP endpoints, metode, path, struktur payload (`snake_case`), response envelopes, pagination meta, dan kode error baku.
 2. **ERD v6.2 Data Model (`erd-v6.2.dbml`):** Mendefinisikan struktur 8 tabel relasional database:
-   - `users` (Penyimpanan akun lokal terhubung ke Clerk ID)
+   - `users` (Penyimpanan akun lokal terhubung ke Neon Auth `auth_user_id`)
    - `roles` & `user_roles` (Role-based access: `STUDENT`, `OFFICER`)
    - `service_posts` (Pos operasional kampus, e.g. Pos Pengajaran)
    - `categories` (Kategori klasifikasi barang)
@@ -110,7 +110,7 @@ Pengembangan sistem tidak didasarkan pada asumsi, melainkan berpatokan ketat pad
 | **B/A** | **Preflight, Contract Audit & Environment Initialization** | ✅ Selesai | Verifikasi OpenAPI v1.0 & ERD v6.2, konfigurasi environment Drizzle dan Neon. |
 | **B/B** | **Database Architecture, Modular Schemas & Idempotent Seeding** | ✅ Selesai | Skema termodularisasi $\le 80$ LOC per domain, runner seed idempoten dengan 15 item uji. |
 | **B/C** | **Public Catalog & Item Details API** | ✅ Selesai | `GET /api/v1/items` dan `GET /api/v1/items/:id` (hanya `STORED` + `is_visible=true`, 404 security filter). |
-| **B/D** | **Authentication & Role-Based Access Control (RBAC)** | ✅ Selesai | Verifikasi Clerk JWT server-side, `authenticateGuard`, `requireOfficerGuard`, proteksi IDOR. |
+| **B/D** | **Authentication & Role-Based Access Control (RBAC)** | ✅ Selesai | Verifikasi Neon Auth server-side, `authenticateGuard`, `requireOfficerGuard`, proteksi IDOR. |
 | **B/E** | **Secure Cloudflare R2 Upload Pipeline** | ✅ Selesai | `POST /uploads/intents` (Presigned PUT) & `POST /uploads/:id/finalize` (HMAC token anti-replay). |
 | **B/F** | **Officer Item Registration & MVP Quality Gate** | ✅ **LULUS** | `POST /api/v1/officer/items`, nomor `INV-YYYY-XXXX`, transaksi atomik, **94/94 Test PASS**. |
 | **B/G** | **Officer Inventory Management & Overdue Lifecycle** | 📋 *Planned* | `GET /officer/inventory`, filter status, toggle visibilitas, audit barang kedaluwarsa (>90 hari). |
@@ -134,7 +134,7 @@ Pengembangan frontend mengikuti strategi **Role-First**: menyelesaikan seluruh a
 | **F/C** | **Guest Publik UI Lengkap (In-Memory Mock Adapter)** | 🟡 *Next* | Katalog pencarian, filter kategori, paginasi 10 item/halaman, detail publik, state 404. |
 | **F/D** | **Mahasiswa UI & Alur Pelaporan Temuan (Mock)** | 📋 *Planned* | Antarmuka akun mahasiswa, form pelaporan mandiri, riwayat status laporan. |
 | **F/E** | **Integrasi API Publik dengan Backend** | 📋 *Planned* | Penggantian mock adapter Guest dengan HTTP Client nyata mengonsumsi endpoint B/C. |
-| **F/F** | **Integrasi Penuh Petugas & Mahasiswa (Clerk & R2)** | 📋 *Planned* | Alur login riil Clerk, unggah binary langsung ke Cloudflare R2, dan sinkronisasi inventaris pos. |
+| **F/F** | **Integrasi Penuh Petugas & Mahasiswa (Neon Auth & R2)** | 📋 *Planned* | Alur login riil Neon Auth (Better Auth), unggah binary langsung ke Cloudflare R2, dan sinkronisasi inventaris pos. |
 | **F/G** | **QA, Visual Regression & Deployment Produksi** | 📋 *Planned* | Audit pixel-perfect terhadap Figma, cross-browser testing, dan rilis frontend. |
 
 ---
@@ -146,7 +146,7 @@ Pengembangan frontend mengikuti strategi **Role-First**: menyelesaikan seluruh a
 * **Package Manager:** NPM v10+ (atau PNPM / Bun yang kompatibel)
 * Akses Cloud Services (untuk backend live):
   * **Neon Serverless PostgreSQL**
-  * **Clerk Identity Platform**
+  * **Neon Auth (Managed Better Auth)**
   * **Cloudflare R2 Bucket**
 
 ---
@@ -166,18 +166,18 @@ PORT=3000
 
 # Database Neon
 DATABASE_URL=postgresql://user:password@ep-sample-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require
 
-# Clerk Auth
-CLERK_SECRET_KEY=your_clerk_secret_key_here
-CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
-JWT_SIGNING_SECRET=kunci_rahasia_hmac_upload_token_minimal_32_karakter
+# Neon Auth (Better Auth)
+AUTH_SECRET=dev-neon-auth-secret-key-min-32-chars-long!
+NEON_AUTH_BASE_URL=https://your-neon-auth-domain.neon.tech
 
 # Cloudflare R2 Storage
-R2_ACCOUNT_ID=your_cloudflare_account_id
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
 R2_ACCESS_KEY_ID=your_r2_access_key_id
 R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
-R2_BUCKET_NAME=ubl-lostnfound-dev
-R2_PUBLIC_DOMAIN=https://pub-sample.r2.dev
+R2_BUCKET_NAME=lostandfound-budiluhur
+R2_PUBLIC_URL=https://pub-sample.r2.dev
 ```
 
 #### 2. Frontend (`apps/frontend/.env`)
@@ -259,7 +259,7 @@ UBL-LostnFound/
 │   │   │   │   ├── fixtures/        # Data fixture deterministik untuk testing & seed
 │   │   │   │   ├── client.ts        # Inisialisasi pool koneksi Neon Postgres
 │   │   │   │   └── seed.ts          # Runner seeding idempoten
-│   │   │   ├── middleware/          # Guard autentikasi Clerk & otorisasi Petugas
+│   │   │   ├── middleware/          # Guard autentikasi Neon Auth & otorisasi Petugas
 │   │   │   ├── modules/
 │   │   │   │   ├── auth/            # JWT verification & identitas pengguna
 │   │   │   │   ├── items/           # Katalog publik & detail barang temuan
@@ -289,7 +289,7 @@ UBL-LostnFound/
 1. **Clean Code Sweet Spot:**
    - Batas maksimum file produksi di `src/` adalah $\le 100$ baris kode (LOC) dengan ukuran fungsi $\approx 15–25$ LOC guna menjamin keterbacaan tinggi dan isolasi tanggung jawab (*Single Responsibility*).
 2. **Server-Enforced RBAC & Anti-IDOR:**
-   - Parameter krusial seperti `storage_post_id` tidak pernah diterima dari payload klien. Server secara independen mengambil pos penugasan petugas dari tabel relasi database berdasarkan token sesi Clerk yang sah.
+   - Parameter krusial seperti `storage_post_id` tidak pernah diterima dari payload klien. Server secara independen mengambil pos penugasan petugas dari tabel relasi database berdasarkan token sesi Neon Auth yang sah.
 3. **Penyimpanan Objek Terenkripsi & Anti-Replay:**
    - File media diunggah langsung ke Cloudflare R2 melalui Presigned PUT URL berbatas waktu.
    - Token unggah dilindungi tanda tangan kriptografis HMAC-SHA256, berumur 15 menit, terikat pada ID pengguna dan tujuan penggunaan (*purpose*), serta dicatat ke dalam *consumed token store* agar tidak dapat digunakan ulang (*single-use protection*).
