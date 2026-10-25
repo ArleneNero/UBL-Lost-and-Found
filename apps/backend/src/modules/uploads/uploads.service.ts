@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { env } from "../../config/env.js";
 import type { AuthUser } from "../auth/auth.types.js";
 import type {
   UploadPurpose,
@@ -22,7 +23,11 @@ export class UploadsService {
   private storage: StorageProvider;
 
   constructor(customStorage?: StorageProvider) {
-    this.storage = customStorage || (r2Provider.isConfigured ? r2Provider : mockStorageProvider);
+    this.storage =
+      customStorage ||
+      (env.NODE_ENV !== "test" && r2Provider.isConfigured
+        ? r2Provider
+        : mockStorageProvider);
   }
 
   public async createUploadIntent(

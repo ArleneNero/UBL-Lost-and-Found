@@ -98,6 +98,26 @@ export class R2StorageProvider implements StorageProvider {
       expiresIn: expiresInSeconds,
     });
   }
+
+  public async getObjectStream(
+    key: string
+  ): Promise<{ body: any; contentType: string } | null> {
+    if (!this.s3Client) return null;
+    try {
+      const res = await this.s3Client.send(
+        new GetObjectCommand({
+          Bucket: env.R2_BUCKET_NAME,
+          Key: key,
+        })
+      );
+      return {
+        body: res.Body,
+        contentType: res.ContentType || "image/png",
+      };
+    } catch {
+      return null;
+    }
+  }
 }
 
 export const r2Provider = new R2StorageProvider();

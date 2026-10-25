@@ -10,6 +10,7 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx src/db/seed.ts",
+    "r2:sync": "tsx src/scripts/sync-r2.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

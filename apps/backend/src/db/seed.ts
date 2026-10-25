@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, pool } from "./index.js";
-import { users, servicePosts, servicePostPhotos, foundItems, itemPhotos } from "./schema.js";
+import { users, servicePosts, servicePostPhotos, foundItems, itemPhotos, itemReturns } from "./schema.js";
 import {
   SEED_OFFICER_EMAIL,
   officerSeedData,
@@ -54,16 +54,13 @@ async function seedServicePost(officerUserId: string) {
 }
 
 async function seedFoundItems(officerUserId: string, postId: number) {
+  console.log("🧹 Clearing old dummy items and photos...");
+  await db.delete(itemReturns);
+  await db.delete(itemPhotos);
+  await db.delete(foundItems);
+  console.log("✨ All previous dummy items cleared.");
+
   for (const itemData of itemsToSeed) {
-    const existing = await db.query.foundItems.findFirst({
-      where: eq(foundItems.inventoryCode, itemData.inventoryCode),
-    });
-
-    if (existing) {
-      console.log(`ℹ️ Item already exists: ${itemData.inventoryCode}`);
-      continue;
-    }
-
     const [item] = await db
       .insert(foundItems)
       .values({

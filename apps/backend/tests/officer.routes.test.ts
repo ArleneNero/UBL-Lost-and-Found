@@ -3,7 +3,7 @@ import { buildApp } from "../src/app.js";
 import { authService } from "../src/modules/auth/auth.service.js";
 import { uploadsService } from "../src/modules/uploads/uploads.service.js";
 import { db, pool } from "../src/db/index.js";
-import { users } from "../src/db/schema.js";
+import { users, foundItems, itemPhotos } from "../src/db/schema.js";
 import { eq } from "drizzle-orm";
 import type { FastifyInstance } from "fastify";
 
@@ -90,6 +90,13 @@ describe("Officer Item Registration & MVP Gate (Milestone B/F)", () => {
   });
 
   afterAll(async () => {
+    const testItems = await db.query.foundItems.findMany({
+      where: eq(foundItems.itemName, "Helm KYT TT Course Merah"),
+    });
+    for (const ti of testItems) {
+      await db.delete(itemPhotos).where(eq(itemPhotos.itemId, ti.itemId));
+      await db.delete(foundItems).where(eq(foundItems.itemId, ti.itemId));
+    }
     await app.close();
     await pool.end();
   });

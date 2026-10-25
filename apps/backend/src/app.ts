@@ -1,12 +1,15 @@
 import Fastify, { FastifyInstance, FastifyError } from "fastify";
 import cors from "@fastify/cors";
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
 import { env } from "./config/env.js";
 import { postsRoutes } from "./modules/posts/posts.routes.js";
 import { itemsRoutes } from "./modules/items/items.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
 import { uploadsRoutes } from "./modules/uploads/uploads.routes.js";
 import { officerRoutes } from "./modules/officer/officer.routes.js";
+import { r2Provider } from "./modules/uploads/storage/r2.provider.js";
 
 export function buildApp(): FastifyInstance {
   const app = Fastify({
@@ -62,6 +65,42 @@ export function buildApp(): FastifyInstance {
       timestamp: new Date().toISOString(),
       request_id: request.id,
     };
+  });
+
+  // Storage endpoint: stream live from Cloudflare R2 bucket with local fallback
+  app.get("/storage/*", async (request, reply) => {
+    const rawKey = (request.params as any)["*"];
+    if (!rawKey) return reply.status(404).send({ error: "Not Found" });
+    const safeKey = rawKey.replace(/^(\.\.[\/\\])+/, "");
+
+    // 1. Live stream directly from Cloudflare R2
+    if (r2Provider.isConfigured) {
+      try {
+        const stream = await r2Provider.getObjectStream(safeKey);
+        if (stream && stream.body) {
+          reply.header("Content-Type", stream.contentType);
+          return reply.send(stream.body);
+        }
+      } catch (err) {
+        request.log.warn({ err }, "R2 stream error, falling back to local storage");
+      }
+    }
+
+    // 2. Local filesystem fallback
+    const fullPath = path.resolve(process.cwd(), "storage", safeKey);
+    if (!fs.existsSync(fullPath)) {
+      return reply.status(404).send({ error: "File not found" });
+    }
+    const ext = path.extname(fullPath).toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      ".png": "image/png",
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".webp": "image/webp",
+      ".svg": "image/svg+xml",
+    };
+    reply.header("Content-Type", mimeTypes[ext] || "application/octet-stream");
+    return reply.send(fs.createReadStream(fullPath));
   });
 
   // APIs (/api/v1)
