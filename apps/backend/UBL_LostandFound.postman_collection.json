@@ -1,0 +1,218 @@
+{
+  "info": {
+    "_postman_id": "ubl-lostandfound-collection-v1",
+    "name": "UBL Lost and Found REST API",
+    "description": "Koleksi request Postman resmi untuk UBL Lost and Found (Fastify TypeScript, Neon PostgreSQL, Cloudflare R2). Sesuai kontrak OpenAPI v1.0 dan ERD v6.2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "apiPrefix",
+      "value": "http://localhost:3000/api/v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health & Server Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Memeriksa status hidup server Fastify dan request ID pelacakan."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Public Catalog (Katalog Publik)",
+      "item": [
+        {
+          "name": "GET Public Items - Halaman 1 (Limit 8)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/items?page=1&limit=8",
+              "host": ["{{apiPrefix}}"],
+              "path": ["items"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "8" }
+              ]
+            },
+            "description": "Mengambil 8 barang temuan pertama yang berstatus STORED dan is_visible = true."
+          }
+        },
+        {
+          "name": "GET Public Items - Halaman 2 (Limit 8)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/items?page=2&limit=8",
+              "host": ["{{apiPrefix}}"],
+              "path": ["items"],
+              "query": [
+                { "key": "page", "value": "2" },
+                { "key": "limit", "value": "8" }
+              ]
+            },
+            "description": "Mengambil sisa 4 barang temuan pada halaman kedua."
+          }
+        },
+        {
+          "name": "Filter Barang Berdasarkan Kategori",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/items?category=Elektronik",
+              "host": ["{{apiPrefix}}"],
+              "path": ["items"],
+              "query": [
+                { "key": "category", "value": "Elektronik" }
+              ]
+            },
+            "description": "Memfilter barang berdasarkan kategori spesifik (contoh: Elektronik, Kunci, Dompet, Aksesori)."
+          }
+        },
+        {
+          "name": "Pencarian Kata Kunci (Keyword Search)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/items?query=Vario",
+              "host": ["{{apiPrefix}}"],
+              "path": ["items"],
+              "query": [
+                { "key": "query", "value": "Vario" }
+              ]
+            },
+            "description": "Pencarian aman terhadap nama barang atau deskripsi publik."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Item Detail (Detail Barang)",
+      "item": [
+        {
+          "name": "GET Item Detail by UUID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/items/6daac34e-6258-45e7-88ed-175b4097cc00",
+              "host": ["{{apiPrefix}}"],
+              "path": ["items", "6daac34e-6258-45e7-88ed-175b4097cc00"]
+            },
+            "description": "Mengambil detail barang publik (Kunci Motor Honda Vario) tanpa membocorkan catatan rahasia/private verification notes."
+          }
+        },
+        {
+          "name": "GET Item Detail - 404 Not Found",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/items/00000000-0000-0000-0000-000000000000",
+              "host": ["{{apiPrefix}}"],
+              "path": ["items", "00000000-0000-0000-0000-000000000000"]
+            },
+            "description": "Respon error baku 404 jika barang tidak ditemukan atau belum disetujui publik."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Service Posts (Pos Operasional)",
+      "item": [
+        {
+          "name": "GET Service Posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{apiPrefix}}/posts",
+              "host": ["{{apiPrefix}}"],
+              "path": ["posts"]
+            },
+            "description": "Mengambil daftar pos penyimpanan fisik barang temuan di kampus (e.g. Pos Pengajaran)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Storage Streaming (Cloudflare R2)",
+      "item": [
+        {
+          "name": "Stream Foto Kunci Motor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/storage/items/kunci-motor.png",
+              "host": ["{{baseUrl}}"],
+              "path": ["storage", "items", "kunci-motor.png"]
+            },
+            "description": "Streaming biner foto asli dari Cloudflare R2 bucket dengan fallback file storage lokal."
+          }
+        },
+        {
+          "name": "Stream Foto AirPods Pro",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/storage/items/airpods-pro.png",
+              "host": ["{{baseUrl}}"],
+              "path": ["storage", "items", "airpods-pro.png"]
+            },
+            "description": "Streaming biner foto AirPods Pro dari Cloudflare R2."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Officer Operations (Operasional Petugas)",
+      "item": [
+        {
+          "name": "POST Officer Item Registration (Simulasi 401 Unauthorized)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item_name\": \"Helm KYT Merah\",\n  \"category\": \"Aksesori\",\n  \"storage_post_id\": 1,\n  \"found_location\": \"Parkiran Barat Gedung Unit 7\",\n  \"found_on\": \"2026-10-27\",\n  \"public_description\": \"Helm half-face warna merah glossy\",\n  \"private_verification_notes\": \"Ada stiker nama di bagian belakang\",\n  \"item_photo_upload_tokens\": [\"mock-token-sample\"]\n}"
+            },
+            "url": {
+              "raw": "{{apiPrefix}}/officer/items",
+              "host": ["{{apiPrefix}}"],
+              "path": ["officer", "items"]
+            },
+            "description": "Memverifikasi proteksi guard otorisasi petugas. Mengembalikan 401 Unauthorized jika dipanggil tanpa cookie/header sesi petugas."
+          }
+        }
+      ]
+    }
+  ]
+}

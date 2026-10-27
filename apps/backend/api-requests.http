@@ -1,0 +1,105 @@
+### ===================================================================
+### UBL Lost and Found — REST API Interactive Client
+### Gunakan ekstensi "REST Client" (Huachao Mao) atau "Thunder Client" di VS Code.
+### Cukup klik "Send Request" di atas tiap endpoint di bawah ini.
+### ===================================================================
+
+@baseUrl = http://localhost:3000
+@api = http://localhost:3000/api/v1
+
+### -------------------------------------------------------------------
+### 1. HEALTH CHECK & STATUS SERVER
+### -------------------------------------------------------------------
+
+# @name healthCheck
+GET {{baseUrl}}/health
+Accept: application/json
+
+### -------------------------------------------------------------------
+### 2. KATALOG PUBLIK (PUBLIC CATALOG - GET ALL & FILTER)
+### -------------------------------------------------------------------
+
+# @name getCatalogPage1
+# Mengambil katalog publik halaman 1 (limit 8 barang sesuai ketentuan UI)
+GET {{api}}/items?page=1&limit=8
+Accept: application/json
+
+###
+
+# @name getCatalogPage2
+# Mengambil katalog publik halaman 2 (sisa 4 barang)
+GET {{api}}/items?page=2&limit=8
+Accept: application/json
+
+###
+
+# @name filterByCategory
+# Filter barang temuan berdasarkan kategori (e.g. Elektronik, Aksesori, Kunci, Dompet)
+GET {{api}}/items?category=Elektronik
+Accept: application/json
+
+###
+
+# @name searchKeyword
+# Pencarian kata kunci barang (e.g. Honda, Asus, Dompet)
+GET {{api}}/items?query=Vario
+Accept: application/json
+
+### -------------------------------------------------------------------
+### 3. DETAIL BARANG PUBLIK (GET BY ID)
+### -------------------------------------------------------------------
+
+# @name getItemDetailValid
+# Ganti dengan UUID item yang ada (contoh: Kunci Motor Honda Vario)
+GET {{api}}/items/6daac34e-6258-45e7-88ed-175b4097cc00
+Accept: application/json
+
+###
+
+# @name getItemDetailNotFound
+# Simulasi error 404 ketika barang tidak ditemukan atau belum STORED
+GET {{api}}/items/00000000-0000-0000-0000-000000000000
+Accept: application/json
+
+### -------------------------------------------------------------------
+### 4. POS OPERASIONAL KAMPUS (SERVICE POSTS)
+### -------------------------------------------------------------------
+
+# @name getServicePosts
+# Mengambil daftar pos penyimpanan operasional (Pos Pengajaran, dll)
+GET {{api}}/posts
+Accept: application/json
+
+### -------------------------------------------------------------------
+### 5. CLOUDFLARE R2 OBJECT STREAMING (STREAM GAMBAR)
+### -------------------------------------------------------------------
+
+# @name streamKunciMotor
+# Stream langsung dari Cloudflare R2 bucket dengan fallback lokal
+GET {{baseUrl}}/storage/items/kunci-motor.png
+
+###
+
+# @name streamAirPods
+GET {{baseUrl}}/storage/items/airpods-pro.png
+
+### -------------------------------------------------------------------
+### 6. PENCATATAN BARANG PETUGAS (POST /officer/items)
+### Catatan: Memerlukan header autentikasi Petugas atau simulasi test
+### -------------------------------------------------------------------
+
+# @name createItemUnauthorized
+# Simulasi penolakan 401 jika dipanggil tanpa sesi otorisasi petugas
+POST {{api}}/officer/items
+Content-Type: application/json
+
+{
+  "item_name": "Helm KYT Merah",
+  "category": "Aksesori",
+  "storage_post_id": 1,
+  "found_location": "Parkiran Barat Gedung Unit 7",
+  "found_on": "2026-10-27",
+  "public_description": "Helm half-face warna merah glossy",
+  "private_verification_notes": "Ada stiker nama di bagian belakang",
+  "item_photo_upload_tokens": ["mock-token-sample"]
+}
