@@ -2,6 +2,7 @@
 **/*.md
 **/*.mdx
 !/README.md
+!/API_DOCUMENTATION.md
 
 # AI and agent internal files
 .agent-internal/
