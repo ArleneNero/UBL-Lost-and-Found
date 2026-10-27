@@ -8,6 +8,7 @@ import { ItemDetailPage } from '@/pages/ItemDetailPage';
 import { PostsPage } from '@/pages/PostsPage';
 import { GuidePage } from '@/pages/GuidePage';
 import { LoginPage } from '@/pages/LoginPage';
+import { OfficerLoginPage } from '@/pages/officer/OfficerLoginPage';
 import { OfficerDashboardPage } from '@/pages/officer/OfficerDashboardPage';
 import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
 import { OfficerRegisterItemPage } from '@/pages/officer/OfficerRegisterItemPage';
@@ -19,6 +20,12 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { RoutePaths } from '@/constants/routes';
 
 export const router = createBrowserRouter([
+  // Dedicated Officer Login Route
+  {
+    path: RoutePaths.OFFICER_LOGIN,
+    element: <OfficerLoginPage />,
+  },
+
   // Public & Guest Routes
   {
     path: RoutePaths.LANDING,

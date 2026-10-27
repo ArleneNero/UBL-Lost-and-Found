@@ -16,6 +16,44 @@ GET {{baseUrl}}/health
 Accept: application/json
 
 ### -------------------------------------------------------------------
+### 1.1 LOGIN PETUGAS (OFFICER AUTHENTICATION - BCRYPT VERIFIED)
+### -------------------------------------------------------------------
+
+# @name officerLoginSuccess
+# Login Petugas Pos Pengajaran (Ganti {{officerPassword}} dengan kata sandi petugas Anda)
+POST {{api}}/auth/officer-login
+Content-Type: application/json
+
+{
+  "email": "petugas.pengajaran@budiluhur.ac.id",
+  "password": "{{officerPassword}}"
+}
+
+###
+
+# @name officerLoginInvalidPassword
+# Simulasi 401 INVALID_CREDENTIALS jika kata sandi salah
+POST {{api}}/auth/officer-login
+Content-Type: application/json
+
+{
+  "email": "petugas.pengajaran@budiluhur.ac.id",
+  "password": "sandiSalahTesting123"
+}
+
+###
+
+# @name officerLoginInvalidFormat
+# Simulasi 400 VALIDATION_ERROR jika format email tidak valid
+POST {{api}}/auth/officer-login
+Content-Type: application/json
+
+{
+  "email": "bukan-email",
+  "password": "apapunsandinya"
+}
+
+### -------------------------------------------------------------------
 ### 2. KATALOG PUBLIK (PUBLIC CATALOG - GET ALL & FILTER)
 ### -------------------------------------------------------------------
 

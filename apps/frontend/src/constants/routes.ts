@@ -18,6 +18,7 @@ export const RoutePaths = {
   FORGOT_PASSWORD: '/lupa-sandi',
 
   // Officer / Petugas
+  OFFICER_LOGIN: '/petugas/login',
   OFFICER_DASHBOARD: '/petugas/dashboard',
   OFFICER_INVENTORY: '/petugas/inventaris',
   OFFICER_INVENTORY_DETAIL: '/petugas/inventaris/:id',

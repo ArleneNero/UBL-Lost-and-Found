@@ -16,7 +16,7 @@ export class InMemoryAuthService implements IAuthService {
     };
   }
 
-  async loginAsOfficer(email?: string): Promise<UserSession> {
+  async loginAsOfficer(email?: string, _password?: string): Promise<UserSession> {
     const user: UserSession = {
       id: 'officer-01',
       name: 'Petugas Pos Pengajaran',

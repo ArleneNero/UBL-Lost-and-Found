@@ -97,7 +97,7 @@ export const PublicLayout: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => navigate(RoutePaths.LOGIN)}
+                onClick={() => navigate(RoutePaths.LANDING)}
                 className="bg-[#1570EF] hover:bg-[#175CD3] text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <span>Login</span>

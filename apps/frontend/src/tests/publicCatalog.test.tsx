@@ -64,7 +64,7 @@ describe('Public & Guest Flows (F/C.1 - F/C.2.0)', () => {
 
       // Test navigation on clicking cards
       fireEvent.click(screen.getByText('Petugas'));
-      expect(mockNavigate).toHaveBeenCalledWith('/petugas/dashboard');
+      expect(mockNavigate).toHaveBeenCalledWith('/petugas/login');
 
       // Mahasiswa is disabled per scope agreement
       fireEvent.click(screen.getByText('Mahasiswa'));

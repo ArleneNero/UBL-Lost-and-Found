@@ -13,6 +13,7 @@ import { InMemoryUploadService } from './in-memory/InMemoryUploadService';
 import { HttpItemService } from './http/HttpItemService';
 import { HttpUploadService } from './http/HttpUploadService';
 import { HttpPostService } from './http/HttpPostService';
+import { HttpAuthService } from './http/HttpAuthService';
 
 export type ServiceMode = 'in-memory' | 'http';
 
@@ -44,7 +45,7 @@ class ServiceRegistry {
       items: new HttpItemService(),
       submissions: new InMemorySubmissionService(),
       posts: new HttpPostService(),
-      auth: new InMemoryAuthService(),
+      auth: new HttpAuthService(),
       upload: new HttpUploadService(),
       mode: 'http',
     };

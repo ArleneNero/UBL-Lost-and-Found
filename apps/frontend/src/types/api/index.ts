@@ -172,3 +172,13 @@ export interface MeDto {
   assigned_post_id: number | null;
   nim_verification_status: string;
 }
+
+export interface OfficerLoginRequestDto {
+  email: string;
+  password: string;
+}
+
+export interface OfficerLoginResponseDto {
+  token: string;
+  user: MeDto;
+}

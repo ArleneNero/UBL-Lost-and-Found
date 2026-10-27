@@ -2,6 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import Fastify, { FastifyInstance } from "fastify";
 import { authenticate, requireOfficer } from "../src/middleware/auth.guard.js";
 import { authService } from "../src/modules/auth/auth.service.js";
+import { authRoutes } from "../src/modules/auth/auth.routes.js";
+import { SEED_OFFICER_EMAIL, SEED_OFFICER_PASSWORD } from "../src/db/fixtures/officer.fixture.js";
 import { db, pool } from "../src/db/index.js";
 import { users } from "../src/db/schema.js";
 import { eq } from "drizzle-orm";
@@ -25,6 +27,9 @@ describe("B/D.1 — Server-Side Auth, Identity Mapping & Scoped Policy", () => {
         },
       });
     });
+
+    // Register official authRoutes under /api/v1
+    app.register(authRoutes, { prefix: "/api/v1" });
 
     // Protected Route 1: Any Authenticated User
     app.get("/api/v1/test/protected", { preHandler: [authenticate] }, async (request) => {
@@ -209,6 +214,116 @@ describe("B/D.1 — Server-Side Auth, Identity Mapping & Scoped Policy", () => {
       expect(json.officer.user.role).toBe("OFFICER");
       expect(json.officer.postId).toBe(1);
       expect(json.officer.postName).toBe("Pos Pengajaran");
+    });
+  });
+
+  describe("B/D.2.1: Officer Login Endpoint (POST /api/v1/auth/officer-login)", () => {
+    it("should login successfully with valid officer credentials and return token + profile", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: {
+          email: SEED_OFFICER_EMAIL,
+          password: SEED_OFFICER_PASSWORD,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.data).toBeDefined();
+      expect(body.data.token).toBeDefined();
+      expect(typeof body.data.token).toBe("string");
+      expect(body.data.user.role).toBe("OFFICER");
+      expect(body.data.user.email).toBe(SEED_OFFICER_EMAIL);
+      expect(body.data.user.assigned_post_id).toBe(1);
+
+      // Verify that the issued token is accepted by protected endpoints
+      const checkResponse = await app.inject({
+        method: "GET",
+        url: "/api/v1/test/officer-only",
+        headers: {
+          authorization: `Bearer ${body.data.token}`,
+        },
+      });
+      expect(checkResponse.statusCode).toBe(200);
+    });
+
+    it("should reject login with 401 INVALID_CREDENTIALS when password is incorrect", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: {
+          email: SEED_OFFICER_EMAIL,
+          password: "wrongPassword123!",
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = response.json();
+      expect(body.error.code).toBe("INVALID_CREDENTIALS");
+      expect(body.error.message).toContain("tidak valid");
+    });
+
+    it("should reject login with 401 INVALID_CREDENTIALS when officer email does not exist", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: {
+          email: "nonexistent.officer@budiluhur.ac.id",
+          password: "anyPassword123!",
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = response.json();
+      expect(body.error.code).toBe("INVALID_CREDENTIALS");
+    });
+
+    it("should reject login with 401 when student email attempts officer login (Zero-Trust RBAC)", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: {
+          email: "mahasiswa.test@budiluhur.ac.id",
+          password: "somePassword123!",
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = response.json();
+      expect(body.error.code).toBe("INVALID_CREDENTIALS");
+    });
+
+    it("should reject login with 400 VALIDATION_ERROR when email format is invalid", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: {
+          email: "not-an-email",
+          password: "anyPassword",
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = response.json();
+      expect(body.error.code).toBe("VALIDATION_ERROR");
+      expect(body.error.message).toContain("Format email tidak valid");
+    });
+
+    it("should reject login with 400 VALIDATION_ERROR when password is empty", async () => {
+      const response = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: {
+          email: SEED_OFFICER_EMAIL,
+          password: "",
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = response.json();
+      expect(body.error.code).toBe("VALIDATION_ERROR");
+      expect(body.error.message).toContain("Kata sandi wajib diisi");
     });
   });
 });

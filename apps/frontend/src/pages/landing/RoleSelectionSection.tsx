@@ -33,7 +33,7 @@ export const RoleSelectionSection: React.FC = () => {
           title="Petugas"
           description="Login untuk mengelola barang dan penyerahan"
           iconSrc="/assets/illustrations/roles/Icon_Petugas.png"
-          onClick={() => navigate(RoutePaths.OFFICER_DASHBOARD)}
+          onClick={() => navigate(RoutePaths.OFFICER_LOGIN)}
         />
 
         {/* Card 3: Mode Tamu */}

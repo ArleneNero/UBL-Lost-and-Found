@@ -17,3 +17,19 @@ export const meResponseSchema = z.object({
   data: meSchema,
 });
 export type MeResponse = z.infer<typeof meResponseSchema>;
+
+// 3. Officer Login Request Schema
+export const officerLoginSchema = z.object({
+  email: z.string().trim().email("Format email tidak valid"),
+  password: z.string().min(1, "Kata sandi wajib diisi"),
+});
+export type OfficerLoginRequest = z.infer<typeof officerLoginSchema>;
+
+// 4. Officer Login Response Schema
+export const officerLoginResponseSchema = z.object({
+  data: z.object({
+    token: z.string(),
+    user: meSchema,
+  }),
+});
+export type OfficerLoginResponse = z.infer<typeof officerLoginResponseSchema>;
