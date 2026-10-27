@@ -24,6 +24,24 @@ export const servicePostsRelations = relations(servicePosts, ({ one, many }) => 
   submissions: many(foundSubmissions),
 }));
 
+export const servicePostPhotosRelations = relations(servicePostPhotos, ({ one }) => ({
+  post: one(servicePosts, {
+    fields: [servicePostPhotos.postId],
+    references: [servicePosts.postId],
+  }),
+}));
+
+export const foundSubmissionsRelations = relations(foundSubmissions, ({ one }) => ({
+  reporter: one(users, {
+    fields: [foundSubmissions.reporterUserId],
+    references: [users.userId],
+  }),
+  targetPost: one(servicePosts, {
+    fields: [foundSubmissions.targetPostId],
+    references: [servicePosts.postId],
+  }),
+}));
+
 export const foundItemsRelations = relations(foundItems, ({ one }) => ({
   storagePost: one(servicePosts, {
     fields: [foundItems.storagePostId],
@@ -47,5 +65,16 @@ export const itemPhotosRelations = relations(itemPhotos, ({ one }) => ({
   item: one(foundItems, {
     fields: [itemPhotos.itemId],
     references: [foundItems.itemId],
+  }),
+}));
+
+export const itemReturnsRelations = relations(itemReturns, ({ one }) => ({
+  item: one(foundItems, {
+    fields: [itemReturns.itemId],
+    references: [foundItems.itemId],
+  }),
+  returnedBy: one(users, {
+    fields: [itemReturns.returnedByUserId],
+    references: [users.userId],
   }),
 }));
