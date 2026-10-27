@@ -10,6 +10,7 @@
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx src/db/seed.ts",
+    "db:studio": "tsx ./node_modules/drizzle-kit/bin.cjs studio --port 4983",
     "r2:sync": "tsx src/scripts/sync-r2.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
