@@ -5,7 +5,8 @@
 ### ===================================================================
 
 @baseUrl = http://localhost:3000
-@api = http://localhost:3000/api/v1
+# Masukkan kata sandi petugas pos di bawah ini untuk pengujian lokal:
+@officerPassword = kataSandiPetugasAnda
 
 ### -------------------------------------------------------------------
 ### 1. HEALTH CHECK & STATUS SERVER
@@ -25,7 +26,7 @@ POST {{api}}/auth/officer-login
 Content-Type: application/json
 
 {
-  "email": "petugas.pengajaran@budiluhur.ac.id",
+  "email": "lostandfound.budiluhur@gmail.com",
   "password": "{{officerPassword}}"
 }
 
@@ -37,7 +38,7 @@ POST {{api}}/auth/officer-login
 Content-Type: application/json
 
 {
-  "email": "petugas.pengajaran@budiluhur.ac.id",
+  "email": "lostandfound.budiluhur@gmail.com",
   "password": "sandiSalahTesting123"
 }
 
@@ -134,10 +135,28 @@ Content-Type: application/json
 {
   "item_name": "Helm KYT Merah",
   "category": "Aksesori",
-  "storage_post_id": 1,
   "found_location": "Parkiran Barat Gedung Unit 7",
   "found_on": "2026-10-27",
   "public_description": "Helm half-face warna merah glossy",
   "private_verification_notes": "Ada stiker nama di bagian belakang",
   "item_photo_upload_tokens": ["mock-token-sample"]
 }
+
+###
+
+# @name createItemAuthorized
+# Pencatatan barang dengan token autentikasi petugas dari request officerLoginSuccess
+POST {{api}}/officer/items
+Content-Type: application/json
+Authorization: Bearer {{officerLoginSuccess.response.body.data.token}}
+
+{
+  "item_name": "Helm KYT Merah",
+  "category": "Aksesori",
+  "found_location": "Parkiran Barat Gedung Unit 7",
+  "found_on": "2026-10-27",
+  "public_description": "Helm half-face warna merah glossy",
+  "private_verification_notes": "Ada stiker nama di bagian belakang",
+  "item_photo_upload_tokens": ["mock-token-sample"]
+}
+

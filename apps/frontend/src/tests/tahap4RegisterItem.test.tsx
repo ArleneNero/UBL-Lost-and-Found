@@ -14,7 +14,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-describe('Step 1 (F/B.3) — Officer Direct Item Registration', () => {
+describe('Step 1 (F/B.3) ï¿½ Officer Direct Item Registration', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockStore.reset();
@@ -54,7 +54,7 @@ describe('Step 1 (F/B.3) — Officer Direct Item Registration', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(screen.getByText('Foto contoh dipilih.')).toBeDefined();
+      expect(screen.getByText('Foto dipilih.')).toBeDefined();
     });
 
     // 2. Fill required text fields

@@ -39,23 +39,41 @@ export class HttpUploadService implements IUploadService {
     );
     const { upload_id, put_url, required_headers } = intentRes.data;
 
-    // Step 2: Binary PUT directly to Cloudflare R2
-    const putHeaders = new Headers();
-    if (required_headers) {
-      Object.entries(required_headers).forEach(([k, v]) => putHeaders.set(k, v));
-    }
-    if (!putHeaders.has('Content-Type')) {
-      putHeaders.set('Content-Type', contentType);
+    // Step 2: Binary PUT directly to Cloudflare R2 (with automatic relay fallback if browser CORS is blocked on R2)
+    let directUploadSucceeded = false;
+    try {
+      const putHeaders = new Headers();
+      if (required_headers) {
+        Object.entries(required_headers).forEach(([k, v]) => putHeaders.set(k, v));
+      }
+      if (!putHeaders.has('Content-Type')) {
+        putHeaders.set('Content-Type', contentType);
+      }
+
+      const r2Response = await fetch(put_url, {
+        method: 'PUT',
+        headers: putHeaders,
+        body: file,
+      });
+
+      if (r2Response.ok) {
+        directUploadSucceeded = true;
+      }
+    } catch {
+      // Direct R2 upload failed (e.g. browser CORS blocked on R2 bucket)
+      directUploadSucceeded = false;
     }
 
-    const r2Response = await fetch(put_url, {
-      method: 'PUT',
-      headers: putHeaders,
-      body: file,
-    });
-
-    if (!r2Response.ok) {
-      throw new Error(`Gagal mengunggah foto ke storage: ${r2Response.statusText}`);
+    if (!directUploadSucceeded) {
+      // Relay file via backend server (which has R2 credentials and bypasses browser CORS)
+      const buffer = await file.arrayBuffer();
+      await apiClient(`/uploads/${upload_id}/content`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': contentType,
+        },
+        body: buffer,
+      });
     }
 
     // Step 3: POST /api/v1/uploads/:id/finalize
@@ -63,6 +81,7 @@ export class HttpUploadService implements IUploadService {
       `/uploads/${upload_id}/finalize`,
       {
         method: 'POST',
+        body: JSON.stringify({}),
       }
     );
 

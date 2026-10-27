@@ -43,7 +43,7 @@ export async function apiClient<T>(
   const url = `${BASE_URL}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
   const headers = new Headers(options.headers || {});
 
-  if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
+  if (options.body && !headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -71,6 +71,10 @@ export async function apiClient<T>(
       }
     } catch {
       // Body is not JSON, use default HTTP message
+    }
+
+    if (response.status === 401) {
+      setAuthToken(null);
     }
 
     throw new ApiError(errorCode, errorMessage, response.status, requestId);

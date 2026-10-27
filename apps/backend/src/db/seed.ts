@@ -26,24 +26,6 @@ async function seedOfficer() {
     officer = created;
   }
 
-  // Also seed official campus domain officer
-  const campusOfficerEmail = "petugas.pengajaran@budiluhur.ac.id";
-  const existingCampus = await db.query.users.findFirst({
-    where: eq(users.email, campusOfficerEmail),
-  });
-  if (!existingCampus) {
-    await db.insert(users).values({
-      authUserId: "seed-officer-pengajaran-campus",
-      fullName: "Petugas Pos Pengajaran",
-      email: campusOfficerEmail,
-      role: "OFFICER",
-      passwordHash: officerSeedData.passwordHash,
-    });
-    console.log(`✅ Created Campus Officer: ${campusOfficerEmail}`);
-  } else if (!existingCampus.passwordHash) {
-    await db.update(users).set({ passwordHash: officerSeedData.passwordHash }).where(eq(users.userId, existingCampus.userId));
-  }
-
   return officer!;
 }
 

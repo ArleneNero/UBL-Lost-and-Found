@@ -32,10 +32,10 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             className={clsx(
               'w-full h-[48px] bg-white text-sm text-[var(--lf-ink)] px-4 pr-10 appearance-none',
               'border rounded-[12px] transition-colors duration-150 cursor-pointer',
-              'focus:outline-none focus:ring-2 focus:ring-offset-1',
+              'focus:outline-none focus:ring-0 focus:shadow-none',
               error
-                ? 'border-[var(--lf-error)] focus:ring-[var(--lf-error)]'
-                : 'border-[var(--lf-border)] focus:border-[var(--lf-blue)] focus:ring-[var(--lf-blue)]',
+                ? 'border-[var(--lf-error)]'
+                : 'border-[var(--lf-border)] focus:border-[var(--lf-blue)]',
               className
             )}
             {...props}

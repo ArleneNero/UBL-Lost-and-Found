@@ -7,14 +7,13 @@ import { Card } from '@/components/ui/Card';
 
 export interface RegisterItemSuccessProps {
   item: FoundItem;
-  onViewCatalog: () => void;
   onRecordAnother: () => void;
   onViewInventory: () => void;
+  onViewCatalog?: () => void;
 }
 
 export const RegisterItemSuccess: React.FC<RegisterItemSuccessProps> = ({
   item,
-  onViewCatalog,
   onRecordAnother,
   onViewInventory,
 }) => {
@@ -26,7 +25,7 @@ export const RegisterItemSuccess: React.FC<RegisterItemSuccessProps> = ({
       <div>
         <h2 className="text-xl font-bold text-[var(--lf-ink)]">Barang berhasil dicatat</h2>
         <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-1">
-          Barang sudah masuk inventaris pos dan tersedia di katalog.
+          Barang sudah masuk inventaris pos operasional petugas.
         </p>
       </div>
 
@@ -41,14 +40,11 @@ export const RegisterItemSuccess: React.FC<RegisterItemSuccessProps> = ({
       </div>
 
       <div className="flex flex-col w-full gap-2.5 pt-2">
-        <Button variant="primary" onClick={onViewCatalog} rightIcon={<ArrowRight className="w-4 h-4" />}>
-          Lihat di Katalog
+        <Button variant="primary" onClick={onViewInventory} rightIcon={<ArrowRight className="w-4 h-4" />}>
+          Lihat Inventaris Petugas
         </Button>
         <Button variant="secondary" onClick={onRecordAnother} leftIcon={<RotateCcw className="w-4 h-4" />}>
           Catat Barang Lagi
-        </Button>
-        <Button variant="ghost" onClick={onViewInventory} leftIcon={<Package className="w-4 h-4" />}>
-          Lihat Inventaris
         </Button>
       </div>
     </Card>

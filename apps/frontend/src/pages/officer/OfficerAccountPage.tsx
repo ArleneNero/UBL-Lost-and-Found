@@ -26,7 +26,7 @@ export const OfficerAccountPage: React.FC = () => {
           </div>
           <div>
             <h2 className="text-base font-bold text-[var(--lf-ink)]">Petugas Pengajaran</h2>
-            <p className="text-xs text-[var(--lf-muted)]">petugas.pengajaran@budiluhur.ac.id</p>
+            <p className="text-xs text-[var(--lf-muted)]">lostandfound.budiluhur@gmail.com</p>
             <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 bg-[var(--lf-soft)] text-[var(--lf-action)] rounded-full text-[11px] font-semibold">
               <Building2 className="w-3 h-3" />
               <span>Pos Pengajaran — Gedung Induk</span>
@@ -39,7 +39,10 @@ export const OfficerAccountPage: React.FC = () => {
             variant="danger"
             size="sm"
             leftIcon={<LogOut className="w-4 h-4" />}
-            onClick={() => navigate(RoutePaths.LANDING)}
+            onClick={async () => {
+              await services.auth.logout();
+              navigate(RoutePaths.OFFICER_LOGIN);
+            }}
           >
             Keluar Panel
           </Button>

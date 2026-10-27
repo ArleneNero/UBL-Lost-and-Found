@@ -81,6 +81,7 @@ export const CatalogFiltersRow: React.FC<CatalogFiltersRowProps> = ({
       </div>
 
       <button
+        type="button"
         onClick={onResetFilters}
         className="text-xs font-semibold text-[#1570EF] hover:underline cursor-pointer"
       >

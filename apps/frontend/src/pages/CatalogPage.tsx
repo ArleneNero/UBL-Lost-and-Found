@@ -8,7 +8,7 @@ import { CatalogFiltersRow } from '@/features/public/components/CatalogFiltersRo
 
 export const CatalogPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     items,
     isLoading,
@@ -27,17 +27,43 @@ export const CatalogPage: React.FC = () => {
   } = usePublicCatalog(8);
 
   useEffect(() => {
-    const q = searchParams.get('q');
-    const cat = searchParams.get('cat');
-    if (q) setSearchQuery(q);
-    if (cat) setCategoryFilter(cat);
-  }, [searchParams, setSearchQuery, setCategoryFilter]);
+    const q = searchParams.get('q') || '';
+    const cat = searchParams.get('cat') || 'ALL';
+    const post = searchParams.get('post');
+    setSearchQuery(q);
+    setCategoryFilter(cat);
+    setPostIdFilter(post ? Number(post) : undefined);
+  }, [searchParams, setSearchQuery, setCategoryFilter, setPostIdFilter]);
+
+  const handleCategoryChange = (cat: string) => {
+    setCategoryFilter(cat);
+    const next = new URLSearchParams(searchParams);
+    if (cat === 'ALL') {
+      next.delete('cat');
+    } else {
+      next.set('cat', cat);
+    }
+    setSearchParams(next, { replace: true });
+  };
+
+  const handlePostChange = (postId?: number) => {
+    setPostIdFilter(postId);
+    const next = new URLSearchParams(searchParams);
+    if (!postId) {
+      next.delete('post');
+    } else {
+      next.set('post', String(postId));
+    }
+    setSearchParams(next, { replace: true });
+  };
 
   const handleResetFilters = () => {
     setSearchQuery('');
     setCategoryFilter('ALL');
     setPostIdFilter(undefined);
     setSortOrder('newest');
+    setSearchParams({}, { replace: true });
+    navigate('/barang', { replace: true });
   };
 
   return (
@@ -67,9 +93,9 @@ export const CatalogPage: React.FC = () => {
       {/* Filters Row */}
       <CatalogFiltersRow
         postIdFilter={postIdFilter}
-        setPostIdFilter={setPostIdFilter}
+        setPostIdFilter={handlePostChange}
         categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
+        setCategoryFilter={handleCategoryChange}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
         onResetFilters={handleResetFilters}

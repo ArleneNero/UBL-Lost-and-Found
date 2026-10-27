@@ -177,6 +177,29 @@ describe('Public & Guest Flows (F/C.1 - F/C.2.0)', () => {
       expect((catSelect as HTMLSelectElement).value).toBe('Elektronik');
     });
 
+    it('resets category filter and search params when Hapus Filter is clicked', async () => {
+      render(
+        <MemoryRouter initialEntries={['/barang?cat=Tas']}>
+          <CatalogPage />
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText(/barang tersedia/i)).toBeDefined();
+      });
+
+      const catSelect = screen.getByLabelText('Filter Kategori') as HTMLSelectElement;
+      expect(catSelect.value).toBe('Tas');
+
+      // Click Hapus Filter button
+      const resetBtn = screen.getByRole('button', { name: /Hapus Filter/i });
+      fireEvent.click(resetBtn);
+
+      await waitFor(() => {
+        expect(catSelect.value).toBe('ALL');
+      });
+    });
+
     it('F/C.2.1: sorts items by newest and oldest, and clamps pagination correctly', async () => {
       // Sort newest
       const newestRes = await services.items.getItems({ sort: 'newest' });

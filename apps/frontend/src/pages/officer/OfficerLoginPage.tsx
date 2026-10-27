@@ -115,7 +115,7 @@ export const OfficerLoginPage: React.FC = () => {
                 label="Email Petugas"
                 type="email"
                 id="officer-email"
-                placeholder="petugas.pengajaran@budiluhur.ac.id"
+                placeholder="lostandfound.budiluhur@gmail.com"
                 leftIcon={<Mail className="w-4 h-4" />}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}

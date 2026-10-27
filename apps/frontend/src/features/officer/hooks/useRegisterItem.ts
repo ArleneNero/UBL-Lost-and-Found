@@ -21,7 +21,7 @@ const getInitialData = (): RegisterItemFormData => ({
   foundLocation: '',
   foundDate: '',
   receivedDate: new Date().toISOString().split('T')[0],
-  receivedTime: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')} WIB`,
+  receivedTime: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
   privateNotes: '',
   isPhysicallyReceived: false,
 });
@@ -66,11 +66,16 @@ export function useRegisterItem() {
     try {
       let photoToken = `mock-upload-token-${Date.now()}`;
       if (photo && services.upload) {
-        try {
+        if (services.mode === 'http') {
           const uploadRes = await services.upload.uploadPhoto(photo, 'ITEM_PHOTO');
           photoToken = uploadRes.uploadToken;
-        } catch {
-          // Fallback if unauthenticated or in offline mock
+        } else {
+          try {
+            const uploadRes = await services.upload.uploadPhoto(photo, 'ITEM_PHOTO');
+            photoToken = uploadRes.uploadToken;
+          } catch {
+            // Fallback in offline mock
+          }
         }
       }
 

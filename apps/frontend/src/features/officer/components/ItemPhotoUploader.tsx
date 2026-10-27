@@ -56,7 +56,7 @@ export const ItemPhotoUploader: React.FC<ItemPhotoUploaderProps> = ({
           </div>
           <div className="flex-1 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-[var(--lf-muted)]">
-              <ImageIcon className="w-3.5 h-3.5" /> Foto contoh dipilih.
+              <ImageIcon className="w-3.5 h-3.5" /> Foto dipilih.
             </div>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" leftIcon={<RefreshCw className="w-3 h-3" />} onClick={() => fileInputRef.current?.click()}>

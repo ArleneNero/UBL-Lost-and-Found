@@ -14,6 +14,7 @@ describe("Officer Item Registration & MVP Gate (Milestone B/F)", () => {
   let studentToken: string;
   let studentUserId: string;
   let unassignedOfficerToken: string;
+  let unassignedOfficerUserId: string;
   let otherOfficerToken: string;
   let otherOfficerUserId: string;
 
@@ -67,6 +68,7 @@ describe("Officer Item Registration & MVP Gate (Milestone B/F)", () => {
         .returning();
       unassignedOfficer = inserted;
     }
+    unassignedOfficerUserId = unassignedOfficer.userId;
     unassignedOfficerToken = authService.createToken({ sub: unassignedOfficer.authUserId });
 
     // 4. Resolve or create Secondary Officer for IDOR token tests
@@ -96,6 +98,15 @@ describe("Officer Item Registration & MVP Gate (Milestone B/F)", () => {
     for (const ti of testItems) {
       await db.delete(itemPhotos).where(eq(itemPhotos.itemId, ti.itemId));
       await db.delete(foundItems).where(eq(foundItems.itemId, ti.itemId));
+    }
+    if (studentUserId) {
+      await db.delete(users).where(eq(users.userId, studentUserId));
+    }
+    if (unassignedOfficerUserId) {
+      await db.delete(users).where(eq(users.userId, unassignedOfficerUserId));
+    }
+    if (otherOfficerUserId) {
+      await db.delete(users).where(eq(users.userId, otherOfficerUserId));
     }
     await app.close();
     await pool.end();

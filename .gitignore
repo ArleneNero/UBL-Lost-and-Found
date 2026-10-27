@@ -10,6 +10,8 @@
 .gemini/
 .cursor/
 .copilot/
+.neon/
+.neon
 
 # Logs
 logs

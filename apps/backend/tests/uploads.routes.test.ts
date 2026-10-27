@@ -71,6 +71,12 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
   });
 
   afterAll(async () => {
+    if (studentUserId) {
+      await db.delete(users).where(eq(users.userId, studentUserId));
+    }
+    if (otherOfficerUserId) {
+      await db.delete(users).where(eq(users.userId, otherOfficerUserId));
+    }
     await app.close();
     await pool.end();
   });

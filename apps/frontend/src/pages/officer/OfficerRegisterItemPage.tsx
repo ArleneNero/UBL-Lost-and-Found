@@ -16,9 +16,11 @@ export const OfficerRegisterItemPage: React.FC = () => {
 
   if (createdItem) {
     return (
-      <div className="py-6">
-        <RegisterItemSuccess item={createdItem} onViewCatalog={() => navigate(RoutePaths.CATALOG)} onRecordAnother={resetForm} onViewInventory={() => navigate(RoutePaths.OFFICER_INVENTORY)} />
-      </div>
+        <RegisterItemSuccess
+          item={createdItem}
+          onRecordAnother={resetForm}
+          onViewInventory={() => navigate(RoutePaths.OFFICER_INVENTORY)}
+        />
     );
   }
 
@@ -66,11 +68,35 @@ export const OfficerRegisterItemPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[var(--lf-border)]">
               <div>
                 <label className="text-xs font-bold text-[var(--lf-ink)]">Tanggal diterima</label>
-                <input type="date" value={formData.receivedDate} onChange={(e) => setFormData({ ...formData, receivedDate: e.target.value })} className="mt-1 w-full px-3 py-2 text-xs bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)]" />
+                <input
+                  type="date"
+                  value={formData.receivedDate}
+                  onChange={(e) => setFormData({ ...formData, receivedDate: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 text-xs bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] cursor-pointer"
+                />
               </div>
               <div>
-                <label className="text-xs font-bold text-[var(--lf-ink)]">Waktu diterima</label>
-                <input type="text" value={formData.receivedTime} onChange={(e) => setFormData({ ...formData, receivedTime: e.target.value })} className="mt-1 w-full px-3 py-2 text-xs bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)]" />
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[var(--lf-ink)]">Waktu diterima (WIB)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      const hh = String(now.getHours()).padStart(2, '0');
+                      const mm = String(now.getMinutes()).padStart(2, '0');
+                      setFormData({ ...formData, receivedTime: `${hh}:${mm}` });
+                    }}
+                    className="text-[10px] font-semibold text-[var(--lf-action)] hover:underline cursor-pointer"
+                  >
+                    Waktu Sekarang
+                  </button>
+                </div>
+                <input
+                  type="time"
+                  value={formData.receivedTime}
+                  onChange={(e) => setFormData({ ...formData, receivedTime: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 text-xs bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] cursor-pointer"
+                />
               </div>
             </div>
 
@@ -88,7 +114,22 @@ export const OfficerRegisterItemPage: React.FC = () => {
               </label>
             </div>
             {errors.isPhysicallyReceived && <span className="text-xs text-[var(--lf-error)]">{errors.isPhysicallyReceived}</span>}
-            {errors.form && <span className="text-xs text-[var(--lf-error)] font-medium">{errors.form}</span>}
+            {errors.form && (
+              <div className="p-3.5 rounded-xl bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318] text-xs font-medium flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+                <span className="leading-relaxed">{errors.form}</span>
+                {(errors.form.toLowerCase().includes('token') ||
+                  errors.form.toLowerCase().includes('autentikasi') ||
+                  errors.form.toLowerCase().includes('kedaluwarsa')) && (
+                  <button
+                    type="button"
+                    onClick={() => navigate(RoutePaths.OFFICER_LOGIN)}
+                    className="px-3 py-1.5 bg-[#D92D20] text-white font-semibold rounded-lg hover:bg-[#B42318] transition-colors shrink-0 text-center cursor-pointer"
+                  >
+                    Masuk ke Akun Petugas
+                  </button>
+                )}
+              </div>
+            )}
 
             <Button type="submit" variant="primary" isLoading={isSubmitting} leftIcon={<CheckSquare className="w-4 h-4" />}>
               Konfirmasi & Simpan Barang

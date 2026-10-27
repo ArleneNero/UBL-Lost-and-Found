@@ -32,12 +32,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className={clsx(
               'w-full h-[48px] bg-white text-sm text-[var(--lf-ink)] placeholder-[var(--lf-muted)]',
               'border rounded-[12px] transition-colors duration-150',
-              'focus:outline-none focus:ring-2 focus:ring-offset-1',
+              'focus:outline-none focus:ring-0 focus:shadow-none',
               leftIcon ? 'pl-10' : 'pl-4',
               rightIcon ? 'pr-10' : 'pr-4',
               error
-                ? 'border-[var(--lf-error)] focus:ring-[var(--lf-error)] text-[var(--lf-error)]'
-                : 'border-[var(--lf-border)] focus:border-[var(--lf-blue)] focus:ring-[var(--lf-blue)]',
+                ? 'border-[var(--lf-error)] text-[var(--lf-error)]'
+                : 'border-[var(--lf-border)] focus:border-[var(--lf-blue)]',
               className
             )}
             {...props}

@@ -1,12 +1,12 @@
 import "dotenv/config";
 
 export const SEED_OFFICER_EMAIL =
-  process.env.SEED_OFFICER_EMAIL || "petugas.pengajaran@budiluhur.ac.id";
+  process.env.SEED_OFFICER_EMAIL || "lostandfound.budiluhur@gmail.com";
 export const SEED_OFFICER_PASSWORD =
   process.env.SEED_OFFICER_PASSWORD || "dummy-dev-password";
 export const SEED_OFFICER_PASSWORD_HASH =
   process.env.SEED_OFFICER_PASSWORD_HASH ||
-  "$2b$10$iFUewry3iiFiCq.7Ikw1Vu07HnYn/6g2giCcJRgnJPX2dwvRDS2/6";
+  "$2b$10$l.tv/TEACqQO2ZwUJr0Qfu/w/.VC5knT97F80dhzTlTCol69ifrIi";
 
 export const officerSeedData = {
   authUserId: "seed-officer-pengajaran-01",

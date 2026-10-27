@@ -8,7 +8,7 @@ export class JwtService {
    */
   createToken(
     payload: { sub: string; email?: string; name?: string },
-    expiresInSeconds: number = 3600
+    expiresInSeconds: number = 2 * 3600 // 2 hours (7,200 seconds)
   ): string {
     const now = Math.floor(Date.now() / 1000);
     const fullPayload: TokenPayload = {

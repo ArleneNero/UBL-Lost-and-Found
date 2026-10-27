@@ -7,6 +7,7 @@ import {
   uploadFinalizedResponseSchema,
 } from "./uploads.dto.js";
 import { uploadsService } from "./uploads.service.js";
+import { intentRegistry } from "./intent.registry.js";
 
 export const uploadsRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -85,6 +86,52 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       });
 
       return reply.status(200).send(response);
+    }
+  );
+
+  /**
+   * PUT /uploads/:upload_id/content
+   * Relay endpoint to upload image when direct client-to-R2 upload is blocked by browser CORS
+   */
+  app.put(
+    "/uploads/:upload_id/content",
+    {
+      preHandler: [authenticate],
+    },
+    async (request, reply) => {
+      const parsedParams = uploadIdParamSchema.safeParse(request.params);
+      if (!parsedParams.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Parameter upload_id harus berupa UUID valid",
+            request_id: request.id,
+          },
+        });
+      }
+
+      const { upload_id } = parsedParams.data;
+      const rawIntent = intentRegistry.get(upload_id);
+      if (!rawIntent) {
+        return reply.status(404).send({
+          error: {
+            code: "INTENT_NOT_FOUND",
+            message: "Upload intent tidak ditemukan atau sudah kedaluwarsa",
+            request_id: request.id,
+          },
+        });
+      }
+
+      const body = request.body as Buffer;
+      const contentType = (request.headers["content-type"] as string) || rawIntent.contentType;
+
+      await uploadsService.simulatePut(
+        rawIntent.storagePath,
+        Buffer.isBuffer(body) ? body : Buffer.from(body || ""),
+        contentType
+      );
+
+      return reply.status(200).send({ data: { success: true } });
     }
   );
 

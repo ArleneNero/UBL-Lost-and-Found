@@ -118,6 +118,33 @@ export class R2StorageProvider implements StorageProvider {
       return null;
     }
   }
+
+  public async putObject(
+    key: string,
+    body: Buffer,
+    contentType: string
+  ): Promise<void> {
+    if (!this.s3Client) {
+      throw new Error("R2 S3Client belum dikonfigurasi");
+    }
+
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: env.R2_BUCKET_NAME,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      })
+    );
+  }
+
+  public async simulatePut(
+    key: string,
+    body: Buffer,
+    contentType: string
+  ): Promise<void> {
+    await this.putObject(key, body, contentType);
+  }
 }
 
 export const r2Provider = new R2StorageProvider();

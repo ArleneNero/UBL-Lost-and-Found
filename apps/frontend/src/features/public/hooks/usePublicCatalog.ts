@@ -65,25 +65,25 @@ export function usePublicCatalog(initialLimit = 8): UsePublicCatalogReturn {
     fetchItems();
   }, [fetchItems]);
 
-  const handleSearchChange = (q: string) => {
+  const handleSearchChange = useCallback((q: string) => {
     setSearchQuery(q);
     setPage(1);
-  };
+  }, []);
 
-  const handleCategoryChange = (cat: string) => {
+  const handleCategoryChange = useCallback((cat: string) => {
     setCategoryFilter(cat);
     setPage(1);
-  };
+  }, []);
 
-  const handleSortChange = (s: 'newest' | 'oldest') => {
+  const handleSortChange = useCallback((s: 'newest' | 'oldest') => {
     setSortOrder(s);
     setPage(1);
-  };
+  }, []);
 
-  const handlePostChange = (id: number | undefined) => {
+  const handlePostChange = useCallback((id: number | undefined) => {
     setPostIdFilter(id);
     setPage(1);
-  };
+  }, []);
 
   return {
     items,
