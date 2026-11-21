@@ -45,7 +45,7 @@ export class InMemoryAuthService implements IAuthService {
     const nim = studentNumber || (email?.match(/^(\d+)/)?.[1]) || '2411502194';
     const user: UserSession = {
       id: `student-${nim}`,
-      name: name || 'Nero Mahasiswa',
+      name: name || 'Nero',
       email: email || `${nim}@student.budiluhur.ac.id`,
       role: 'STUDENT',
       studentNumber: nim,

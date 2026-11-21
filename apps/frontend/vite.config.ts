@@ -21,6 +21,17 @@ export default defineConfig({
     fs: {
       allow: ['..'],
     },
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      '/storage': { target: 'http://localhost:3000', changeOrigin: true },
+    },
+  },
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': { target: 'http://localhost:3000', changeOrigin: true },
+      '/storage': { target: 'http://localhost:3000', changeOrigin: true },
+    },
   },
   test: {
     globals: true,

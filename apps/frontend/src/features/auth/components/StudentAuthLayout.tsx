@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, GraduationCap, User } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { RoutePaths } from '@/constants/routes';
+import { setGuestModeActive } from '@/utils/guestSession';
 
 interface StudentAuthLayoutProps {
   title: string;
@@ -25,7 +26,7 @@ export const StudentAuthLayout: React.FC<StudentAuthLayoutProps> = ({
         {/* Back Link */}
         <div>
           <Link
-            to={RoutePaths.LANDING}
+            to={`${RoutePaths.LANDING}?switch=true`}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#475467] hover:text-[#1570EF] transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -92,6 +93,7 @@ export const StudentAuthLayout: React.FC<StudentAuthLayoutProps> = ({
         {/* Guest Portal Entry Card */}
         <Link
           to={RoutePaths.GUEST_HOME}
+          onClick={() => setGuestModeActive(true)}
           className="w-full flex items-center justify-center gap-2.5 px-4 py-3 bg-[#EAF3FF] hover:bg-[#d8e9ff] active:scale-[0.99] text-[#0B5ED7] rounded-xl text-xs sm:text-sm font-semibold transition-all border border-[#D1E9FF]"
         >
           <User className="w-4 h-4 text-[#0B5ED7] shrink-0" />

@@ -50,30 +50,31 @@ export const OfficerLoginPage: React.FC = () => {
       <header className="bg-white border-b border-[var(--lf-border)] sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link
-            to={RoutePaths.LANDING}
-            className="flex items-center gap-3 group select-none"
+            to={`${RoutePaths.LANDING}?switch=true`}
+            className="flex items-center gap-3 group select-none min-w-0"
           >
             <img
               src="/assets/branding/Logo_LostnFound.png"
               alt="UBL LostnFound"
-              className="w-9 h-9 object-contain"
+              className="w-9 h-9 object-contain shrink-0"
             />
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-[var(--lf-ink)] leading-tight group-hover:text-[var(--lf-action)] transition-colors">
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-bold text-[var(--lf-ink)] leading-tight group-hover:text-[var(--lf-action)] transition-colors truncate">
                 UBL LostnFound
               </span>
-              <span className="text-[11px] text-[var(--lf-muted)]">
+              <span className="hidden sm:block text-[11px] text-[var(--lf-muted)]">
                 Layanan Barang Temuan Kampus
               </span>
             </div>
           </Link>
 
           <Link
-            to={RoutePaths.LANDING}
-            className="inline-flex items-center gap-2 text-xs font-semibold text-[#475467] hover:text-[#1570EF] transition-colors py-2 px-3 rounded-lg hover:bg-[#F2F4F7]"
+            to={`${RoutePaths.LANDING}?switch=true`}
+            className="inline-flex items-center gap-1.5 sm:gap-2 text-xs font-semibold text-[#475467] hover:text-[#1570EF] transition-colors py-2 px-2.5 sm:px-3 rounded-lg hover:bg-[#F2F4F7] shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Beranda</span>
+            <span className="sm:hidden">Kembali</span>
+            <span className="hidden sm:inline">Kembali ke Beranda</span>
           </Link>
         </div>
       </header>
@@ -177,7 +178,7 @@ export const OfficerLoginPage: React.FC = () => {
           <div className="text-center text-xs text-[var(--lf-muted)] px-4">
             <span>Bukan petugas jaga pos? </span>
             <Link
-              to={RoutePaths.LANDING}
+              to={`${RoutePaths.LANDING}?switch=true`}
               className="text-[#1570EF] font-semibold hover:underline"
             >
               Kembali ke Halaman Utama
