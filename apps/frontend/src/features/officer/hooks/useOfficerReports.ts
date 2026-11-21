@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Submission } from '@/types/domain';
 import { ReportStatus } from '@/types/api';
 import { services } from '@/services/registry';
@@ -15,12 +16,45 @@ export interface UseOfficerReportsReturn {
   refetch: () => Promise<void>;
 }
 
+function resolveInitialReportStatus(raw: string | null): ReportStatus | 'ALL' {
+  if (!raw) return 'ALL';
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'menunggu' || normalized === 'pending_receipt') return 'PENDING_RECEIPT';
+  if (normalized === 'diterima' || normalized === 'received') return 'RECEIVED';
+  if (normalized === 'ditolak' || normalized === 'rejected') return 'REJECTED';
+  if (normalized === 'dibatalkan' || normalized === 'cancelled') return 'CANCELLED';
+  return 'ALL';
+}
+
 export function useOfficerReports(): UseOfficerReportsReturn {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ReportStatus | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilterState] = useState<ReportStatus | 'ALL'>(() =>
+    resolveInitialReportStatus(searchParams.get('status'))
+  );
+
+  useEffect(() => {
+    setStatusFilterState(resolveInitialReportStatus(searchParams.get('status')));
+  }, [searchParams]);
+
+  const setStatusFilter = useCallback(
+    (nextStatus: ReportStatus | 'ALL') => {
+      setStatusFilterState(nextStatus);
+      const next = new URLSearchParams(searchParams);
+      if (nextStatus === 'ALL') {
+        next.delete('status');
+      } else if (nextStatus === 'PENDING_RECEIPT') {
+        next.set('status', 'menunggu');
+      } else {
+        next.set('status', nextStatus);
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
 
   const fetchReports = useCallback(async () => {
     setIsLoading(true);

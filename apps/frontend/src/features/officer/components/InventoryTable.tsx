@@ -53,14 +53,14 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ items, isLoading
                   <div>{item.name}</div>
                   <div className="text-xs text-[var(--lf-muted)] font-normal">{item.category}</div>
                 </td>
-                <td className="px-4 py-3 text-xs font-mono text-[var(--lf-muted)]">{item.inventoryCode}</td>
-                <td className="px-4 py-3 text-xs text-[var(--lf-muted)]">{dateStr}</td>
+                <td className="px-4 py-3 text-xs font-mono text-[var(--lf-muted)] whitespace-nowrap">{item.inventoryCode}</td>
+                <td className="px-4 py-3 text-xs text-[var(--lf-muted)] whitespace-nowrap">{dateStr}</td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap">
                     <Badge variant={cfg.variant}>{cfg.label}</Badge>
                     {overdue && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--lf-warning)] bg-[var(--lf-warning-soft)] px-2 py-0.5 rounded-full">
-                        <AlertTriangle className="w-3 h-3" /> Overdue
+                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-100/80 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
+                        <AlertTriangle className="w-3 h-3 text-amber-600" /> Overdue
                       </span>
                     )}
                   </div>

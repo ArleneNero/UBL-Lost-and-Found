@@ -38,14 +38,14 @@ export const InventoryCardList: React.FC<InventoryCardListProps> = ({ items, isL
         return (
           <div key={item.id} className="p-4 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] flex flex-col gap-3">
             <div className="flex items-start justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-semibold text-[var(--lf-ink)]">{item.name}</h3>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-[var(--lf-ink)] truncate">{item.name}</h3>
                 <p className="text-xs text-[var(--lf-muted)] mt-0.5">{item.inventoryCode} · {dateStr}</p>
               </div>
-              <div className="flex flex-col items-end gap-1">
-                <Badge variant={cfg.variant}>{cfg.label}</Badge>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <Badge variant={cfg.variant} className="whitespace-nowrap">{cfg.label}</Badge>
                 {overdue && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--lf-warning)] bg-[var(--lf-warning-soft)] px-2 py-0.5 rounded-full">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--lf-warning)] bg-[var(--lf-warning-soft)] px-2 py-0.5 rounded-full whitespace-nowrap">
                     <AlertTriangle className="w-2.5 h-2.5" /> Overdue
                   </span>
                 )}

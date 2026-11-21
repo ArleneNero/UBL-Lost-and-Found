@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FoundItem } from '@/types/domain';
 import { ItemStatus } from '@/types/api';
 import { services } from '@/services/registry';
@@ -21,13 +22,43 @@ export interface UseOfficerInventoryReturn {
   refetch: () => Promise<void>;
 }
 
+function resolveInitialItemStatus(raw: string | null): ItemStatus | 'ALL' {
+  if (!raw) return 'ALL';
+  const normalized = raw.trim().toUpperCase();
+  if (normalized === 'STORED' || normalized === 'TERSEDIA') return 'STORED';
+  if (normalized === 'RETURNED_TO_OWNER' || normalized === 'DISERAHKAN') return 'RETURNED_TO_OWNER';
+  if (normalized === 'DISTRIBUTED' || normalized === 'DISALURKAN') return 'DISTRIBUTED';
+  return 'ALL';
+}
+
 export function useOfficerInventory(): UseOfficerInventoryReturn {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<FoundItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ItemStatus | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilterState] = useState<ItemStatus | 'ALL'>(() =>
+    resolveInitialItemStatus(searchParams.get('status'))
+  );
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+
+  useEffect(() => {
+    setStatusFilterState(resolveInitialItemStatus(searchParams.get('status')));
+  }, [searchParams]);
+
+  const setStatusFilter = useCallback(
+    (nextStatus: ItemStatus | 'ALL') => {
+      setStatusFilterState(nextStatus);
+      const next = new URLSearchParams(searchParams);
+      if (nextStatus === 'ALL') {
+        next.delete('status');
+      } else {
+        next.set('status', nextStatus);
+      }
+      setSearchParams(next, { replace: true });
+    },
+    [searchParams, setSearchParams]
+  );
 
   const fetchInventory = useCallback(async () => {
     setIsLoading(true);

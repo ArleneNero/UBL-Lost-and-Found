@@ -70,9 +70,9 @@ export const OfficerInventoryPage: React.FC = () => {
         </Button>
       </div>
 
-      {/* Scope Disclaimer Banner (Figma Exact) */}
-      <div className="flex items-center gap-2.5 px-4 py-3 bg-[var(--lf-surface)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-muted)]">
-        <Info className="w-4 h-4 text-[var(--lf-action)] shrink-0" />
+      {/* Scope Disclaimer Banner (Item D.11: Soft Blue Callout) */}
+      <div className="flex items-center gap-2.5 px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-[var(--lf-radius-md)] text-xs text-blue-900">
+        <Info className="w-4 h-4 text-blue-600 shrink-0" />
         <span>Data hanya dari unit Pengajaran. Tidak ada akses edit inventaris unit lain.</span>
       </div>
 

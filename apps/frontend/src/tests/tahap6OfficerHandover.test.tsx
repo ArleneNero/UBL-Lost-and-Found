@@ -21,7 +21,7 @@ describe('Officer Handover, Distribution & Gate Submilestone (F/B.5)', () => {
   });
 
   describe('F/B.5.0 Form Pengembalian Terverifikasi', () => {
-    it('renders return modal with privacy notice and requires mandatory fields & checkbox', async () => {
+    it('renders return modal with internal secret notes, no privacy clutter, and requires mandatory fields & checkbox', async () => {
       render(
         <MemoryRouter initialEntries={['/petugas/inventaris/item-uuid-001']}>
           <Routes>
@@ -37,10 +37,11 @@ describe('Officer Handover, Distribution & Gate Submilestone (F/B.5)', () => {
 
       // 1. Open Return Modal
       fireEvent.click(screen.getByRole('button', { name: /Serah Terima Pemilik/i }));
-      expect(screen.getByRole('heading', { name: /Proses Pengembalian Barang/i })).toBeDefined();
+      expect(screen.getByRole('heading', { name: /Serah Terima ke Pemilik/i })).toBeDefined();
 
-      // 2. Verify Privacy Notice exists and no identity upload fields are present
-      expect(screen.getByText(/Jangan meminta atau menyimpan salinan foto KTP\/NIK\/KTM/i)).toBeDefined();
+      // 2. Verify Privacy Notice block is removed (Item D.17), secret notes are embedded (Item D.18), and no identity upload fields are present
+      expect(screen.queryByText(/Jangan meminta atau menyimpan salinan foto KTP\/NIK\/KTM/i)).toBeNull();
+      expect(screen.getByText(/Ciri internal:/i)).toBeDefined();
       expect(screen.queryByLabelText(/Foto KTP/i)).toBeNull();
 
       // 3. Confirm button is disabled initially

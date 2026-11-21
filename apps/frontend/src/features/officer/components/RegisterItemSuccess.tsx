@@ -29,14 +29,14 @@ export const RegisterItemSuccess: React.FC<RegisterItemSuccessProps> = ({
         </p>
       </div>
 
-      <div className="w-full p-4 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] flex items-center justify-between text-left">
+      <div className="w-full p-4 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-left">
         <div>
           <h3 className="text-sm font-bold text-[var(--lf-ink)]">{item.name}</h3>
           <p className="text-xs font-mono text-[var(--lf-muted)] mt-0.5">
-            {item.inventoryCode} · Pos: {item.postName}
+            {item.inventoryCode} · {item.postName}
           </p>
         </div>
-        <Badge variant="available">Tersedia di pos</Badge>
+        <Badge variant="available" className="w-fit shrink-0 whitespace-nowrap">Tersedia di pos</Badge>
       </div>
 
       <div className="flex flex-col w-full gap-2.5 pt-2">

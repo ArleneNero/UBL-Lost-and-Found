@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, AlertTriangle, Calendar, MapPin, Building2, CheckSquare } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 import { Button } from '@/components/ui/Button';
 import { Badge, BadgeVariant } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -55,15 +56,24 @@ export const OfficerReportDetailPage: React.FC = () => {
     if (ok) setIsRejectOpen(false);
   };
 
+  const handleBack = () => {
+    const idx = window.history.state?.idx;
+    if (typeof idx === 'number' && idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(RoutePaths.OFFICER_REPORTS);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
-      <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={() => navigate(RoutePaths.OFFICER_REPORTS)} className="w-fit -ml-2">
-        Kembali ke Daftar Laporan
+      <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={handleBack} className="w-fit -ml-2">
+        Kembali
       </Button>
 
       <Card className="flex flex-col md:flex-row gap-6 p-6">
-        <div className="w-full md:w-5/12 aspect-square rounded-[14px] overflow-hidden bg-[var(--lf-surface)] border border-[var(--lf-border)] shrink-0">
-          <img src={submission.photoUrl} alt={submission.itemName} className="w-full h-full object-cover" />
+        <div className="w-full md:w-5/12 aspect-square lg:aspect-[4/3] rounded-[14px] overflow-hidden bg-slate-100/80 border border-[var(--lf-border)] shrink-0 flex items-center justify-center p-3">
+          <img src={submission.photoUrl} alt={submission.itemName} className="w-full h-full object-contain" />
         </div>
 
         <div className="flex-1 flex flex-col justify-between gap-4">
@@ -73,14 +83,14 @@ export const OfficerReportDetailPage: React.FC = () => {
               <Badge variant={cfg.variant}>{cfg.label}</Badge>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-[var(--lf-ink)]">{submission.itemName}</h1>
-            <p className="text-xs text-[var(--lf-muted)] font-mono">{submission.reportCode} · Pos Pengajaran</p>
+            <p className="text-xs text-[var(--lf-muted)] font-mono">{submission.reportCode} · {ACTIVE_SERVICE_POST.name}</p>
 
             <div className="space-y-2 pt-2 border-t border-[var(--lf-border)] text-xs text-[var(--lf-muted)]">
               <p className="text-[var(--lf-ink)] leading-relaxed">{submission.description}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
                 <div className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--lf-action)]" /> Ditemukan {submission.foundDate}</div>
                 <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-[var(--lf-action)]" /> Lokasi: {submission.foundLocation}</div>
-                <div className="flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--lf-action)]" /> Pos: Pos Pengajaran</div>
+                <div className="flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--lf-action)]" /> Pos: {ACTIVE_SERVICE_POST.shortName}</div>
               </div>
             </div>
           </div>

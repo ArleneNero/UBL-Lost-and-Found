@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, SendHorizontal } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { FoundItem } from '@/types/domain';
 
@@ -33,8 +33,8 @@ export const DistributeItemModal: React.FC<DistributeItemModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-      <div className="relative w-full max-w-lg bg-[var(--lf-canvas)] rounded-[var(--lf-radius-xl)] border border-[var(--lf-border)] shadow-xl p-6">
-        <button onClick={onClose} className="absolute right-4 top-4 p-1.5 rounded-full text-[var(--lf-muted)] hover:bg-[var(--lf-surface)] cursor-pointer">
+      <div className="relative w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[var(--lf-canvas)] rounded-[var(--lf-radius-xl)] border border-[var(--lf-border)] shadow-xl p-5 sm:p-6">
+        <button onClick={onClose} aria-label="Tutup modal" className="absolute right-3.5 top-3.5 p-2 rounded-full text-[var(--lf-muted)] hover:bg-[var(--lf-surface)] cursor-pointer">
           <X className="w-4 h-4" />
         </button>
         <h3 className="text-base font-semibold text-[var(--lf-ink)]">Penyaluran Barang Temuan</h3>
@@ -46,10 +46,10 @@ export const DistributeItemModal: React.FC<DistributeItemModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="block text-xs font-semibold text-[var(--lf-ink)] mb-1">Tujuan / Catatan Penyaluran *</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Tuliskan pihak penerima penyaluran (misal: DKM Masjid Budi Luhur, panti asuhan)..." className="w-full p-2.5 text-xs bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] focus:outline-none focus:border-[var(--lf-action)] resize-none" />
+            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder="Tuliskan pihak penerima penyaluran (misal: DKM Masjid Budi Luhur, panti asuhan)..." className="w-full p-2.5 text-base sm:text-xs bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] focus:outline-none focus:border-[var(--lf-action)] resize-none" />
           </div>
-          <div className="flex items-start gap-2 p-2.5 bg-[var(--lf-surface)] border border-[var(--lf-border)] rounded-[var(--lf-radius-sm)] text-[11px] text-[var(--lf-muted)]">
-            <SendHorizontal className="w-4 h-4 shrink-0 text-[var(--lf-action)] mt-0.5" />
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-[var(--lf-radius-sm)] text-[11px] text-amber-900">
+            <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
             <span>Barang akan ditandai Disalurkan dan otomatis disembunyikan dari katalog publik. Aksi ini tidak dapat dibatalkan.</span>
           </div>
           <label className="flex items-start gap-2 text-xs text-[var(--lf-ink)] cursor-pointer">

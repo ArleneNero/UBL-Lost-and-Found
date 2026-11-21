@@ -28,7 +28,7 @@ describe('Tahap 2 - Officer Dashboard & Layout (R1 & R3)', () => {
     expect(screen.getAllByText('Akun').length).toBeGreaterThan(0);
   });
 
-  it('renders OfficerDashboardPage with layout, metrics, and Laporan Menunggu access (R3)', async () => {
+  it('renders OfficerDashboardPage with layout, metrics, and Laporan menunggu access (R3)', async () => {
     render(
       <MemoryRouter>
         <OfficerDashboardPage />
@@ -43,11 +43,11 @@ describe('Tahap 2 - Officer Dashboard & Layout (R1 & R3)', () => {
     await waitFor(() => {
       expect(screen.getByText('Barang tersedia')).toBeDefined();
       expect(screen.getByText('Sudah diserahkan')).toBeDefined();
-      expect(screen.getByText('Laporan Menunggu')).toBeDefined();
+      expect(screen.getByText('Laporan menunggu')).toBeDefined();
     });
 
-    // Verify Laporan Menunggu is clickable and navigates to reports
-    const card = screen.getByText('Laporan Menunggu').closest('div');
+    // Verify Laporan menunggu is clickable and navigates to reports
+    const card = screen.getByText('Laporan menunggu').closest('div');
     if (card) {
       fireEvent.click(card);
     }

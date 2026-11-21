@@ -56,11 +56,13 @@ export const OfficerDashboardPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Metrics Section with interactive Laporan Menunggu */}
+      {/* Metrics Section with consistent interactive navigation */}
       <DashboardMetricsSection
         metrics={metrics}
         isLoading={isLoading}
-        onPendingReportsClick={() => navigate(RoutePaths.OFFICER_REPORTS)}
+        onStoredClick={() => navigate(`${RoutePaths.OFFICER_INVENTORY}?status=STORED`)}
+        onReturnedClick={() => navigate(`${RoutePaths.OFFICER_INVENTORY}?status=RETURNED_TO_OWNER`)}
+        onPendingReportsClick={() => navigate(`${RoutePaths.OFFICER_REPORTS}?status=menunggu`)}
       />
 
       {/* Laporan Menunggu Action Banner */}
@@ -82,7 +84,7 @@ export const OfficerDashboardPage: React.FC = () => {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate(RoutePaths.OFFICER_REPORTS)}
+            onClick={() => navigate(`${RoutePaths.OFFICER_REPORTS}?status=menunggu`)}
             className="shrink-0 bg-white hover:bg-amber-50 border-amber-200"
           >
             Periksa Laporan

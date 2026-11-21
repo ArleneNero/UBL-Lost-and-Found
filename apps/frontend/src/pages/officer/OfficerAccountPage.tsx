@@ -4,6 +4,7 @@ import { User, LogOut, Building2 } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 import { registry } from '@/services/registry';
 
 export const OfficerAccountPage: React.FC = () => {
@@ -30,7 +31,7 @@ export const OfficerAccountPage: React.FC = () => {
             <p className="text-xs text-[var(--lf-muted)]">lostandfound.budiluhur@gmail.com</p>
             <div className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-0.5 bg-[var(--lf-soft)] text-[var(--lf-action)] rounded-full text-[11px] font-semibold">
               <Building2 className="w-3 h-3" />
-              <span>Pos Pengajaran — Gedung Induk</span>
+              <span>{ACTIVE_SERVICE_POST.name} — {ACTIVE_SERVICE_POST.locationShort}</span>
             </div>
           </div>
         </div>

@@ -48,11 +48,21 @@ export const OfficerItemDetailPage: React.FC = () => {
   const overdue = item.status === 'STORED' && isItemOverdue(item.receivedAt);
   const cfg = statusMap[item.status] || statusMap.STORED;
   const dateStr = new Date(item.receivedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const shortPos = item.postName?.replace(/^Pos\s+/i, '') || 'Pengajaran';
+
+  const handleBack = () => {
+    const idx = window.history.state?.idx;
+    if (typeof idx === 'number' && idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(RoutePaths.OFFICER_INVENTORY);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
-      <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={() => navigate(RoutePaths.OFFICER_INVENTORY)} className="w-fit -ml-2">
-        Kembali ke inventaris
+      <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={handleBack} className="w-fit -ml-2">
+        Kembali
       </Button>
 
       {overdue && (
@@ -66,8 +76,8 @@ export const OfficerItemDetailPage: React.FC = () => {
       )}
 
       <Card className="flex flex-col md:flex-row gap-6 p-6">
-        <div className="w-full md:w-5/12 aspect-square rounded-[14px] overflow-hidden bg-[var(--lf-surface)] border border-[var(--lf-border)] shrink-0">
-          <img src={item.photoUrl} alt={item.name} className="w-full h-full object-cover" />
+        <div className="w-full md:w-5/12 aspect-square lg:aspect-[4/3] rounded-[14px] overflow-hidden bg-slate-100/80 border border-[var(--lf-border)] shrink-0 flex items-center justify-center p-3">
+          <img src={item.photoUrl} alt={item.name} className="w-full h-full object-contain" />
         </div>
 
         <div className="flex-1 flex flex-col gap-4">
@@ -86,16 +96,16 @@ export const OfficerItemDetailPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 text-[var(--lf-muted)]">
               <div className="flex items-center gap-1.5"><Calendar className="w-4 h-4 text-[var(--lf-action)]" /> Diterima {dateStr}</div>
               <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-[var(--lf-action)]" /> Lokasi: {item.foundLocation || '-'}</div>
-              <div className="flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--lf-action)]" /> Pos: {item.postName}</div>
+              <div className="flex items-center gap-1.5"><Building2 className="w-4 h-4 text-[var(--lf-action)]" /> Pos: {shortPos}</div>
             </div>
           </div>
 
-          <div className="p-4 bg-[var(--lf-surface)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-xs space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[var(--lf-ink)] font-bold">
-              <Lock className="w-3.5 h-3.5 text-[var(--lf-action)]" /> Hanya untuk petugas
+          <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-[var(--lf-radius-md)] text-xs space-y-1.5">
+            <div className="flex items-center gap-1.5 text-amber-950 font-bold">
+              <Lock className="w-3.5 h-3.5 text-amber-700" /> Hanya untuk petugas
             </div>
-            <p className="text-[var(--lf-ink)] font-medium">{item.privateNotes || 'Tidak ada catatan ciri khusus.'}</p>
-            <p className="text-[11px] text-[var(--lf-muted)]">Catatan ciri kepemilikan tersedia di sini. Tidak ditampilkan pada katalog publik.</p>
+            <p className="text-amber-950 font-medium">{item.privateNotes || 'Tidak ada catatan ciri khusus.'}</p>
+            <p className="text-[11px] text-amber-800/90">Catatan ciri kepemilikan tersedia di sini. Tidak ditampilkan pada katalog publik.</p>
           </div>
 
           <ItemVisibilityToggle isVisible={item.isVisible} isUpdating={isUpdating} onToggle={toggleVisibility} />

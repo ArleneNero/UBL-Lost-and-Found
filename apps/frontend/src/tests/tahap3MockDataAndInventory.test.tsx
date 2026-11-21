@@ -58,6 +58,6 @@ describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
     // Dashboard metrics should reflect mock data
     expect(screen.getByText('Barang tersedia')).toBeDefined();
     expect(screen.getByText('Sudah diserahkan')).toBeDefined();
-    expect(screen.getByText('Laporan Menunggu')).toBeDefined();
+    expect(screen.getByText('Laporan menunggu')).toBeDefined();
   });
 });

@@ -28,7 +28,7 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Cari barang atau kode inventaris..."
-          className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] placeholder-[var(--lf-muted)] focus:outline-none focus:border-[var(--lf-blue)] focus:ring-1 focus:ring-[var(--lf-blue)] transition-colors"
+          className="w-full pl-10 pr-4 py-2.5 text-base sm:text-sm bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] placeholder-[var(--lf-muted)] focus:outline-none focus:border-[var(--lf-blue)] focus:ring-1 focus:ring-[var(--lf-blue)] transition-colors"
         />
       </div>
 
@@ -36,7 +36,7 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
         <select
           value={statusFilter}
           onChange={(e) => onStatusChange(e.target.value as ItemStatus | 'ALL')}
-          className="px-3 py-2.5 text-xs font-medium bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] focus:outline-none focus:border-[var(--lf-blue)]"
+          className="flex-1 sm:flex-none px-3 py-2.5 text-base sm:text-xs font-medium bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] focus:outline-none focus:border-[var(--lf-blue)]"
         >
           <option value="ALL">Semua status</option>
           <option value="STORED">Tersedia di pos</option>
@@ -47,7 +47,7 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
         <select
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value as 'newest' | 'oldest')}
-          className="px-3 py-2.5 text-xs font-medium bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] focus:outline-none focus:border-[var(--lf-blue)]"
+          className="flex-1 sm:flex-none px-3 py-2.5 text-base sm:text-xs font-medium bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] focus:outline-none focus:border-[var(--lf-blue)]"
         >
           <option value="newest">Terbaru</option>
           <option value="oldest">Terlama</option>

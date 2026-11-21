@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, FileText, PlusCircle, Search } from 'lucide-react';
+import { AlertCircle, ArrowRight, PlusCircle, Search } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { ReportStatus } from '@/types/api';
 import { useOfficerReports } from '@/features/officer/hooks/useOfficerReports';
@@ -38,55 +39,49 @@ export const OfficerReportsPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
-      {/* Figma 02.M01 Alur Pemilihan Laporan */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-[var(--lf-ink)]">Pilih Jenis Laporan</h1>
-        <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-1">
-          Pilih alur pencatatan atau verifikasi barang temuan di pos Anda.
-        </p>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <button
-            onClick={() => navigate(RoutePaths.OFFICER_REGISTER_ITEM)}
-            className="flex items-start gap-4 p-4 text-left rounded-[var(--lf-radius-lg)] border border-[var(--lf-border)] bg-[var(--lf-canvas)] hover:border-[var(--lf-action)] hover:shadow-sm transition-all group cursor-pointer"
-          >
-            <div className="w-10 h-10 rounded-[var(--lf-radius-md)] bg-[var(--lf-soft)] flex items-center justify-center text-[var(--lf-action)] shrink-0 group-hover:bg-[var(--lf-action)] group-hover:text-white transition-colors">
-              <PlusCircle className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-[var(--lf-ink)]">Catat Barang oleh Petugas</h2>
-              <p className="text-xs text-[var(--lf-muted)] mt-0.5">
-                Catat langsung barang yang diserahkan penemu di pos.
-              </p>
-            </div>
-          </button>
-
-          <div className="flex items-start gap-4 p-4 text-left rounded-[var(--lf-radius-lg)] border-2 border-[var(--lf-action)] bg-[var(--lf-canvas)] shadow-sm">
-            <div className="w-10 h-10 rounded-[var(--lf-radius-md)] bg-[var(--lf-action)] flex items-center justify-center text-white shrink-0">
-              <FileText className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-bold text-[var(--lf-ink)]">Laporan dari Mahasiswa</h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[var(--lf-soft)] text-[var(--lf-action)]">
-                  Aktif
-                </span>
-              </div>
-              <p className="text-xs text-[var(--lf-muted)] mt-0.5">
-                Verifikasi laporan dan penerimaan fisik barang dari mahasiswa.
-              </p>
-            </div>
+      {/* Header Laporan Mahasiswa & Action Catat Barang Manual (Item D.4) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-[var(--lf-ink)]">
+              Laporan Mahasiswa
+            </h1>
+            <span className="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[var(--lf-soft)] text-[var(--lf-action)]">
+              Petugas Pengajaran
+            </span>
           </div>
+          <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-1">
+            Kelola dan verifikasi laporan barang temuan dari mahasiswa di pos Anda.
+          </p>
         </div>
+
+        <Button
+          variant="primary"
+          leftIcon={<PlusCircle className="w-4 h-4" />}
+          onClick={() => navigate(RoutePaths.OFFICER_REGISTER_ITEM, { state: { from: 'laporan' } })}
+          className="w-full sm:w-auto shrink-0"
+        >
+          Catat Barang Manual
+        </Button>
       </div>
 
-      {/* Mandatory Notice Banner (Figma 05.01) */}
+      {/* Mandatory Notice Banner + Inline Shortcut (Item D.5) */}
       <div className="flex items-start gap-3 p-4 bg-[var(--lf-warning-soft)] border border-[rgba(181,71,8,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-ink)]">
         <AlertCircle className="w-5 h-5 text-[var(--lf-warning)] shrink-0 mt-0.5" />
         <div>
           <span className="font-bold text-[var(--lf-warning)]">Penting untuk Petugas:</span>
-          <p className="mt-0.5 text-[var(--lf-muted)]">
-            Jangan konfirmasi penerimaan jika mahasiswa belum menyerahkan barang fisik kepada petugas.
+          <p className="mt-0.5 text-[var(--lf-muted)] leading-relaxed">
+            Jangan konfirmasi penerimaan jika mahasiswa belum menyerahkan barang fisik kepada petugas.{' '}
+            Jika penemu menyerahkan barang langsung tanpa laporan online, gunakan{' '}
+            <button
+              type="button"
+              onClick={() => navigate(RoutePaths.OFFICER_REGISTER_ITEM, { state: { from: 'laporan' } })}
+              className="inline-flex items-center gap-1 font-semibold underline text-amber-900 hover:text-amber-700 cursor-pointer"
+            >
+              <span>Catat Barang Manual</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+            .
           </p>
         </div>
       </div>
@@ -100,7 +95,7 @@ export const OfficerReportsPage: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari kode laporan atau nama barang..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] placeholder-[var(--lf-muted)] focus:outline-none focus:border-[var(--lf-blue)]"
+            className="w-full pl-10 pr-4 py-2.5 text-base sm:text-sm bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] placeholder-[var(--lf-muted)] focus:outline-none focus:border-[var(--lf-blue)]"
           />
         </div>
 
@@ -109,7 +104,7 @@ export const OfficerReportsPage: React.FC = () => {
             <button
               key={f.value}
               onClick={() => setStatusFilter(f.value)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors ${
+              className={`px-3.5 py-2 sm:py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
                 statusFilter === f.value
                   ? 'bg-[var(--lf-action)] text-white'
                   : 'bg-[var(--lf-surface)] text-[var(--lf-muted)] hover:bg-[var(--lf-border)]'

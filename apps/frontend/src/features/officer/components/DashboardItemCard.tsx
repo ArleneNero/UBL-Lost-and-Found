@@ -33,13 +33,13 @@ export const DashboardItemCard: React.FC<DashboardItemCardProps> = ({
   return (
     <div className="p-4 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--lf-ink)]">{item.name}</h3>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-[var(--lf-ink)] truncate">{item.name}</h3>
           <p className="text-xs text-[var(--lf-muted)] mt-0.5">
             {item.inventoryCode} · {formattedDate}
           </p>
         </div>
-        <Badge variant={badgeVariant}>{badgeLabel}</Badge>
+        <Badge variant={badgeVariant} className="shrink-0 whitespace-nowrap">{badgeLabel}</Badge>
       </div>
       <Button
         variant="secondary"

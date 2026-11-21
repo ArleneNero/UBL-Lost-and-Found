@@ -10,6 +10,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
 interface NavItem {
   name: string;
@@ -26,13 +27,28 @@ const officerNavItems: NavItem[] = [
 
 export const OfficerLayout: React.FC = () => {
   const location = useLocation();
+  const isRegisterRoute = location.pathname.startsWith(RoutePaths.OFFICER_REGISTER_ITEM);
+  const fromLaporan = (location.state as { from?: string } | null)?.from === 'laporan';
+
+  const isNavItemActive = (itemPath: string) => {
+    if (location.pathname.startsWith(itemPath)) return true;
+    if (isRegisterRoute) {
+      return fromLaporan
+        ? itemPath === RoutePaths.OFFICER_REPORTS
+        : itemPath === RoutePaths.OFFICER_INVENTORY;
+    }
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-[var(--lf-canvas)] flex flex-col lg:flex-row">
       {/* Desktop Sidebar (244px) matching Figma Node 27:50 */}
       <aside className="hidden lg:flex flex-col w-[244px] bg-white border-r border-[var(--lf-border)] shrink-0 sticky top-0 h-screen">
         {/* Brand Header */}
-        <div className="p-5 border-b border-[var(--lf-border)] flex items-center gap-3">
+        <NavLink
+          to={RoutePaths.OFFICER_DASHBOARD}
+          className="p-5 border-b border-[var(--lf-border)] flex items-center gap-3 hover:bg-[var(--lf-soft)]/40 transition-colors"
+        >
           <img
             src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
             alt="UBL LostnFound"
@@ -44,17 +60,17 @@ export const OfficerLayout: React.FC = () => {
             </h1>
             <span className="text-xs text-[var(--lf-muted)] font-medium">Panel Petugas</span>
           </div>
-        </div>
+        </NavLink>
 
         {/* Assigned Post Badge */}
         <div className="mx-4 my-3 p-3 bg-[var(--lf-soft)] rounded-[12px] border border-[rgba(11,94,215,0.15)] flex items-center gap-2.5">
           <Building2 className="w-4 h-4 text-[var(--lf-action)] shrink-0" />
           <div className="overflow-hidden">
             <span className="block text-xs text-[var(--lf-action)] font-bold truncate">
-              Pos Pengajaran
+              {ACTIVE_SERVICE_POST.name}
             </span>
             <span className="block text-[11px] text-[var(--lf-muted)] truncate">
-              Gedung Induk Lt. 1
+              {ACTIVE_SERVICE_POST.locationShort}
             </span>
           </div>
         </div>
@@ -63,7 +79,7 @@ export const OfficerLayout: React.FC = () => {
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
           {officerNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname.startsWith(item.path);
+            const isActive = isNavItemActive(item.path);
             return (
               <NavLink
                 key={item.path}
@@ -95,10 +111,10 @@ export const OfficerLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-20 lg:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-0">
         {/* Mobile Top Header */}
         <header className="lg:hidden bg-white border-b border-[var(--lf-border)] px-4 py-3 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-2.5">
+          <NavLink to={RoutePaths.OFFICER_DASHBOARD} className="flex items-center gap-2.5">
             <img
               src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
               alt="UBL LostnFound"
@@ -106,9 +122,9 @@ export const OfficerLayout: React.FC = () => {
             />
             <div>
               <span className="block text-xs font-bold text-[var(--lf-ink)]">UBL LostnFound</span>
-              <span className="block text-[10px] text-[var(--lf-action)] font-semibold">Pos Pengajaran</span>
+              <span className="block text-[10px] text-[var(--lf-action)] font-semibold">{ACTIVE_SERVICE_POST.name}</span>
             </div>
-          </div>
+          </NavLink>
           <div className="w-7 h-7 rounded-full bg-[var(--lf-soft)] flex items-center justify-center text-[var(--lf-action)] text-xs font-bold">
             P
           </div>
@@ -121,24 +137,26 @@ export const OfficerLayout: React.FC = () => {
       </div>
 
       {/* Mobile Fixed Bottom Navigation (Figma exact: Dashboard, Inventaris, Laporan, Akun) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--lf-border)] h-[64px] z-40 flex items-center justify-around px-2 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
-        {officerNavItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = location.pathname.startsWith(item.path);
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={clsx(
-                'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors select-none',
-                isActive ? 'text-[var(--lf-action)] font-semibold' : 'text-[var(--lf-muted)]'
-              )}
-            >
-              <Icon className={clsx('w-5 h-5', isActive ? 'text-[var(--lf-action)]' : 'text-[var(--lf-muted)]')} />
-              <span className="text-[11px] leading-none">{item.name}</span>
-            </NavLink>
-          );
-        })}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--lf-border)] z-40 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
+        <div className="h-[64px] w-full flex items-center justify-around px-2">
+          {officerNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = isNavItemActive(item.path);
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={clsx(
+                  'flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors select-none',
+                  isActive ? 'text-[var(--lf-action)] font-semibold' : 'text-[var(--lf-muted)]'
+                )}
+              >
+                <Icon className={clsx('w-5 h-5', isActive ? 'text-[var(--lf-action)]' : 'text-[var(--lf-muted)]')} />
+                <span className="text-[11px] leading-none">{item.name}</span>
+              </NavLink>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );
