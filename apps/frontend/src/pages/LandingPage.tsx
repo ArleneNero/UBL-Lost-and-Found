@@ -1,7 +1,46 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { registry } from '@/services/registry';
+import { RoutePaths } from '@/constants/routes';
+import { isGuestModeActive, setGuestModeActive } from '@/utils/guestSession';
 import { RoleSelectionSection } from './landing/RoleSelectionSection';
 
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const allowSwitch = searchParams.get('switch') === 'true';
+
+  useEffect(() => {
+    if (allowSwitch) {
+      setGuestModeActive(false);
+      return;
+    }
+
+    let isMounted = true;
+    registry
+      .getServices()
+      .auth.getCurrentUser()
+      .then((user) => {
+        if (!isMounted) return;
+        if (user?.role === 'STUDENT') {
+          navigate(RoutePaths.STUDENT_HOME, { replace: true });
+        } else if (user?.role === 'OFFICER') {
+          navigate(RoutePaths.OFFICER_DASHBOARD, { replace: true });
+        } else if (isGuestModeActive()) {
+          navigate(RoutePaths.GUEST_HOME, { replace: true });
+        }
+      })
+      .catch(() => {
+        if (isMounted && isGuestModeActive()) {
+          navigate(RoutePaths.GUEST_HOME, { replace: true });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate, allowSwitch]);
+
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 md:py-10 flex flex-col gap-8 md:gap-10">
       {/* Hero Panoramic Banner (Figma Exact 3D Visual) */}

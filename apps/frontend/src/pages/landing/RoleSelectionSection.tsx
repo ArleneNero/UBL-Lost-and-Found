@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { setGuestModeActive } from '@/utils/guestSession';
 import { RoleCard } from './RoleCard';
 
 export const RoleSelectionSection: React.FC = () => {
@@ -24,7 +25,10 @@ export const RoleSelectionSection: React.FC = () => {
           title="Mahasiswa"
           description="Lapor barang temuan dan pantau riwayat laporan"
           iconSrc="/assets/illustrations/roles/Icon_Mahasiswa.png"
-          onClick={() => navigate(RoutePaths.STUDENT_HOME)}
+          onClick={() => {
+            setGuestModeActive(false);
+            navigate(RoutePaths.STUDENT_HOME);
+          }}
         />
 
         {/* Card 2: Petugas */}
@@ -32,7 +36,10 @@ export const RoleSelectionSection: React.FC = () => {
           title="Petugas"
           description="Login untuk mengelola barang dan penyerahan"
           iconSrc="/assets/illustrations/roles/Icon_Petugas.png"
-          onClick={() => navigate(RoutePaths.OFFICER_LOGIN)}
+          onClick={() => {
+            setGuestModeActive(false);
+            navigate(RoutePaths.OFFICER_LOGIN);
+          }}
         />
 
         {/* Card 3: Mode Tamu */}
@@ -41,7 +48,10 @@ export const RoleSelectionSection: React.FC = () => {
           description="Lihat barang dan lokasi pos tanpa login"
           iconFallback={<Search className="w-5 h-5 text-[var(--lf-action)]" />}
           iconBgColor="bg-[#EFF8FF]"
-          onClick={() => navigate(RoutePaths.GUEST_HOME)}
+          onClick={() => {
+            setGuestModeActive(true);
+            navigate(RoutePaths.GUEST_HOME);
+          }}
         />
       </div>
 

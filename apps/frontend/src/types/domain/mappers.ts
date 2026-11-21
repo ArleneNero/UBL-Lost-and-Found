@@ -6,6 +6,7 @@ import {
   MeDto,
 } from '../api';
 import { FoundItem, Submission, ServicePost, UserSession } from './index';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
 export function cleanPhotoUrl(url?: string): string {
   if (!url) return '';
@@ -62,9 +63,9 @@ export function mapServicePostDtoToDomain(dto: ServicePostPublicDto): ServicePos
   return {
     id: dto.post_id,
     name: dto.name,
-    location: dto.location_description || 'Gedung Induk',
-    openingHours: dto.opening_hours || '08.00 - 16.00 WIB',
-    directions: dto.directions || 'Gedung Induk Lt. 1',
+    location: dto.location_description || ACTIVE_SERVICE_POST.location,
+    openingHours: dto.opening_hours || ACTIVE_SERVICE_POST.openingHours,
+    directions: dto.directions || ACTIVE_SERVICE_POST.locationDetailed,
     photos: dto.photos.map((p) => p.url),
   };
 }

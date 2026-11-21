@@ -30,7 +30,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             className={clsx(
-              'w-full h-[48px] bg-white text-sm text-[var(--lf-ink)] placeholder-[var(--lf-muted)]',
+              'w-full h-[48px] bg-white text-base sm:text-sm text-[var(--lf-ink)] placeholder-[var(--lf-muted)]',
               'border rounded-[12px] transition-colors duration-150',
               'focus:outline-none focus:ring-0 focus:shadow-none',
               leftIcon ? 'pl-10' : 'pl-4',
