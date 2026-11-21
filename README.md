@@ -1,299 +1,308 @@
-# UBL Lost and Found
+<div align="center">
 
-Sistem Informasi Manajemen, Inventarisasi, dan Pelaporan Barang Temuan Terpadu berbasis web untuk lingkungan **Universitas Budi Luhur**. Mengadopsi arsitektur monorepo modern, performa tinggi, dan standar keamanan berorientasi privasi (*Privacy-by-Design*).
+# 🔍 UBL Lost and Found
 
----
+**Sistem Informasi Manajemen, Inventarisasi, dan Pelaporan Barang Temuan Terpadu untuk Lingkungan Kampus Universitas Budi Luhur.**
 
-## 📌 Daftar Isi
-1. [Tentang Sistem (About)](#-tentang-sistem-about)
-2. [Arsitektur Monorepo & Tech Stack](#-arsitektur-monorepo--tech-stack)
-3. [Kontrak & Sumber Kebenaran Data](#-kontrak--sumber-kebenaran-data)
-4. [Roadmap & Status Milestone](#-roadmap--status-milestone)
-   - [Milestone Backend (B/A – B/M)](#1-backend-milestones-ba--bm)
-   - [Milestone Frontend (F/A – F/G)](#2-frontend-milestones-fa--fg)
-5. [Instalasi & Menjalankan Proyek](#-instalasi--menjalankan-proyek)
-   - [Prasyarat](#prasyarat)
-   - [Konfigurasi Environment](#konfigurasi-environment)
-   - [Backend: Database, Seed & Server](#backend-appsbackend)
-   - [Frontend: Menjalankan UI](#frontend-appsfrontend)
-   - [Pengujian Otomatis (Testing)](#pengujian-otomatis-testing)
-6. [Struktur Direktori Monorepo](#-struktur-direktori-monorepo)
-7. [Kebijakan Keamanan & Kualitas Kode](#-kebijakan-keamanan--kualitas-kode)
+Found-Item Only · Privasi Ciri Rahasia Terisolasi · Dual-Option Camera & Galeri · Presigned Cloudflare R2 · Single-Domain Vercel Services
 
----
+<br/>
 
-## 📖 Tentang Sistem (About)
+[![React 19](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%206-1570EF?style=flat-square&logo=react&logoColor=white)](https://react.dev)
+[![Fastify v5](https://img.shields.io/badge/Backend-Fastify%20v5-000000?style=flat-square&logo=fastify&logoColor=white)](https://fastify.dev)
+[![Neon PostgreSQL](https://img.shields.io/badge/Database-Neon%20PostgreSQL-00E599?style=flat-square&logo=postgresql&logoColor=black)](https://neon.tech)
+[![Cloudflare R2](https://img.shields.io/badge/Storage-Cloudflare%20R2-F38020?style=flat-square&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/r2/)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript%205.7-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vercel Services](https://img.shields.io/badge/Deploy-Vercel%20Services-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 
-**UBL Lost and Found** mendigitalisasi dan menstandardisasi seluruh proses penanganan barang temuan di lingkungan Universitas Budi Luhur, mulai dari pelaporan, pencatatan fisik di pos, kurasi foto, verifikasi kepemilikan, hingga serah terima barang kepada pemilik sah.
+<br/>
 
-### 1. Peran Pengguna (Roles & Access Control)
-* **Guest (Publik / Tanpa Akun):**
-  * Akses katalog publik barang temuan (`status = STORED` dan `is_visible = true`).
-  * Pencarian berbasis kategori, lokasi temuan, dan rentang tanggal.
-  * Melihat detail publik barang (karakteristik umum).
-  * *Catatan:* Tidak memiliki akses ke catatan verifikasi rahasia atau identitas penemu.
-* **Mahasiswa (Student / Terautentikasi):**
-  * Login akun kampus via Neon Auth (Managed Better Auth).
-  * Membuat laporan penemuan barang secara mandiri.
-  * Memantau status laporan dan riwayat interaksi dengan pos operasional.
-* **Petugas (Officer / Berwenang):**
-  * Petugas resmi yang bertugas di pos operasional (Pos Pengajaran, Pos Keamanan, dll.).
-  * Pencatatan barang temuan fisik secara langsung ke sistem dengan nomor inventaris otomatis (`INV-YYYY-XXXX`).
-  * Unggah foto barang aman ke Cloudflare R2 dengan token anti-replay.
-  * Mengelola status barang (`STORED`, `CLAIMED`, `DISPOSED`), catatan verifikasi rahasia (*private notes*), serta verifikasi klaim tatap muka.
+[Overview](#-overview) • [Peran & Fitur](#-peran-pengguna--peta-fitur) • [Siklus Barang](#-siklus-status-barang--laporan) • [Tech Stack](#-tech-stack--struktur-monorepo) • [Arsitektur Keamanan](#-mekanisme-keamanan--teknik-kunci) • [Instalasi Lokal](#-instalasi--menjalankan-di-lokal) • [Deployment](#-build-monorepo--arsitektur-deploy) • [Troubleshooting](#-troubleshooting)
 
-### 2. Batasan Ruang Lingkup Sistem
-* Sistem secara eksklusif mengelola **barang yang telah ditemukan** (*found items*), bukan portal laporan kehilangan online (*lost reports*) ataupun klaim kepemilikan jarak jauh.
-* Seluruh proses klaim dan serah terima barang **wajib dilakukan secara fisik** di Pos Pengajaran dengan mencocokkan bukti identitas dan ciri khusus barang yang tercatat pada sistem.
-* Tidak ada role `ADMIN` di database. Otorisasi berbasis role `STUDENT` dan `OFFICER` yang diputuskan secara *server-side* langsung dari tabel database pengguna.
+<hr/>
+
+</div>
+
+> [!IMPORTANT]
+> **Batasan Ruang Lingkup Sistem:**  
+> - Sistem ini **hanya mengelola barang yang telah ditemukan (*found items*)** — bukan portal laporan kehilangan barang (*lost reports*) ataupun klaim kepemilikan jarak jauh secara online.  
+> - Seluruh proses verifikasi bukti kepemilikan dan serah terima fisik dilakukan **secara tatap muka di Pos Pengajaran (Gedung Unit 4 Lantai 1)** Universitas Budi Luhur.  
+> - Tidak terdapat role `ADMIN` terpisah; otorisasi hanya membedakan **Tamu (Guest)**, **Mahasiswa (`STUDENT`)**, dan **Petugas Posko (`OFFICER`)** yang divalidasi di sisi server.
 
 ---
 
-## 🛠 Arsitektur Monorepo & Tech Stack
+## ✨ Overview
 
-Sistem dibangun dalam satu repository monorepo dengan pemisahan tegas antara antarmuka klien dan penyedia layanan data:
+**UBL Lost and Found** mendigitalisasi alur penanganan barang temuan kampus dari hulu ke hilir: mulai dari pelaporan penemuan oleh mahasiswa, pencatatan fisik oleh petugas di pos dengan kode inventaris otomatis (`INV-YYYY-XXXX`), kurasi foto terenkripsi di Cloudflare R2, katalog publik yang aman dari kebocoran ciri rahasia, hingga pengarsipan serah terima atau penyaluran barang kedaluwarsa.
 
-```
-UBL-LostnFound/
-├── apps/
-│   ├── frontend/        # React 19 SPA (Vite + Tailwind CSS v4)
-│   └── backend/         # Fastify v5 REST API (TypeScript + Drizzle ORM)
-└── .agent-internal/     # Canonical OpenAPI v1.0 & ERD v6.2 Contracts
-```
+### 🔥 Keunggulan Utama:
+- **Privasi Terisolasi (*Privacy-by-Design*):** Kolom `private_verification_notes` (ciri rahasia barang untuk verifikasi pemilik asli) hanya dapat diakses oleh petugas dan disaring ketat sebelum data masuk ke katalog publik.
+- **Upload Foto Two-Phase Anti-Replay:** Pengunggahan foto langsung ke Cloudflare R2 menggunakan *Presigned PUT URL* dan konfirmasi token kriptografis **HMAC-SHA256** berumur 15 menit yang hangus setelah 1 kali pakai (*single-use*).
+- **Dual-Option Kamera & Galeri:** Mahasiswa maupun petugas dapat mengambil foto langsung lewat **kamera WebRTC** (dengan pratinjau & validasi resolusi/ukuran otomatis) atau mengunggah dari galeri perangkat.
+- **Autentikasi Kampus & Token-Gated Reset:** Akun mahasiswa terikat domain resmi `@student.budiluhur.ac.id` dengan enkripsi **Bcrypt + JWT (HS256)** dan pemulihan kata sandi via tautan token email (Resend).
+- **Single-Origin Deployment & Vite Proxy:** Frontend SPA dan backend Fastify berjalan di satu domain yang sama melalui konfigurasi `vercel.json` serta proxy Vite `/api` & `/storage` di lingkungan lokal—bebas isu CORS.
 
-| Domain | Komponen | Teknologi | Keterangan |
+---
+
+## 👥 Peran Pengguna & Peta Fitur
+
+Sistem membagi akses secara tegas ke dalam tiga tingkatan pengguna:
+
+| Peran | Mekanisme Akses | Kapabilitas & Fitur Utama | Rute Utama |
 |---|---|---|---|
-| **Frontend** | Framework | React 19, TypeScript 5.7+ | Tipe data ketat, modern component model |
-| | Bundler | Vite 6 | Build pipeline ultra-cepat dan Hot Module Replacement (HMR) |
-| | Styling | Tailwind CSS v4 (`@tailwindcss/vite`) | Engine styling performa tinggi berbasis CSS tokens |
-| | Routing | React Router DOM v7 | Manajemen navigasi client-side |
-| | Icons | Lucide React | Library ikon konsisten sesuai frame Figma |
-| | Testing | Vitest + Testing Library | Pengujian komponen dan alur mock |
-| **Backend** | Runtime & Core | Node.js v20+, Fastify v5.2+ | Server web mikro asinkron berkinerja tinggi |
-| | ORM & Query | Drizzle ORM v0.38+, Drizzle Kit | SQL-like query builder type-safe tanpa overhead berat |
-| | Database | Neon Serverless PostgreSQL | Database relasional cloud dengan instant branching |
-| | Auth & Identity | Neon Auth (Managed Better Auth) | Autentikasi modern berbasis session/JWT terverifikasi server-side |
-| | Object Storage | Cloudflare R2 (`@aws-sdk/client-s3`) | S3-compatible private storage tanpa biaya data transfer |
-| | Validasi DTO | Zod v3.24+ | Validasi skema runtime untuk request body, query, dan env |
-| | Testing | Vitest v3.0+ | 12 Test Suites, 94 unit/integration/security tests |
+| **Tamu (Guest)** | Tanpa login (mode publik via `/` atau tombol `Ganti Peran`) | Menelusuri katalog barang `STORED` & `is_visible = true`, pencarian kata kunci/kategori, melihat detail umum barang, melihat lokasi/jam operasional Pos Pengajaran, serta panduan alur pengambilan. | `/`, `/beranda`, `/barang`, `/barang/:id`, `/pos`, `/panduan` |
+| **Mahasiswa (`STUDENT`)** | Email `@student.budiluhur.ac.id` + password (Bcrypt + JWT) | Seluruh akses publik + pelaporan barang temuan mandiri (`REP-YYYY-XXXX`) dengan kamera/galeri, melacak status penerimaan fisik, membatalkan laporan (`PENDING_RECEIPT`) dengan alasan wajib, pemulihan kata sandi, dan halaman profil NIM. | `/masuk`, `/daftar`, `/lupa-sandi`, `/mahasiswa/beranda`, `/mahasiswa/lapor-temuan`, `/mahasiswa/laporan-saya`, `/mahasiswa/profil` |
+| **Petugas (`OFFICER`)** | Login portal khusus petugas (Bcrypt + JWT + `assigned_post_id` dari DB) | Dashboard ringkasan KPI (`Barang tersedia`, `Sudah diserahkan`, `Laporan menunggu`), pencatatan barang temuan langsung (`INV-YYYY-XXXX`), menerima fisik laporan mahasiswa menjadi inventaris, toggle visibilitas katalog, memantau barang `OVERDUE` (> 90 hari), serta modal serah terima (`RETURNED`) dan penyaluran (`DISTRIBUTED`). | `/petugas/login`, `/petugas/dashboard`, `/petugas/inventaris`, `/petugas/inventaris/:id`, `/petugas/catat-barang`, `/petugas/laporan`, `/petugas/laporan/:id`, `/petugas/akun` |
+
+> [!TIP]
+> Pada landing page (`/`), pilihan peran tersimpan di sesi browser agar pengguna dapat langsung melanjutkan aktivitasnya, dan pengguna mode tamu tetap bisa kembali memilih peran kapan saja lewat tombol **`Ganti Peran`** di header.
 
 ---
 
-## 📜 Kontrak & Sumber Kebenaran Data
+## 🔄 Siklus Status Barang & Laporan
 
-Pengembangan sistem tidak didasarkan pada asumsi, melainkan berpatokan ketat pada dokumen spesifikasi kanonikal:
-1. **OpenAPI v1.0 Specification (`openapi-v1.0.yaml`):** Menentukan seluruh kontrak 22 HTTP endpoints, metode, path, struktur payload (`snake_case`), response envelopes, pagination meta, dan kode error baku.
-2. **ERD v6.2 Data Model (`erd-v6.2.dbml`):** Mendefinisikan struktur 8 tabel relasional database:
-   - `users` (Penyimpanan akun lokal terhubung ke Neon Auth `auth_user_id`)
-   - `roles` & `user_roles` (Role-based access: `STUDENT`, `OFFICER`)
-   - `service_posts` (Pos operasional kampus, e.g. Pos Pengajaran)
-   - `categories` (Kategori klasifikasi barang)
-   - `found_items` (Entitas utama barang temuan dan status inventaris)
-   - `item_photos` (Relasi metadata foto barang pada Cloudflare R2)
-   - `claim_records` (Catatan bukti serah terima dan penyelesaian klaim)
-3. **Figma Exact Policy:** Implementasi UI pada frontend berpatokan penuh pada rancangan Figma Page 05 (Frame per Role) dan Page 00 (Design System).
-
----
-
-## 🗺 Roadmap & Status Milestone
-
-### 1. Backend Milestones (B/A – B/M)
-
-```
-[B/A] ──► [B/B] ──► [B/C] ──► [B/D] ──► [B/E] ──► [B/F] ──► [MVP GATE LULUS]
-                                                                  │
-[B/M] ◄── [B/L] ◄── [B/K] ◄── [B/J] ◄── [B/I] ◄── [B/H] ◄── [B/G] ◄┘
+### 1. Siklus Laporan Penemuan Mahasiswa (`found_submissions`)
+```text
+[Mahasiswa Lapor + Upload Foto] ──► PENDING_RECEIPT (Menunggu serah fisik ke Pos Pengajaran)
+                                       ├──► [Mahasiswa Batalkan Mandiri] ──► CANCELLED
+                                       └──► [Petugas Terima Fisik di Pos] ──► RECEIVED ──► Masuk Inventaris (STORED)
 ```
 
-| ID | Fokus & Ruang Lingkup | Status | Detail Capaian |
-|:---:|---|:---:|---|
-| **B/A** | **Preflight, Contract Audit & Environment Initialization** | ✅ Selesai | Verifikasi OpenAPI v1.0 & ERD v6.2, konfigurasi environment Drizzle dan Neon. |
-| **B/B** | **Database Architecture, Modular Schemas & Idempotent Seeding** | ✅ Selesai | Skema termodularisasi $\le 80$ LOC per domain, runner seed idempoten dengan 15 item uji. |
-| **B/C** | **Public Catalog & Item Details API** | ✅ Selesai | `GET /api/v1/items` dan `GET /api/v1/items/:id` (hanya `STORED` + `is_visible=true`, 404 security filter). |
-| **B/D** | **Authentication & Role-Based Access Control (RBAC)** | ✅ Selesai | Verifikasi Neon Auth server-side, `authenticateGuard`, `requireOfficerGuard`, proteksi IDOR. |
-| **B/E** | **Secure Cloudflare R2 Upload Pipeline** | ✅ Selesai | `POST /uploads/intents` (Presigned PUT) & `POST /uploads/:id/finalize` (HMAC token anti-replay). |
-| **B/F** | **Officer Item Registration & MVP Quality Gate** | ✅ **LULUS** | `POST /api/v1/officer/items`, nomor `INV-YYYY-XXXX`, transaksi atomik, **94/94 Test PASS**. |
-| **B/G** | **Officer Inventory Management & Overdue Lifecycle** | 📋 *Planned* | `GET /officer/inventory`, filter status, toggle visibilitas, audit barang kedaluwarsa (>90 hari). |
-| **B/H** | **Student Portal & Submission Tracking** | 📋 *Planned* | Endpoint pelaporan mandiri mahasiswa dan riwayat status barang. |
-| **B/I** | **Physical Verification & Handover Registry** | 📋 *Planned* | Pencatatan penerimaan fisik barang dari penemu ke Petugas Pos Pengajaran. |
-| **B/J** | **Claim Verification, Return & Distribution** | 📋 *Planned* | Alur verifikasi bukti klaim tatap muka dan pengarsipan serah terima barang. |
-| **B/K** | **Frontend UI Integration & Contract Validation** | 📋 *Planned* | Penyambungan antarmuka React ke API Fastify dengan validasi parity data live. |
-| **B/L** | **Security Hardening, Rate Limiting & Penetration Audit** | 📋 *Planned* | Proteksi brute force, HTTP Security Headers (Helmet), pembatasan rate limit IP. |
-| **B/M** | **Staging Deployment & Pos Pengajaran Pilot Launch** | 📋 *Planned* | Deployment cloud staging dan uji coba operasional di Pos Pengajaran UBL. |
+| Status Laporan | Makna Operasional | Aksi yang Tersedia |
+|---|---|---|
+| `PENDING_RECEIPT` | Laporan sudah dikirim mahasiswa, barang fisik belum diserahkan ke pos. | Mahasiswa dapat membatalkan dengan alasan wajib; petugas dapat meninjau lalu menerima fisik barang. |
+| `RECEIVED` | Barang fisik telah diterima petugas pos dan otomatis dibuatkan kode inventaris `INV-YYYY-XXXX`. | Laporan berstatus final dan tertaut dengan inventaris pos. |
+| `CANCELLED` | Laporan dibatalkan oleh pelapor sebelum barang diserahkan ke pos. | Alasan pembatalan tercatat pada riwayat laporan. |
+
+### 2. Siklus Inventaris Barang di Pos (`found_items`)
+| Status Barang | Kriteria & Visibilitas Publik | Keterangan |
+|---|---|---|
+| `STORED` | Tersimpan di pos; tampil di katalog publik bila `is_visible = true`. | Pemilik sah dapat datang ke Pos Pengajaran untuk verifikasi tatap muka. |
+| `OVERDUE` *(Penanda Umur)* | Barang berstatus `STORED` yang telah melewati batas simpan (`> 90 hari`). | Ditandai di tabel inventaris petugas agar dapat ditindaklanjuti penyalurannya. |
+| `RETURNED` | Diserahkan ke pemilik sah *(otomatis tersembunyi dari katalog publik)*. | Mencatat nama penerima dan ringkasan hasil verifikasi kecocokan ciri rahasia. |
+| `DISTRIBUTED` | Disalurkan/diarsipkan setelah masa tunggu berakhir *(aksi permanen)*. | Mencatat catatan penyaluran untuk keperluan audit pos. |
 
 ---
 
-### 2. Frontend Milestones (F/A – F/G)
+## 🛠️ Tech Stack & Struktur Monorepo
 
-Pengembangan frontend mengikuti strategi **Role-First**: menyelesaikan seluruh antarmuka dan interaksi satu peran sebelum berpindah ke peran berikutnya.
+### Stack Teknologi
+| Lapisan | Teknologi | Peran di Sistem |
+|---|---|---|
+| **Frontend** | React 19, TypeScript 5.7, Vite 6 | Antarmuka SPA responsif (*mobile-first*) dengan build dan HMR cepat |
+| **Styling & Ikon** | Tailwind CSS v4 (`@tailwindcss/vite`), Lucide React | Sistem token CSS (`--lf-*`) dan ikon konsisten antar layar |
+| **Routing** | React Router DOM v7 | Pemisahan rute Publik, Mahasiswa, dan Panel Petugas (termasuk alias `/lupa-password`) |
+| **Backend API** | Node.js >= 20, Fastify v5.2, TypeScript | REST API asinkron dengan logging ter-redact (`authorization`, `email`, `token`) dan format error seragam |
+| **Database & ORM** | Neon Serverless PostgreSQL, Drizzle ORM v0.38+ | Skema relasional termodularisasi (`users`, `posts`, `items`, `submissions`, `enums`, `relations`) |
+| **Object Storage** | Cloudflare R2 (`@aws-sdk/client-s3` + presigner) | Penyimpanan foto privat dengan streaming endpoint `/storage/*` dan fallback lokal |
+| **Auth & Email** | `bcryptjs`, HMAC-SHA256 JWT, Resend HTTP API | Verifikasi kredensial sisi server dan pengiriman tautan reset sandi ke email kampus |
+| **Testing** | Vitest v5 (Frontend) / v3 (Backend), Testing Library, Zod v3 | Validasi kontrak DTO runtime, integrasi API, dan pengujian UI komponen |
 
-| ID | Fokus & Ruang Lingkup | Status | Detail Capaian |
-|:---:|---|:---:|---|
-| **F/A** | **Frontend Foundation & Design System Setup** | ✅ Selesai | Setup Vite 6, Tailwind CSS v4, integrasi aset asli, router, dan layout dasar. |
-| **F/B** | **Petugas UI Lengkap (In-Memory Mock Adapter)** | ✅ Selesai | Dashboard ringkas, tabel inventaris pos, form catat barang dengan preview foto, modal detail. |
-| **F/C** | **Guest Publik UI Lengkap (In-Memory Mock Adapter)** | 🟡 *Next* | Katalog pencarian, filter kategori, paginasi 10 item/halaman, detail publik, state 404. |
-| **F/D** | **Mahasiswa UI & Alur Pelaporan Temuan (Mock)** | 📋 *Planned* | Antarmuka akun mahasiswa, form pelaporan mandiri, riwayat status laporan. |
-| **F/E** | **Integrasi API Publik dengan Backend** | 📋 *Planned* | Penggantian mock adapter Guest dengan HTTP Client nyata mengonsumsi endpoint B/C. |
-| **F/F** | **Integrasi Penuh Petugas & Mahasiswa (Neon Auth & R2)** | 📋 *Planned* | Alur login riil Neon Auth (Better Auth), unggah binary langsung ke Cloudflare R2, dan sinkronisasi inventaris pos. |
-| **F/G** | **QA, Visual Regression & Deployment Produksi** | 📋 *Planned* | Audit pixel-perfect terhadap Figma, cross-browser testing, dan rilis frontend. |
+### Struktur Direktori
+```text
+UBL_LostandFound_Project/
+├── api/                                # Bundle entrypoint Fastify untuk Vercel Services
+├── apps/
+│   ├── backend/
+│   │   ├── src/
+│   │   │   ├── config/                 # Validasi environment variables (Zod)
+│   │   │   ├── db/
+│   │   │   │   ├── schema/             # Skema Drizzle modular (enums, users, posts, items, submissions, relations)
+│   │   │   │   ├── fixtures/           # Fixture seed terpisah (officer, student, servicePost, items)
+│   │   │   │   └── seed.ts             # Runner seeding idempoten
+│   │   │   ├── middleware/             # Guard autentikasi JWT & RBAC (STUDENT / OFFICER)
+│   │   │   ├── modules/
+│   │   │   │   ├── auth/               # Login mahasiswa/petugas, register, /me, forgot & reset password
+│   │   │   │   ├── items/              # Katalog publik (STORED + is_visible) & detail publik
+│   │   │   │   ├── officer/            # Inventaris pos, catat barang, visibilitas, return & distribute
+│   │   │   │   ├── posts/              # Informasi pos layanan aktif (Pos Pengajaran)
+│   │   │   │   ├── submissions/        # Pelaporan mandiri mahasiswa & penerimaan fisik petugas
+│   │   │   │   └── uploads/            # Presigned R2 PUT URL, HMAC token anti-replay, & lokal fallback
+│   │   │   ├── services/               # Layanan email reset sandi (Resend)
+│   │   │   ├── app.ts                  # Konfigurasi Fastify, CORS, /docs, /openapi.yaml, /storage/*
+│   │   │   └── server.ts / index.ts    # Entry point local dev & serverless handler
+│   │   └── tests/                      # 14 file test integrasi, keamanan, & kontrak backend
+│   │
+│   └── frontend/
+│       ├── public/                     # Aset logo resmi & gambar layanan
+│       ├── src/
+│       │   ├── app/                    # Definisi router aplikasi
+│       │   ├── components/
+│       │   │   ├── layouts/            # PublicLayout, OfficerLayout, StudentMobileMenu
+│       │   │   └── ui/                 # Komponen UI bersama (Input, Button, PhotoSourceModal, CameraCaptureModal)
+│       │   ├── constants/              # RoutePaths & ACTIVE_SERVICE_POST (Pos Pengajaran)
+│       │   ├── data/                   # In-memory store untuk mode mock & unit test
+│       │   ├── features/               # Modul fitur terisolasi: auth, public, student, officer
+│       │   ├── hooks/                  # useCameraStream & usePhotoInput
+│       │   ├── pages/                  # Halaman Publik, Auth, Mahasiswa, & Panel Petugas
+│       │   ├── services/               # Adapter dual-mode (HttpClient live vs InMemory mock)
+│       │   ├── types/                  # Kontrak tipe API & domain mappers
+│       │   ├── utils/                  # photoFile (validasi/kompresi), guestSession, helpers
+│       │   └── tests/                  # 14 test suites (69 unit/integration tests) + setup
+│       └── vite.config.ts              # Konfigurasi Vite + proxy /api & /storage ke :3000
+│
+├── API_DOCUMENTATION.md                # Ringkasan dokumentasi endpoint REST API
+├── package.json                        # Root workspace & script build monorepo terpadu
+└── vercel.json                         # Konfigurasi routing Vercel Services (frontend + backend)
+```
 
 ---
 
-## 🚀 Instalasi & Menjalankan Proyek
+## 🧠 Mekanisme Keamanan & Teknik Kunci
+
+### 1. Isolasi Data Rahasia (*Zero Leakage*)
+Petugas mencatat deskripsi ciri khusus barang (seperti isi dompet, stiker di balik laptop, atau nomor seri) ke kolom `private_verification_notes`. Endpoint publik `GET /api/v1/items` dan `GET /api/v1/items/:id` hanya mengembalikan item yang berstatus `STORED` dengan `is_visible = true` dan **tidak pernah menyertakan** `private_verification_notes` di payload respons. Jika item berstatus non-`STORED` atau disembunyikan, rute publik mengembalikan `404`.
+
+### 2. Two-Phase Cloudflare R2 Upload (Anti-Replay)
+```text
+[Client] ──(1) POST /uploads/intents──► [Backend] ──► Validasi MIME/size + buat Presigned PUT & HMAC-SHA256 Token (15m)
+[Client] ──(2) PUT binary foto─────────► [Cloudflare R2 Bucket]
+[Client] ──(3) POST /uploads/:id/finalize──► [Backend] ──► Verifikasi signature HMAC + catat single-use consumed token
+[Client] ──(4) Submit Form + photo_token──► [Backend] ──► Transaksi atomik simpan item/laporan + metadata foto
+```
+- Membatasi ukuran berkas maks. **5 MB** (`image/jpeg`, `image/png`, `image/webp`).
+- Di sisi frontend (`utils/photoFile.ts`), gambar beresolusi besar atau dari kamera WebRTC otomatis dikompresi sebelum diunggah agar hemat kuota storage & cepat di jaringan kampus.
+
+### 3. Server-Enforced RBAC & Anti-IDOR
+- Parameter krusial seperti `storage_post_id` pada pencatatan barang oleh petugas **tidak diterima dari request body klien**; server mengambilnya langsung dari `assignedPostId` milik akun petugas di database.
+- Akses pembatalan laporan mahasiswa divalidasi berbasis kepemilikan (`reporter_user_id === currentUser.userId`) dan hanya diizinkan saat status masih `PENDING_RECEIPT`.
+
+### 4. Token-Gated Password Reset
+- Halaman `/lupa-sandi` (dan alias `/lupa-password`) memisahkan tahap permintaan email dengan tahap pembuatan kata sandi baru secara ketat: formulir reset hanya terbuka jika URL membawa parameter `?token=...` yang valid dari email.
+- Bila token tidak valid atau kedaluwarsa, pengguna diarahkan lewat aksi pemulihan ulang tanpa *dead-end button*.
+
+---
+
+## 📦 Prasyarat & Konfigurasi Environment
 
 ### Prasyarat
-* **Node.js:** Versi $\ge 20.0.0$
-* **Package Manager:** NPM v10+ (atau PNPM / Bun yang kompatibel)
-* Akses Cloud Services (untuk backend live):
-  * **Neon Serverless PostgreSQL**
-  * **Neon Auth (Managed Better Auth)**
-  * **Cloudflare R2 Bucket**
+- **Node.js** `>= 20.0.0` dan **NPM** `>= 10`
+- Layanan cloud (untuk mode API live):
+  - **Neon PostgreSQL** (Database relasional)
+  - **Cloudflare R2** *(opsional untuk dev lokal; tersedia fallback penyimpanan lokal di `apps/backend/storage/`)*
+  - **Resend API Key** *(opsional untuk kirim email reset sandi sungguhan di lokal)*
 
----
-
-### Konfigurasi Environment
-
-#### 1. Backend (`apps/backend/.env`)
-Salin berkas `.env.example` ke `.env`:
+### 1. Konfigurasi Backend (`apps/backend/.env`)
+Salin berkas contoh environment terlebih dahulu:
 ```bash
-cd apps/backend
-cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
 ```
-Isi konfigurasi berikut:
+Sesuaikan nilai variabel berikut sesuai akun layanan Anda:
 ```ini
 NODE_ENV=development
 PORT=3000
+FRONTEND_ORIGIN=http://localhost:5173
 
-# Database Neon
-DATABASE_URL=postgresql://user:password@ep-sample-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
-DATABASE_URL_UNPOOLED=postgresql://user:password@ep-sample.us-east-2.aws.neon.tech/neondb?sslmode=require
+# Neon PostgreSQL Database
+DATABASE_URL=postgresql://user:password@ep-example-pooler.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://user:password@ep-example.aws.neon.tech/neondb?sslmode=require
 
-# Neon Auth (Better Auth)
-AUTH_SECRET=dev-neon-auth-secret-key-min-32-chars-long!
-NEON_AUTH_BASE_URL=https://your-neon-auth-domain.neon.tech
+# Autentikasi JWT (minimal 32 karakter acak untuk produksi)
+AUTH_SECRET=ganti-dengan-secret-key-minimal-32-karakter
 
-# Cloudflare R2 Storage
+# Cloudflare R2 Storage (opsional saat dev jika memakai fallback lokal)
 CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
 R2_ACCESS_KEY_ID=your_r2_access_key_id
 R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
 R2_BUCKET_NAME=lostandfound-budiluhur
-R2_PUBLIC_URL=https://pub-sample.r2.dev
+R2_PUBLIC_URL=https://pub-your-bucket.r2.dev
+
+# Pengiriman Email Reset Password (Resend)
+RESEND_API_KEY=re_your_resend_api_key
+RESEND_FROM_EMAIL=UBL LostnFound <noreply@domain-anda.web.id>
 ```
 
-#### 2. Frontend (`apps/frontend/.env`)
+### 2. Konfigurasi Frontend (`apps/frontend/.env`)
 ```bash
-cd apps/frontend
-cp .env.example .env
+cp apps/frontend/.env.example apps/frontend/.env
 ```
 ```ini
 VITE_API_BASE_URL=http://localhost:3000/api/v1
-VITE_USE_MOCK=true
+VITE_USE_MOCK=false
 ```
+> [!NOTE]
+> Jika ingin mencoba UI murni tanpa menjalankan backend atau database, ubah `VITE_USE_MOCK=true` sehingga frontend memakai `InMemory` adapter bawaan.
 
 ---
 
-### Backend (`apps/backend`)
+## 🚀 Instalasi & Menjalankan di Lokal
 
+### Langkah 1: Clone & Install Dependensi
 ```bash
-cd apps/backend
+git clone https://github.com/ArleneNero/UBL-Lost-and-Found.git
+cd UBL-Lost-and-Found
 
-# 1. Install dependensi
 npm install
-
-# 2. Push skema database ke Neon PostgreSQL
-npm run db:push
-
-# 3. Jalankan seeding data awal (Pos, Kategori, Petugas, 15 Dummy Items)
-npm run db:seed
-
-# 4. Jalankan development server (TSX Watch)
-npm run dev
+npm install --prefix apps/backend
+npm install --prefix apps/frontend
 ```
-Backend berjalan pada: `http://localhost:3000`
+
+### Langkah 2: Push Skema Database & Jalankan Seed Awal
+```bash
+# Sinkronkan skema Drizzle ke Neon PostgreSQL
+npm run db:push --prefix apps/backend
+
+# Isi data awal (Pos Pengajaran, akun petugas, akun mahasiswa demo, dan item uji)
+npm run db:seed --prefix apps/backend
+```
+
+### Langkah 3: Jalankan Backend & Frontend Secara Paralel
+Buka **2 terminal terpisah**:
+
+- **Terminal 1 — Backend Fastify (`http://localhost:3000`):**
+  ```bash
+  npm run dev --prefix apps/backend
+  ```
+- **Terminal 2 — Frontend Vite (`http://localhost:5173`):**
+  ```bash
+  npm run dev --prefix apps/frontend
+  ```
+
+> [!TIP]
+> - Dokumentasi interaktif **Swagger UI** tersedia lokal di **`http://localhost:3000/docs`** (dan kontrak mentah di `/openapi.yaml`).  
+> - Baik `npm run dev` (`:5173`) maupun `npm run preview` (`:4173`) pada `apps/frontend` sudah dilengkapi proxy `/api` dan `/storage` menuju `http://localhost:3000` di [`vite.config.ts`](./apps/frontend/vite.config.ts), sehingga request relatif seperti `/api/v1/auth/forgot-password` langsung tersambung ke backend lokal.
 
 ---
 
-### Frontend (`apps/frontend`)
+## ☁️ Build Monorepo & Arsitektur Deploy
+
+Proyek dikonfigurasi untuk berjalan sebagai satu kesatuan di **Vercel Services** ([`vercel.json`](./vercel.json)):
+
+1. Perintah root **`npm run build`** menjalankan:
+   - Build backend (`tsc --noEmit` + bundling `esbuild` menjadi CommonJS standalone di `apps/backend/index.cjs`),
+   - Menyalin file handler ke direktori `api/` untuk entrypoint serverless Vercel,
+   - Build frontend production (`tsc -b && vite build` ke `apps/frontend/dist/`).
+2. Aturan rewrite pada `vercel.json` meneruskan:
+   - `/api/(.*)`, `/storage/(.*)`, `/docs`, dan `/openapi.yaml` → service **`backend`** (`api/index.cjs`)
+   - Seluruh rute lain (`/(.*)`) → service **`frontend`** (SPA `index.html`)
+
+---
+
+## 🧪 Pengujian & Verifikasi
+
+Jalankan pengecekan tipe statis, build, dan seluruh suite test otomatis sebelum melakukan commit:
 
 ```bash
-cd apps/frontend
+# 1. Verifikasi Frontend (Typecheck, Production Build, & 14 Suites / 69 Tests)
+npm run typecheck --prefix apps/frontend
+npm run build --prefix apps/frontend
+npm run test --prefix apps/frontend
 
-# 1. Install dependensi
-npm install
-
-# 2. Jalankan development server
-npm run dev
-```
-Frontend berjalan pada: `http://localhost:5173`
-
----
-
-### Pengujian Otomatis (Testing)
-
-Setiap perubahan kode diverifikasi menggunakan suite pengujian otomatis:
-
-```bash
-# Pengujian Backend (12 Suites, 94 Tests)
-cd apps/backend
-npm run test
-npm run typecheck
-
-# Pengujian Frontend
-cd apps/frontend
-npm run test
-npm run typecheck
+# 2. Verifikasi Backend (Typecheck, Bundle Build, & Integration/Security Tests)
+npm run typecheck --prefix apps/backend
+npm run build --prefix apps/backend
+npm run test --prefix apps/backend
 ```
 
 ---
 
-## 📂 Struktur Direktori Monorepo
+## 🛠️ Troubleshooting
 
-```text
-UBL-LostnFound/
-├── apps/
-│   ├── backend/
-│   │   ├── src/
-│   │   │   ├── config/              # Validasi Zod Environment Variables
-│   │   │   ├── db/
-│   │   │   │   ├── schema/          # Skema Drizzle modular (users, items, photos, dll.)
-│   │   │   │   ├── fixtures/        # Data fixture deterministik untuk testing & seed
-│   │   │   │   ├── client.ts        # Inisialisasi pool koneksi Neon Postgres
-│   │   │   │   └── seed.ts          # Runner seeding idempoten
-│   │   │   ├── middleware/          # Guard autentikasi Neon Auth & otorisasi Petugas
-│   │   │   ├── modules/
-│   │   │   │   ├── auth/            # JWT verification & identitas pengguna
-│   │   │   │   ├── items/           # Katalog publik & detail barang temuan
-│   │   │   │   ├── uploads/         # Provider R2, Presigned URL, & HMAC Token
-│   │   │   │   └── officer/         # Pencatatan barang, kode INV, & transaksi atomik
-│   │   │   ├── app.ts               # Registrasi plugin Fastify, CORS, & routing
-│   │   │   └── index.ts             # Entry point HTTP server listener
-│   │   └── tests/                   # 12 Test Suites (DTO, Integration, Security, E2E)
-│   │
-│   └── frontend/
-│       ├── public/                  # Aset asli (logo, favicon, ilustrasi resmi)
-│       └── src/
-│           ├── components/          # Komponen UI modular (Navbar, Card, Modal, Form)
-│           ├── layouts/             # Layout per role (PetugasLayout, GuestLayout)
-│           ├── pages/               # Tampilan layar per role sesuai frame Figma
-│           ├── services/            # Layer adapter pemisah antara Mock dan HTTP Live
-│           └── types/               # Type definition DTO selaras OpenAPI
-│
-└── .agent-internal/
-    └── contracts/                   # Snapshot canonical OpenAPI v1.0 & ERD v6.2
-```
-
----
-
-## 🔒 Kebijakan Keamanan & Kualitas Kode
-
-1. **Clean Code Sweet Spot:**
-   - Batas maksimum file produksi di `src/` adalah $\le 100$ baris kode (LOC) dengan ukuran fungsi $\approx 15–25$ LOC guna menjamin keterbacaan tinggi dan isolasi tanggung jawab (*Single Responsibility*).
-2. **Server-Enforced RBAC & Anti-IDOR:**
-   - Parameter krusial seperti `storage_post_id` tidak pernah diterima dari payload klien. Server secara independen mengambil pos penugasan petugas dari tabel relasi database berdasarkan token sesi Neon Auth yang sah.
-3. **Penyimpanan Objek Terenkripsi & Anti-Replay:**
-   - File media diunggah langsung ke Cloudflare R2 melalui Presigned PUT URL berbatas waktu.
-   - Token unggah dilindungi tanda tangan kriptografis HMAC-SHA256, berumur 15 menit, terikat pada ID pengguna dan tujuan penggunaan (*purpose*), serta dicatat ke dalam *consumed token store* agar tidak dapat digunakan ulang (*single-use protection*).
-4. **Pencegahan Kebocoran Data (Zero Leakage):**
-   - Catatan verifikasi privat (`private_verification_notes`) hanya dikembalikan pada rute internal Petugas dan secara ketat disaring sebelum data disajikan ke katalog publik.
-5. **Git Safe Policy:**
-   - Kredensial rahasia, file environment (`.env*`), serta direktori audit internal tidak pernah disimpan ke dalam version control.
+| Kendala | Penyebab | Solusi |
+|---|---|---|
+| **Login/Daftar mahasiswa ditolak** | Email tidak menggunakan domain resmi kampus. | Gunakan email berakhiran `@student.budiluhur.ac.id` (atau masukkan NIM saat login agar otomatis dipadankan). |
+| **Formulir `Lupa Kata Sandi` tidak menampilkan input sandi baru** | Mengakses `/lupa-sandi` secara langsung tanpa token reset dari email. | Buka tautan reset yang mengandung `?token=...&email=...` atau minta ulang email reset di langkah awal. |
+| **Request `/api/*` di Vite Preview (`:4173`) mengembalikan 404 / gagal** | Server backend belum berjalan di port `3000` atau bundle `dist` belum di-build ulang. | Jalankan `npm run dev --prefix apps/backend` di terminal lain dan jalankan `npm run build --prefix apps/frontend` sebelum preview. |
+| **Kamera WebRTC gagal terbuka / izin ditolak** | Akses berasal dari origin non-HTTPS selain `localhost`, atau kamera diblokir browser. | Akses lewat `http://localhost:5173` / HTTPS produksi, izinkan akses kamera, atau pilih opsi **Pilih dari Galeri** sebagai fallback. |
+| **Upload foto gagal saat submit item/laporan** | Token HMAC upload kedaluwarsa (> 15 menit) atau sudah pernah dipakai (*single-use*). | Pilih atau ambil ulang foto pada form untuk menghasilkan upload intent dan token baru. |
+| **Data akun atau item uji di database lokal belum sinkron** | Skema atau data seed belum pernah dijalankan di branch Neon aktif. | Jalankan `npm run db:push --prefix apps/backend` diikuti `npm run db:seed --prefix apps/backend`. |
