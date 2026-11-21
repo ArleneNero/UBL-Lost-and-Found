@@ -6,4 +6,7 @@ import { mockStore } from '@/data/mockStore';
 beforeEach(() => {
   registry.setMode('in-memory');
   mockStore.reset();
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.clear();
+  }
 });
