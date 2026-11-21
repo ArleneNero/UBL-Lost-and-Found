@@ -26,7 +26,7 @@ export const GuestCategoryList: React.FC = () => {
           Lihat semua
         </button>
       </div>
-      <div className="grid grid-cols-6 gap-2">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 sm:gap-2">
         {CATEGORIES.map((cat) => {
           const Icon = cat.icon;
           return (

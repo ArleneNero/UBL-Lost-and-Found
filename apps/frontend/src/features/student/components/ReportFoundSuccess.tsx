@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
 interface ReportFoundSuccessProps {
   reportCode: string;
@@ -37,7 +38,7 @@ export const ReportFoundSuccess: React.FC<ReportFoundSuccessProps> = ({
             <span>Langkah Selanjutnya: Serahkan Fisik Barang</span>
           </div>
           <p className="text-xs text-amber-900 leading-relaxed">
-            Silakan bawa barang temuan ini ke <strong>Pos Pengajaran (Gedung Unit 4 Lantai 1)</strong>. Petugas pos akan memeriksa fisik barang dan mencocokkannya dengan nomor laporan Anda.
+            Silakan bawa barang temuan ini ke <strong>{ACTIVE_SERVICE_POST.name} ({ACTIVE_SERVICE_POST.location})</strong>. Petugas pos akan memeriksa fisik barang dan mencocokkannya dengan nomor laporan Anda.
           </p>
         </div>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Building2, Ban, AlertCircle } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 import { registry } from '@/services/registry';
 import { Submission } from '@/types/domain';
 import { getStatusBadge } from '@/features/student/components/StudentReportCard';
@@ -75,10 +76,10 @@ export const StudentReportDetailPage: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--lf-border)]">
         <div>
-          <div className="flex items-center gap-3 mb-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1.5">
             <span className="font-mono text-xs font-bold text-[var(--lf-muted)] bg-[var(--lf-canvas)] px-2.5 py-1 rounded-lg">{report.reportCode}</span>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${badge.className}`}>
-              <BadgeIcon className="w-3.5 h-3.5" />
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border shrink-0 whitespace-nowrap ${badge.className}`}>
+              <BadgeIcon className="w-3.5 h-3.5 shrink-0" />
               <span>{badge.label}</span>
             </span>
           </div>
@@ -103,9 +104,11 @@ export const StudentReportDetailPage: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[var(--lf-border)] p-5 space-y-3">
             <div className="flex items-center gap-2.5 text-xs font-bold text-[var(--lf-action)]">
               <Building2 className="w-4 h-4 shrink-0" />
-              <span>Pos Pengajaran UBL</span>
+              <span>{ACTIVE_SERVICE_POST.name}</span>
             </div>
-            <p className="text-xs text-[var(--lf-muted)] leading-relaxed">Gedung Unit 4 Lantai 1 (Dekat Lobi Lift Barat). Buka Senin–Jumat, 08.00–16.00 WIB.</p>
+            <p className="text-xs text-[var(--lf-muted)] leading-relaxed">
+              {ACTIVE_SERVICE_POST.locationDetailed}. Buka {ACTIVE_SERVICE_POST.openingHours}.
+            </p>
           </div>
         </div>
       </div>

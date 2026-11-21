@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2, Clock, XCircle, Ban, AlertCircle } from 'lucide-react';
 import { ReportStatus } from '@/types/api';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
 interface ReportTimelineProps {
   status: ReportStatus;
@@ -57,11 +58,11 @@ export const ReportTimeline: React.FC<ReportTimelineProps> = ({ status, submitte
           </div>
           <div>
             <h4 className="text-xs font-bold text-[var(--lf-ink)]">
-              Penyerahan Fisik ke Pos Pengajaran
+              Penyerahan Fisik ke {ACTIVE_SERVICE_POST.name}
             </h4>
             <p className="text-[11px] text-[var(--lf-muted)] mt-0.5">
               {status === 'PENDING_RECEIPT' &&
-                'Silakan bawa fisik barang ke Ruang Pengajaran (Gedung Unit 4 Lt. 1).'}
+                `Silakan bawa fisik barang ke ${ACTIVE_SERVICE_POST.location}.`}
               {status === 'RECEIVED' &&
                 'Fisik barang telah diterima dan dicocokkan oleh petugas pos.'}
               {status === 'REJECTED' &&

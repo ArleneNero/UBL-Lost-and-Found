@@ -120,7 +120,7 @@ describe('Tahap 7 - Milestone F/C Guest Public Flow', () => {
       await waitFor(() => {
         expect(screen.getByText('Pos Pelayanan')).toBeDefined();
         expect(screen.getByText('Pos Pengajaran')).toBeDefined();
-        expect(screen.getByText(/Gedung Unit 4 Lantai 1, Ruang Pengajaran/i)).toBeDefined();
+        expect(screen.getAllByText(/Gedung Unit 4 Lantai 1, Ruang Pengajaran/i).length).toBeGreaterThan(0);
       });
     });
 
@@ -132,11 +132,12 @@ describe('Tahap 7 - Milestone F/C Guest Public Flow', () => {
       );
 
       expect(screen.getByText('Alur Pengambilan')).toBeDefined();
-      expect(screen.getByText('1. Cari barang')).toBeDefined();
-      expect(screen.getByText('2. Periksa pos penyimpanan')).toBeDefined();
-      expect(screen.getByText('3. Datang ke pos')).toBeDefined();
-      expect(screen.getByText('4. Verifikasi kepemilikan')).toBeDefined();
-      expect(screen.getByText('5. Barang diserahkan')).toBeDefined();
+      expect(screen.getByText('Cari barang')).toBeDefined();
+      expect(screen.getByText('Periksa pos penyimpanan')).toBeDefined();
+      expect(screen.getByText('Datang ke pos')).toBeDefined();
+      expect(screen.getByText('Verifikasi kepemilikan')).toBeDefined();
+      expect(screen.getByText('Barang diserahkan')).toBeDefined();
+      expect(screen.getByText('Info Lokasi & Syarat Pengambilan')).toBeDefined();
     });
   });
 });

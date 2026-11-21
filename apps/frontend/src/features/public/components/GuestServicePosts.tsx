@@ -2,13 +2,9 @@
 import { useNavigate } from 'react-router-dom';
 import { MapPin, ArrowRight } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
-interface GuestServicePostsProps {
-  selectedPost?: string;
-  setSelectedPost?: (post: string) => void;
-}
-
-export const GuestServicePosts: React.FC<GuestServicePostsProps> = () => {
+export const GuestServicePosts: React.FC = () => {
   const navigate = useNavigate();
 
   return (
@@ -19,7 +15,7 @@ export const GuestServicePosts: React.FC<GuestServicePostsProps> = () => {
           <h2 className="text-sm font-bold text-[var(--lf-ink)]">Pos Pelayanan</h2>
         </div>
         <button
-          onClick={() => navigate(RoutePaths.POSTS)}
+          onClick={() => navigate(`${RoutePaths.POSTS}?from=beranda`)}
           className="text-xs font-semibold text-[var(--lf-action)] hover:underline cursor-pointer flex items-center gap-1"
         >
           Lihat detail
@@ -28,7 +24,7 @@ export const GuestServicePosts: React.FC<GuestServicePostsProps> = () => {
       </div>
 
       <div 
-        onClick={() => navigate(RoutePaths.POSTS)}
+        onClick={() => navigate(`${RoutePaths.POSTS}?from=beranda`)}
         className="flex items-center gap-3.5 p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:border-[var(--lf-action)] transition-all cursor-pointer group"
       >
         <div className="w-10 h-10 rounded-xl bg-[#EFF8FF] text-[var(--lf-action)] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -37,14 +33,14 @@ export const GuestServicePosts: React.FC<GuestServicePostsProps> = () => {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold text-[var(--lf-ink)] group-hover:text-[var(--lf-action)] transition-colors">
-              Pos Pengajaran
+              {ACTIVE_SERVICE_POST.name}
             </span>
             <span className="text-[10px] font-semibold text-[#12B76A] bg-[#ECFDF3] px-2 py-0.5 rounded-full">
               Aktif
             </span>
           </div>
           <p className="text-[11px] text-[var(--lf-muted)] truncate mt-0.5">
-            Gedung Unit 4 Lantai 1, Ruang Pengajaran
+            {ACTIVE_SERVICE_POST.location}
           </p>
         </div>
       </div>

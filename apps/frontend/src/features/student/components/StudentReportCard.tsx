@@ -51,25 +51,25 @@ export const StudentReportCard: React.FC<StudentReportCardProps> = ({ report }) 
     <div className="bg-white rounded-2xl border border-[var(--lf-border)] hover:border-[var(--lf-action)]/50 p-4 sm:p-5 transition-all shadow-xs flex flex-col justify-between group">
       <div>
         {/* Header: Code & Status */}
-        <div className="flex items-center justify-between gap-2 mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           <span className="text-[11px] font-mono font-semibold text-[var(--lf-muted)] bg-[var(--lf-canvas)] px-2.5 py-1 rounded-lg">
             {report.reportCode}
           </span>
           <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${badge.className}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border shrink-0 whitespace-nowrap ${badge.className}`}
           >
-            <BadgeIcon className="w-3.5 h-3.5" />
+            <BadgeIcon className="w-3.5 h-3.5 shrink-0" />
             <span>{badge.label}</span>
           </span>
         </div>
 
         {/* Thumbnail & Title */}
         <div className="flex gap-3 mb-3">
-          <div className="w-16 h-16 rounded-xl bg-[var(--lf-canvas)] border border-[var(--lf-border)] overflow-hidden shrink-0 flex items-center justify-center">
+          <div className="w-16 h-16 rounded-xl bg-slate-100/80 border border-[var(--lf-border)] overflow-hidden shrink-0 flex items-center justify-center p-1">
             <img
               src={report.photoUrl || '/assets/branding/Logo_LostnFound.png'}
               alt={report.itemName}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+              className="w-full h-full object-contain group-hover:scale-105 transition-transform"
             />
           </div>
 

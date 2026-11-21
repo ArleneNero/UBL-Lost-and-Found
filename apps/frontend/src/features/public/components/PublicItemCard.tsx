@@ -9,9 +9,12 @@ interface PublicItemCardProps {
 
 export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item, onClick }) => {
   const [imgError, setImgError] = useState(false);
-  const dateStr = item.foundDate
-    ? new Date(item.foundDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
-    : new Date(item.receivedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  const dateSource = item.receivedAt || item.foundDate;
+  const dateStr = new Date(dateSource).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   // Clean short pos name (e.g. "Pos Pengajaran" -> "Pengajaran")
   const shortPos = item.postName?.replace(/^Pos\s+/i, '') || 'Pengajaran';
@@ -29,7 +32,13 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item, onClick })
       }}
       className="bg-white rounded-2xl border border-[var(--lf-border)] overflow-hidden cursor-pointer group hover:border-[var(--lf-action)] hover:shadow-xs transition-all duration-150 flex flex-col select-none"
     >
-      <div className="relative aspect-4/3 w-full bg-[var(--lf-surface)] overflow-hidden">
+      <div className="relative aspect-4/3 w-full bg-slate-100/80 overflow-hidden flex items-center justify-center">
+        {/* Category Pill Badge (Item B.1 & B.4) */}
+        {item.category && (
+          <div className="absolute top-2.5 left-2.5 z-10 bg-white/95 backdrop-blur-xs text-[11px] font-semibold text-[#344054] px-2.5 py-0.5 rounded-full shadow-2xs border border-[#D0D5DD]/70">
+            {item.category}
+          </div>
+        )}
         {imgError || !item.photoUrl ? (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50/60 text-[var(--lf-muted)] gap-1.5 p-4">
             <div className="w-10 h-10 rounded-xl bg-white shadow-2xs border border-[#E4E7EC] flex items-center justify-center text-[#1570EF]">
@@ -43,13 +52,13 @@ export const PublicItemCard: React.FC<PublicItemCardProps> = ({ item, onClick })
             alt={item.name}
             loading="lazy"
             onError={() => setImgError(true)}
-            className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-200"
+            className="w-full h-full object-contain p-2 group-hover:scale-102 transition-transform duration-200"
           />
         )}
       </div>
 
-      <div className="p-4 flex flex-col gap-1.5 flex-1 justify-between">
-        <h3 className="text-sm font-bold text-[var(--lf-ink)] group-hover:text-[var(--lf-action)] transition-colors truncate">
+      <div className="p-3 sm:p-4 flex flex-col gap-1.5 flex-1 justify-between">
+        <h3 className="text-xs sm:text-sm font-bold text-[var(--lf-ink)] group-hover:text-[var(--lf-action)] transition-colors truncate">
           {item.name}
         </h3>
         

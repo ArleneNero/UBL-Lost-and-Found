@@ -56,7 +56,7 @@ export const StudentMyReportsPage: React.FC = () => {
             <button
               key={tab.value}
               onClick={() => setStatusFilter(tab.value)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`px-3.5 py-2 sm:py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 isActive
                   ? 'bg-[var(--lf-action)] text-white shadow-xs'
                   : 'bg-white text-[var(--lf-muted)] border border-[var(--lf-border)] hover:border-[var(--lf-action)]/40 hover:text-[var(--lf-ink)]'
@@ -83,7 +83,7 @@ export const StudentMyReportsPage: React.FC = () => {
 
           {/* Pagination Controls */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-[var(--lf-border)]">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-[var(--lf-border)]">
               <span className="text-xs text-[var(--lf-muted)]">
                 Menampilkan halaman {page} dari {totalPages} ({total} laporan)
               </span>
@@ -112,12 +112,14 @@ export const StudentMyReportsPage: React.FC = () => {
             <ClipboardList className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-[var(--lf-ink)]">
-            Tidak Ada Laporan Ditemukan
+            {statusFilter === 'ALL'
+              ? 'Belum Ada Laporan Temuan'
+              : 'Tidak Ada Laporan dengan Status Ini'}
           </h3>
           <p className="text-xs text-[var(--lf-muted)] max-w-sm mx-auto">
             {statusFilter === 'ALL'
               ? 'Anda belum pernah mengirimkan laporan penemuan barang.'
-              : 'Tidak ada laporan dengan status yang dipilih.'}
+              : `Belum ada laporan temuan Anda yang berstatus ${FILTER_TABS.find((t) => t.value === statusFilter)?.label || ''}.`}
           </p>
           {statusFilter !== 'ALL' && (
             <button

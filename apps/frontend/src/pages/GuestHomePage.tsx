@@ -11,7 +11,6 @@ import { GuestServicePosts } from '@/features/public/components/GuestServicePost
 export const GuestHomePage: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPost, setSelectedPost] = useState('Pengajaran');
   const { items, isLoading } = usePublicCatalog(4);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -46,21 +45,23 @@ export const GuestHomePage: React.FC = () => {
         </div>
 
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 mt-1">
-          <div className="relative flex-1">
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Cari barang atau deskripsi..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-[#D0D5DD] rounded-xl text-[var(--lf-ink)] placeholder-[#667085] focus:outline-none focus:border-[#1570EF] shadow-xs"
+              className="w-full pl-10 pr-3 sm:pr-4 py-2.5 text-base sm:text-sm bg-white border border-[#D0D5DD] rounded-xl text-[var(--lf-ink)] placeholder-[#667085] focus:outline-none focus:border-[#1570EF] shadow-xs"
             />
           </div>
           <button
             type="submit"
-            className="shrink-0 bg-[#1570EF] hover:bg-[#175CD3] text-white px-6 py-2.5 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+            aria-label="Cari Barang"
+            className="shrink-0 bg-[#1570EF] hover:bg-[#175CD3] text-white px-4 sm:px-6 py-2.5 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer"
           >
-            Cari Barang
+            <span className="sm:hidden">Cari</span>
+            <span className="hidden sm:inline">Cari Barang</span>
           </button>
         </form>
       </section>
@@ -68,10 +69,7 @@ export const GuestHomePage: React.FC = () => {
       {/* Middle Row: Kategori & Pos Pelayanan */}
       <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <GuestCategoryList />
-        <GuestServicePosts
-          selectedPost={selectedPost}
-          setSelectedPost={setSelectedPost}
-        />
+        <GuestServicePosts />
       </section>
 
       {/* Bottom Section: Barang Temuan Terbaru */}
@@ -89,9 +87,9 @@ export const GuestHomePage: React.FC = () => {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {[1, 2, 3, 4].map((n) => (
-              <div key={n} className="bg-white rounded-2xl border border-[var(--lf-border)] p-4 space-y-3">
+              <div key={n} className="bg-white rounded-2xl border border-[var(--lf-border)] p-3 sm:p-4 space-y-3">
                 <Skeleton height={140} className="w-full rounded-xl" />
                 <Skeleton height={18} width="70%" />
                 <Skeleton height={12} width="40%" />
@@ -103,7 +101,7 @@ export const GuestHomePage: React.FC = () => {
             Belum ada barang temuan aktif yang dipublikasikan di katalog.
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             {items.map((item) => (
               <PublicItemCard key={item.id} item={item} onClick={() => navigate(`/barang/${item.id}`)} />
             ))}

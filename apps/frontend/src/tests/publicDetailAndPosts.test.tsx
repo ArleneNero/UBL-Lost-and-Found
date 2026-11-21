@@ -145,11 +145,13 @@ describe('Public Item Detail, Posts & Guide (F/C.3 - F/C.4)', () => {
       expect(screen.getByText('Alur Pengambilan')).toBeDefined();
       expect(screen.getByText('Tidak perlu mengajukan klaim online.')).toBeDefined();
 
-      expect(screen.getByText('1. Cari barang')).toBeDefined();
-      expect(screen.getByText('2. Periksa pos penyimpanan')).toBeDefined();
-      expect(screen.getByText('3. Datang ke pos')).toBeDefined();
-      expect(screen.getByText('4. Verifikasi kepemilikan')).toBeDefined();
-      expect(screen.getByText('5. Barang diserahkan')).toBeDefined();
+      expect(screen.getByText('Cari barang')).toBeDefined();
+      expect(screen.getByText('Periksa pos penyimpanan')).toBeDefined();
+      expect(screen.getByText('Datang ke pos')).toBeDefined();
+      expect(screen.getByText('Verifikasi kepemilikan')).toBeDefined();
+      expect(screen.getByText('Barang diserahkan')).toBeDefined();
+      expect(screen.getByText('Info Lokasi & Syarat Pengambilan')).toBeDefined();
+      expect(screen.getByText('Lihat Pos Pelayanan')).toBeDefined();
     });
   });
 });

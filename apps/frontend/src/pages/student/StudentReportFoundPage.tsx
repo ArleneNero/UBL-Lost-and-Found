@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AlertCircle, Info, MapPin } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 import { useCreateReport } from '@/features/student/hooks/useCreateReport';
 import { ReportFoundSuccess } from '@/features/student/components/ReportFoundSuccess';
 import { ReportFoundForm, ReportFoundFormValues } from '@/features/student/components/ReportFoundForm';
@@ -85,11 +86,11 @@ export const StudentReportFoundPage: React.FC = () => {
               Setelah laporan terkirim
             </h3>
             <p className="text-xs sm:text-sm text-[#667085] leading-relaxed">
-              Simpan kode laporan Anda dan bawa barang ke Pos Pengajaran (Gedung Unit 4 Lt. 1). Petugas akan memeriksa kondisi barang dan mencocokkan kode laporan.
+              Simpan kode laporan Anda dan bawa barang ke {ACTIVE_SERVICE_POST.name} ({ACTIVE_SERVICE_POST.locationShort}). Petugas akan memeriksa kondisi barang dan mencocokkan kode laporan.
             </p>
             <div className="pt-2">
               <Link
-                to={RoutePaths.POSTS}
+                to={`${RoutePaths.POSTS}?from=lapor`}
                 className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-[#D1E9FF] bg-[#EFF8FF] text-[#1570EF] font-semibold text-xs sm:text-sm hover:bg-[#D1E9FF] transition-all"
               >
                 <MapPin className="w-4 h-4" />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, Package, PackageOpen } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Package, PackageOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { RoutePaths } from '@/constants/routes';
@@ -65,21 +65,37 @@ export const ItemDetailPage: React.FC = () => {
   }
 
   const shortPos = item.postName?.replace(/^Pos\s+/i, '') || 'Pengajaran';
+  const dateSource = item.receivedAt || item.foundDate;
+  const dateStr = new Date(dateSource).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const handleBack = () => {
+    const idx = window.history.state?.idx;
+    if (typeof idx === 'number' && idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(RoutePaths.CATALOG);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 lg:px-8 py-8 flex flex-col gap-6">
-      {/* Back Link (Figma 03.02) */}
+      {/* Dynamic Back Link (Item B.7 / 4.3) */}
       <button
-        onClick={() => navigate(RoutePaths.CATALOG)}
+        type="button"
+        onClick={handleBack}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1570EF] hover:underline w-fit cursor-pointer"
       >
-        <ArrowLeft className="w-4 h-4" /> Kembali ke katalog
+        <ArrowLeft className="w-4 h-4" /> Kembali
       </button>
 
       {/* Detail Two Column Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
         {/* Left: Authentic Item Photo */}
-        <div className="aspect-4/3 w-full rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/60 overflow-hidden border border-[var(--lf-border)] flex items-center justify-center shadow-xs">
+        <div className="relative aspect-square lg:aspect-[4/3] w-full rounded-2xl bg-slate-100/80 overflow-hidden border border-[var(--lf-border)] flex items-center justify-center p-3 shadow-xs">
           {imgError || !item.photoUrl ? (
             <div className="flex flex-col items-center justify-center gap-2 p-6 text-center">
               <div className="w-14 h-14 rounded-2xl bg-white shadow-2xs border border-[#E4E7EC] flex items-center justify-center text-[#1570EF]">
@@ -94,7 +110,7 @@ export const ItemDetailPage: React.FC = () => {
               alt={item.name}
               loading="lazy"
               onError={() => setImgError(true)}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           )}
         </div>
@@ -102,13 +118,20 @@ export const ItemDetailPage: React.FC = () => {
         {/* Right: Item Metadata & Actions */}
         <div className="flex flex-col gap-5">
           <div>
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <h1 className="text-2xl sm:text-3xl font-bold text-[var(--lf-ink)]">{item.name}</h1>
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#EDFDF3] text-[#027A48] border border-[#D3F8DF] shrink-0">
+              <span className="w-fit px-3 py-1 rounded-full text-xs font-medium bg-[#EDFDF3] text-[#027A48] border border-[#D3F8DF] shrink-0">
                 Tersedia di pos
               </span>
             </div>
-            <p className="text-xs font-medium text-[var(--lf-muted)] mt-1">{item.category}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[var(--lf-muted)] mt-1.5">
+              <span className="text-[#344054]">{item.category}</span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-[#1570EF]" />
+                Diterima {dateStr}
+              </span>
+            </div>
             <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-2 leading-relaxed">
               {item.description || 'Tidak ada deskripsi fisik publik.'}
             </p>
@@ -124,7 +147,7 @@ export const ItemDetailPage: React.FC = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate(RoutePaths.POSTS)}
+              onClick={() => navigate(`${RoutePaths.POSTS}?from=detail`)}
               className="w-full bg-[#1570EF] hover:bg-[#175CD3] text-white py-2.5 rounded-xl font-semibold text-xs transition-colors cursor-pointer text-center shadow-xs"
             >
               Lihat Lokasi Pengambilan

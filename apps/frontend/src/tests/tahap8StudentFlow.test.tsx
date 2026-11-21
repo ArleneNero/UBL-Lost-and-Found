@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import { registry } from '@/services/registry';
 import { mockStore } from '@/data/mockStore';
+import { StudentIdentityCard } from '@/features/student/components/StudentIdentityCard';
 
 describe('Milestone F/D — Modul Mahasiswa (Mock & UI Services)', () => {
   beforeEach(() => {
@@ -162,6 +164,41 @@ describe('Milestone F/D — Modul Mahasiswa (Mock & UI Services)', () => {
       // 4. Mahasiswa melihat status laporannya berubah menjadi RECEIVED
       const updatedStudentReport = await services.submissions.getSubmissionById(created.id);
       expect(updatedStudentReport?.status).toBe('RECEIVED');
+    });
+  });
+
+  describe('StudentIdentityCard — Clean Profile Identity', () => {
+    it('renders student name directly without initial badge and with single Mahasiswa Aktif pill', () => {
+      render(
+        <StudentIdentityCard
+          profile={{
+            id: 'stu-2',
+            name: 'Budi Santoso',
+            email: '2411508888@student.budiluhur.ac.id',
+            role: 'STUDENT',
+            studentNumber: '2411508888',
+          }}
+          onLogout={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText('Budi Santoso')).toBeDefined();
+      expect(screen.getByText('Universitas Budi Luhur')).toBeDefined();
+      expect(screen.queryByText(/Fakultas Teknologi Informasi/)).toBeNull();
+      expect(screen.queryByText('Peran Sistem')).toBeNull();
+      expect(screen.queryByText('B')).toBeNull();
+      expect(screen.getByText('Mahasiswa Aktif')).toBeDefined();
+      expect(screen.queryByText('Terverifikasi Kampus')).toBeNull();
+      expect(screen.getByText('2411508888')).toBeDefined();
+      expect(screen.getByText('2411508888@student.budiluhur.ac.id')).toBeDefined();
+    });
+
+    it('uses neutral dash fallback when profile is null instead of leaking another student name', () => {
+      render(<StudentIdentityCard profile={null} onLogout={vi.fn()} />);
+
+      expect(screen.queryByText(/Nero/)).toBeNull();
+      expect(screen.queryByText('2411502194')).toBeNull();
+      expect(screen.getAllByText('-').length).toBe(3);
     });
   });
 });

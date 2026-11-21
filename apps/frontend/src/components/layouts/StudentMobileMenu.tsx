@@ -29,10 +29,10 @@ export const StudentMobileMenu: React.FC<StudentMobileMenuProps> = ({
       <div className="p-3 bg-[var(--lf-canvas)] rounded-xl mb-3 flex items-center justify-between">
         <div>
           <span className="block text-xs font-bold text-[var(--lf-ink)]">
-            {currentUser?.name || 'Nero Mahasiswa'}
+            {currentUser?.name || '-'}
           </span>
           <span className="block text-[11px] text-[var(--lf-muted)]">
-            NIM: {currentUser?.studentNumber || '2411502194'}
+            NIM: {currentUser?.studentNumber || '-'}
           </span>
         </div>
         <button

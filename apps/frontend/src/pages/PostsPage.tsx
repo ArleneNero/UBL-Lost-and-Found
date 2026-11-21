@@ -1,16 +1,28 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, Clock, Building2, Info, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { services } from '@/services/registry';
 import { ServicePost } from '@/types/domain';
 import { RoutePaths } from '@/constants/routes';
+import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
 export const PostsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const showBackLink = Boolean(searchParams.get('from'));
   const [posts, setPosts] = useState<ServicePost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleBack = () => {
+    const idx = window.history.state?.idx;
+    if (typeof idx === 'number' && idx > 0) {
+      navigate(-1);
+    } else {
+      navigate(RoutePaths.GUEST_HOME);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -31,14 +43,16 @@ export const PostsPage: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8 flex flex-col gap-8">
       {/* Back button & Header */}
       <div className="flex flex-col gap-4">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--lf-muted)] hover:text-[var(--lf-ink)] w-fit cursor-pointer transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Kembali</span>
-        </button>
+        {showBackLink && (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1570EF] hover:underline w-fit cursor-pointer transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Kembali</span>
+          </button>
+        )}
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-[var(--lf-ink)]">
             Pos Pelayanan
@@ -83,7 +97,9 @@ export const PostsPage: React.FC = () => {
                   <div className="flex items-start gap-2.5">
                     <MapPin className="w-4 h-4 text-[var(--lf-action)] shrink-0 mt-0.5" />
                     <span className="text-[var(--lf-ink)] font-medium leading-relaxed">
-                      {post.location}
+                      {post.id === 1 || post.name === ACTIVE_SERVICE_POST.name
+                        ? ACTIVE_SERVICE_POST.locationDetailed
+                        : post.location}
                     </span>
                   </div>
                   <div className="flex items-start gap-2.5">
@@ -113,10 +129,10 @@ export const PostsPage: React.FC = () => {
             </div>
             <div>
               <h3 className="text-sm font-bold text-[var(--lf-ink)]">
-                Layanan Terpusat di Pos Pengajaran
+                Layanan Terpusat di {ACTIVE_SERVICE_POST.name}
               </h3>
               <p className="text-xs text-[var(--lf-muted)] mt-1 leading-relaxed">
-                Saat ini seluruh barang temuan di lingkungan Universitas Budi Luhur disimpan dan diverifikasi secara terpusat di Ruang Pengajaran Gedung Unit 4 Lantai 1.
+                Saat ini seluruh barang temuan di lingkungan Universitas Budi Luhur disimpan dan diverifikasi secara terpusat di {ACTIVE_SERVICE_POST.location}.
               </p>
             </div>
             <div className="text-xs text-[var(--lf-muted)] bg-[#F8FAFC] p-3.5 rounded-xl border border-[#E2E8F0] space-y-1.5 leading-relaxed">

@@ -66,6 +66,13 @@ export const CatalogPage: React.FC = () => {
     navigate('/barang', { replace: true });
   };
 
+  const hasActiveFilter = Boolean(
+    searchQuery.trim() !== '' ||
+    postIdFilter !== undefined ||
+    categoryFilter !== 'ALL' ||
+    sortOrder !== 'newest'
+  );
+
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 md:py-8 flex flex-col gap-6">
       {/* Header (Figma 03.01) */}
@@ -86,7 +93,7 @@ export const CatalogPage: React.FC = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Cari nama barang..."
-          className="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-[#D0D5DD] rounded-xl text-[var(--lf-ink)] placeholder-[#667085] focus:outline-none focus:border-[#1570EF] shadow-xs"
+          className="w-full pl-10 pr-4 py-2.5 text-base sm:text-sm bg-white border border-[#D0D5DD] rounded-xl text-[var(--lf-ink)] placeholder-[#667085] focus:outline-none focus:border-[#1570EF] shadow-xs"
         />
       </div>
 
@@ -99,6 +106,7 @@ export const CatalogPage: React.FC = () => {
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
         onResetFilters={handleResetFilters}
+        hasActiveFilter={hasActiveFilter}
       />
 
       {/* Status Item Count */}
@@ -108,9 +116,9 @@ export const CatalogPage: React.FC = () => {
 
       {/* Items Grid */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="bg-white rounded-2xl border border-[var(--lf-border)] p-4 space-y-3">
+            <div key={n} className="bg-white rounded-2xl border border-[var(--lf-border)] p-3 sm:p-4 space-y-3">
               <Skeleton height={140} className="w-full rounded-xl" />
               <Skeleton height={18} width="60%" />
               <Skeleton height={12} width="40%" />
@@ -130,7 +138,7 @@ export const CatalogPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {items.map((item) => (
             <PublicItemCard key={item.id} item={item} onClick={() => navigate(`/barang/${item.id}`)} />
           ))}
@@ -139,7 +147,7 @@ export const CatalogPage: React.FC = () => {
 
       {/* Pagination Numerik */}
       {totalPages > 1 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-6 border-t border-[var(--lf-border)] text-xs text-[#344054]">
+        <div className="flex items-center justify-between gap-2 sm:gap-3 pt-6 border-t border-[var(--lf-border)] text-xs text-[#344054]">
           <button
             type="button"
             disabled={page <= 1}
@@ -149,13 +157,13 @@ export const CatalogPage: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#D0D5DD] bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl border border-[#D0D5DD] bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>Sebelumnya</span>
+            <span className="hidden sm:inline">Sebelumnya</span>
           </button>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
                 key={p}
@@ -164,7 +172,7 @@ export const CatalogPage: React.FC = () => {
                   setPage(p);
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className={`w-9 h-9 rounded-xl font-semibold transition-colors cursor-pointer ${
+                className={`w-9 h-9 rounded-xl font-semibold transition-colors cursor-pointer shrink-0 ${
                   p === page
                     ? 'bg-[#1570EF] text-white shadow-xs'
                     : 'bg-white hover:bg-gray-50 text-[#344054] border border-[#D0D5DD]'
@@ -184,9 +192,9 @@ export const CatalogPage: React.FC = () => {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }
             }}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#D0D5DD] bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl border border-[#D0D5DD] bg-white font-medium hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors cursor-pointer shrink-0"
           >
-            <span>Selanjutnya</span>
+            <span className="hidden sm:inline">Selanjutnya</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

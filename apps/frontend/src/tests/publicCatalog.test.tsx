@@ -5,7 +5,9 @@ import { LandingPage } from '@/pages/LandingPage';
 import { GuestHomePage } from '@/pages/GuestHomePage';
 import { CatalogPage } from '@/pages/CatalogPage';
 import { PublicLayout } from '@/components/layouts/PublicLayout';
+import { RoutePaths } from '@/constants/routes';
 import { services } from '@/services/registry';
+import { isGuestModeActive, setGuestModeActive } from '@/utils/guestSession';
 
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
@@ -128,7 +130,83 @@ describe('Public & Guest Flows (F/C.1 - F/C.2.0)', () => {
       expect(screen.getAllByText('Cari Barang').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Pos Pelayanan').length).toBeGreaterThan(0);
       expect(screen.getAllByText('Lapor Temuan').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('Login').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Masuk').length).toBeGreaterThan(0);
+      expect(screen.getByRole('button', { name: 'Ganti Peran' })).toBeDefined();
+      expect(
+        screen.getByText(/© 2026 Universitas Budi Luhur — Layanan Barang Temuan Terpadu/)
+      ).toBeDefined();
+      expect(screen.queryByText(/Pos Layanan:/)).toBeNull();
+    });
+
+    it('switches guest back to role selection via Ganti Peran button', () => {
+      setGuestModeActive(true);
+
+      render(
+        <MemoryRouter initialEntries={['/beranda']}>
+          <PublicLayout />
+        </MemoryRouter>
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Ganti Peran' }));
+
+      expect(isGuestModeActive()).toBe(false);
+      expect(mockNavigate).toHaveBeenCalledWith('/?switch=true');
+    });
+
+    it('hides footer on auth routes', () => {
+      render(
+        <MemoryRouter initialEntries={['/masuk']}>
+          <PublicLayout />
+        </MemoryRouter>
+      );
+
+      expect(
+        screen.queryByText(/© 2026 Universitas Budi Luhur — Layanan Barang Temuan Terpadu/)
+      ).toBeNull();
+    });
+
+    it('renders student circular icon button and GitHub-style dropdown with dynamic name, NIM, Profil, and Keluar', async () => {
+      const userSpy = vi.spyOn(services.auth, 'getCurrentUser').mockResolvedValue({
+        id: 'stu-test-1',
+        name: 'Siti Rahmawati',
+        email: '2411509999@budiluhur.ac.id',
+        role: 'STUDENT',
+        studentNumber: '2411509999',
+      });
+      const logoutSpy = vi.spyOn(services.auth, 'logout').mockResolvedValue(undefined);
+
+      try {
+        render(
+          <MemoryRouter initialEntries={['/beranda']}>
+            <PublicLayout />
+          </MemoryRouter>
+        );
+
+        const trigger = await screen.findByRole('button', { name: 'Menu akun mahasiswa' });
+        expect(screen.queryByText('Siti Rahmawati')).toBeNull();
+        expect(screen.queryByRole('menuitem', { name: 'Profil' })).toBeNull();
+
+        fireEvent.click(trigger);
+
+        expect(screen.getByText('Siti Rahmawati')).toBeDefined();
+        expect(screen.getByText('2411509999')).toBeDefined();
+        const profileLink = screen.getByRole('menuitem', { name: 'Profil' });
+        expect(profileLink.getAttribute('href')).toBe(RoutePaths.STUDENT_PROFILE);
+
+        fireEvent.keyDown(document, { key: 'Escape' });
+        expect(screen.queryByRole('menu', { name: 'Menu akun mahasiswa' })).toBeNull();
+
+        fireEvent.click(trigger);
+        fireEvent.click(screen.getByRole('menuitem', { name: 'Keluar' }));
+
+        await waitFor(() => {
+          expect(logoutSpy).toHaveBeenCalledTimes(1);
+          expect(mockNavigate).toHaveBeenCalledWith('/?switch=true');
+        });
+      } finally {
+        userSpy.mockRestore();
+        logoutSpy.mockRestore();
+      }
     });
   });
 

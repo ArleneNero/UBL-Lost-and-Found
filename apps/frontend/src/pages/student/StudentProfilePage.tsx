@@ -16,13 +16,13 @@ export const StudentProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 lg:px-8 py-6 sm:py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8 space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-[var(--lf-ink)]">
           Profil Mahasiswa
         </h1>
         <p className="text-xs sm:text-sm text-[var(--lf-muted)] mt-1">
-          Informasi identitas akun dan ringkasan aktivitas di UBL LostnFound
+          Informasi identitas akun dan ringkasan aktivitas di UBL LostnFound.
         </p>
       </div>
 
