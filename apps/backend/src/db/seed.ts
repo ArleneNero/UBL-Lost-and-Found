@@ -1,14 +1,9 @@
 import { eq } from "drizzle-orm";
 import { db, pool } from "./index.js";
 import { users, servicePosts, servicePostPhotos, foundItems, itemPhotos, itemReturns } from "./schema.js";
-import {
-  SEED_OFFICER_EMAIL,
-  officerSeedData,
-  servicePostSeedData,
-  servicePostPhotoSeedData,
-  SEED_STUDENT_EMAIL,
-  studentSeedData,
-} from "./fixtures/officer.fixture.js";
+import { SEED_OFFICER_EMAIL, officerSeedData } from "./fixtures/officer.fixture.js";
+import { SEED_STUDENT_EMAIL, studentSeedData } from "./fixtures/student.fixture.js";
+import { servicePostSeedData, servicePostPhotoSeedData } from "./fixtures/servicePost.fixture.js";
 import { itemsToSeed } from "./fixtures/items.fixture.js";
 
 async function seedOfficer() {
@@ -37,12 +32,19 @@ async function seedStudent() {
   });
   let student = existing;
   if (existing) {
+    const patch: Partial<typeof studentSeedData> = {};
     if (!existing.passwordHash) {
+      patch.passwordHash = studentSeedData.passwordHash;
+    }
+    if (existing.fullName === "Nero Mahasiswa") {
+      patch.fullName = studentSeedData.fullName;
+    }
+    if (Object.keys(patch).length > 0) {
       await db
         .update(users)
-        .set({ passwordHash: studentSeedData.passwordHash })
+        .set(patch)
         .where(eq(users.userId, existing.userId));
-      console.log(`🔑 Updated password hash for Student: ${existing.email}`);
+      console.log(`🔑 Updated seeded student record: ${existing.email}`);
     }
     console.log(`ℹ️ Student already exists: ${existing.email} (${existing.userId})`);
   } else {
