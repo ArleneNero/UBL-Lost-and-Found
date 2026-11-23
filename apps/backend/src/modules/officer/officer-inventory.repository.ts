@@ -1,8 +1,22 @@
 import { db } from "../../db/index.js";
 import { foundItems, itemPhotos, servicePosts } from "../../db/schema.js";
 import { generateInventoryCode } from "./inventory-code.util.js";
+import { officerPolicyRepository } from "./officer-policy.repository.js";
 import type { ItemCreateRequest } from "./officer.dto.js";
-import { eq, and, sql, desc, asc, isNull, inArray, gte, lt } from "drizzle-orm";
+import { eq, and, sql, desc, asc, isNull, isNotNull, inArray, gte, lt } from "drizzle-orm";
+
+const officerItemWithRelations = {
+  photo: true as const,
+  returnRecord: {
+    with: {
+      returnedBy: {
+        columns: {
+          fullName: true as const,
+        },
+      },
+    },
+  },
+};
 
 export interface CreateItemParams {
   request: ItemCreateRequest;
@@ -20,6 +34,7 @@ export interface GetOfficerInventoryParams {
   page?: number;
   limit?: number;
   includeArchived?: boolean;
+  archivedOnly?: boolean;
 }
 
 export class OfficerInventoryRepository {
@@ -73,13 +88,22 @@ export class OfficerInventoryRepository {
    * B/G.1.0: Lists inventory items stored at this post with filters and pagination
    */
   async getInventoryByPost(params: GetOfficerInventoryParams) {
-    const { storagePostId, status, category, q, includeArchived = false } = params;
+    const {
+      storagePostId,
+      status,
+      category,
+      q,
+      includeArchived = false,
+      archivedOnly = false,
+    } = params;
     const page = Math.max(1, params.page || 1);
     const limit = Math.min(100, Math.max(1, params.limit || 10));
     const offset = (page - 1) * limit;
 
     const conditions = [eq(foundItems.storagePostId, storagePostId)];
-    if (!includeArchived) {
+    if (archivedOnly) {
+      conditions.push(isNotNull(foundItems.archivedAt));
+    } else if (!includeArchived) {
       conditions.push(isNull(foundItems.archivedAt));
     }
     if (status) {
@@ -113,9 +137,7 @@ export class OfficerInventoryRepository {
 
     const items = await db.query.foundItems.findMany({
       where: whereClause,
-      with: {
-        photo: true,
-      },
+      with: officerItemWithRelations,
       orderBy: [sortOrder],
       limit,
       offset,
@@ -130,9 +152,7 @@ export class OfficerInventoryRepository {
   async getItemById(itemId: string, storagePostId: number) {
     const item = await db.query.foundItems.findFirst({
       where: eq(foundItems.itemId, itemId),
-      with: {
-        photo: true,
-      },
+      with: officerItemWithRelations,
     });
 
     if (!item) {
@@ -185,100 +205,22 @@ export class OfficerInventoryRepository {
   /**
    * B/G.2.0: Calculates overdue items dynamically from received_at and storage_limit_days
    */
-  async getOverdueItems(storagePostId: number) {
-    const post = await db.query.servicePosts.findFirst({
-      where: eq(servicePosts.postId, storagePostId),
-    });
-
-    if (!post) {
-      return [];
-    }
-
-    const postFallbackLimit =
-      post.storageLimitDays !== null && post.storageLimitDays > 0
-        ? post.storageLimitDays
-        : 365;
-    const now = new Date();
-
-    const storedItems = await db.query.foundItems.findMany({
-      where: and(
-        eq(foundItems.storagePostId, storagePostId),
-        eq(foundItems.status, "STORED"),
-        isNull(foundItems.archivedAt)
-      ),
-    });
-
-    const overdueList = [];
-    for (const item of storedItems) {
-      const effectiveLimit =
-        item.storageLimitDays !== null && item.storageLimitDays > 0
-          ? item.storageLimitDays
-          : postFallbackLimit;
-      const receivedDate = new Date(item.receivedAt);
-      const ageMs = now.getTime() - receivedDate.getTime();
-      const storageAgeDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
-
-      if (storageAgeDays > effectiveLimit) {
-        overdueList.push({
-          item_id: item.itemId,
-          inventory_code: item.inventoryCode,
-          item_name: item.itemName,
-          category: item.category,
-          received_at:
-            item.receivedAt instanceof Date
-              ? item.receivedAt.toISOString()
-              : new Date(item.receivedAt).toISOString(),
-          storage_limit_days: effectiveLimit,
-          storage_age_days: storageAgeDays,
-          overdue_days: storageAgeDays - effectiveLimit,
-        });
-      }
-    }
-
-    return overdueList;
+  getOverdueItems(storagePostId: number) {
+    return officerPolicyRepository.getOverdueItems(storagePostId);
   }
 
   /**
    * Read officer service post policy settings
    */
-  async getPostSettings(storagePostId: number) {
-    const post = await db.query.servicePosts.findFirst({
-      where: eq(servicePosts.postId, storagePostId),
-      columns: {
-        postId: true,
-        name: true,
-        storageLimitDays: true,
-      },
-    });
-    if (!post) return null;
-    return {
-      post_id: post.postId,
-      name: post.name,
-      storage_limit_days:
-        post.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365,
-    };
+  getPostSettings(storagePostId: number) {
+    return officerPolicyRepository.getPostSettings(storagePostId);
   }
 
   /**
    * Update officer service post storage limit (non-retroactive for existing items)
    */
-  async updatePostStorageLimit(storagePostId: number, storageLimitDays: number) {
-    const [updated] = await db
-      .update(servicePosts)
-      .set({ storageLimitDays })
-      .where(eq(servicePosts.postId, storagePostId))
-      .returning({
-        postId: servicePosts.postId,
-        name: servicePosts.name,
-        storageLimitDays: servicePosts.storageLimitDays,
-      });
-
-    if (!updated) return null;
-    return {
-      post_id: updated.postId,
-      name: updated.name,
-      storage_limit_days: updated.storageLimitDays ?? storageLimitDays,
-    };
+  updatePostStorageLimit(storagePostId: number, storageLimitDays: number) {
+    return officerPolicyRepository.updatePostStorageLimit(storagePostId, storageLimitDays);
   }
 
   /**

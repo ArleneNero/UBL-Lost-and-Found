@@ -1,4 +1,5 @@
 import React from 'react';
+import { clsx } from 'clsx';
 import { Search } from 'lucide-react';
 import { ItemStatus } from '@/types/api';
 
@@ -9,8 +10,8 @@ export interface InventoryFiltersProps {
   onStatusChange: (status: ItemStatus | 'ALL') => void;
   sortBy: 'newest' | 'oldest';
   onSortChange: (sort: 'newest' | 'oldest') => void;
-  includeArchived?: boolean;
-  onIncludeArchivedChange?: (include: boolean) => void;
+  archivedOnly?: boolean;
+  onArchivedOnlyChange?: (archivedOnly: boolean) => void;
 }
 
 export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
@@ -20,8 +21,8 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
   onStatusChange,
   sortBy,
   onSortChange,
-  includeArchived = false,
-  onIncludeArchivedChange,
+  archivedOnly = false,
+  onArchivedOnlyChange,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -36,7 +37,7 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
         />
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <select
           value={statusFilter}
           onChange={(e) => onStatusChange(e.target.value as ItemStatus | 'ALL')}
@@ -57,15 +58,22 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
           <option value="oldest">Terlama</option>
         </select>
 
-        {onIncludeArchivedChange && (
-          <label className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] cursor-pointer whitespace-nowrap">
+        {onArchivedOnlyChange && (
+          <label
+            className={clsx(
+              'inline-flex items-center gap-1.5 px-3 py-2 text-xs border rounded-[var(--lf-radius-md)] cursor-pointer whitespace-nowrap transition-colors',
+              archivedOnly
+                ? 'bg-[var(--lf-soft)] border-[var(--lf-action)] text-[var(--lf-action)] font-semibold'
+                : 'bg-[var(--lf-canvas)] border-[var(--lf-border)] text-[var(--lf-ink)] font-medium'
+            )}
+          >
             <input
               type="checkbox"
-              checked={includeArchived}
-              onChange={(e) => onIncludeArchivedChange(e.target.checked)}
-              className="rounded"
+              checked={archivedOnly}
+              onChange={(e) => onArchivedOnlyChange(e.target.checked)}
+              className="rounded accent-[var(--lf-action)]"
             />
-            <span>Tampilkan Arsip</span>
+            <span>Hanya Arsip</span>
           </label>
         )}
       </div>

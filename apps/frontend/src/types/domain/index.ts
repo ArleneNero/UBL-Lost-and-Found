@@ -1,5 +1,14 @@
 import { ItemStatus, ReportStatus, UserRole } from '../api';
 
+export interface ItemReturnRecord {
+  returnId: string;
+  recipientName: string;
+  recipientIdentifier?: string | null;
+  verificationSummary: string;
+  returnedAt: string;
+  returnedByName?: string | null;
+}
+
 export interface FoundItem {
   id: string;
   inventoryCode: string;
@@ -17,6 +26,7 @@ export interface FoundItem {
   privateNotes?: string | null;
   storageLimitDays?: number | null;
   archivedAt?: string | null;
+  returnRecord?: ItemReturnRecord | null;
 }
 
 export interface CleanInventoryResult {

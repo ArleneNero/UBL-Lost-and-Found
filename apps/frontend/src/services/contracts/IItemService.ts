@@ -14,6 +14,7 @@ export interface GetOfficerItemsParams extends GetItemsParams {
   status?: ItemStatus;
   isVisible?: boolean;
   includeArchived?: boolean;
+  archivedOnly?: boolean;
 }
 
 export interface CreateItemInput {
@@ -33,7 +34,12 @@ export interface IItemService {
   getPublicItemById(id: string): Promise<FoundItem | null>;
   createItem(input: CreateItemInput): Promise<FoundItem>;
   updateVisibility(id: string, isVisible: boolean): Promise<FoundItem>;
-  returnItem(id: string, recipientName: string, verificationSummary: string): Promise<FoundItem>;
+  returnItem(
+    id: string,
+    recipientName: string,
+    verificationSummary: string,
+    recipientIdentifier?: string
+  ): Promise<FoundItem>;
   distributeItem(id: string, notes: string): Promise<FoundItem>;
   getPostSettings(): Promise<PostSettings>;
   updatePostSettings(storageLimitDays: number): Promise<PostSettings>;

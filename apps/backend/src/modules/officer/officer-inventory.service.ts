@@ -44,6 +44,7 @@ export class OfficerInventoryService {
       page?: number;
       limit?: number;
       includeArchived?: boolean;
+      archivedOnly?: boolean;
     }
   ) {
     const result = await officerInventoryRepository.getInventoryByPost({
@@ -52,7 +53,9 @@ export class OfficerInventoryService {
     });
 
     return {
-      data: result.items.map((item) => mapToOfficerDto(item, item.photo || null, context)),
+      data: result.items.map((item) =>
+        mapToOfficerDto(item, item.photo || null, context, item.returnRecord || null)
+      ),
       meta: {
         page: result.page,
         limit: result.limit,
@@ -79,7 +82,7 @@ export class OfficerInventoryService {
       throw new AppError("NOT_FOUND", "Barang inventaris tidak ditemukan", 404);
     }
 
-    return mapToOfficerDto(item, photo, context);
+    return mapToOfficerDto(item, photo, context, item.returnRecord || null);
   }
 
   /**
@@ -151,7 +154,15 @@ export class OfficerInventoryService {
    * Soft-archive completed items (RETURNED_TO_OWNER / DISTRIBUTED)
    */
   async cleanCompletedInventory(context: OfficerContext, month?: string) {
-    return await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
+    const result = await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
+    if (result.archived_count === 0) {
+      throw new AppError(
+        "NO_ARCHIVABLE_ITEMS",
+        "Tidak ada barang selesai (Sudah Diserahkan atau Disalurkan) yang dapat diarsipkan pada periode tersebut.",
+        409
+      );
+    }
+    return result;
   }
 }
 

@@ -1,11 +1,14 @@
-import React, { useState, useId } from 'react';
-import { Archive, Printer, X, AlertCircle } from 'lucide-react';
+import React, { useState, useId, useMemo, useEffect } from 'react';
+import { Archive, Printer, X, AlertCircle, AlertTriangle } from 'lucide-react';
+import { clsx } from 'clsx';
+import { FoundItem } from '@/types/domain';
 import { Button } from '@/components/ui/Button';
+import { toLocalDateKey } from '../selectors/reportDateSelectors';
 
 export interface CleanInventoryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  completedCount: number;
+  completedItems: FoundItem[];
   onConfirmClean: (month?: string) => Promise<number>;
   onOpenReport?: () => void;
 }
@@ -13,16 +16,29 @@ export interface CleanInventoryModalProps {
 export const CleanInventoryModal: React.FC<CleanInventoryModalProps> = ({
   isOpen,
   onClose,
-  completedCount,
+  completedItems,
   onConfirmClean,
   onOpenReport,
 }) => {
   const titleId = useId();
   const [scope, setScope] = useState<'all' | 'month'>('all');
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [month, setMonth] = useState(() => toLocalDateKey(new Date().toISOString()).slice(0, 7));
   const [confirmed, setConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const eligibleCount = useMemo(() => {
+    if (scope === 'all') return completedItems.length;
+    return completedItems.filter(
+      (item) => toLocalDateKey(item.receivedAt).slice(0, 7) === month
+    ).length;
+  }, [completedItems, scope, month]);
+
+  useEffect(() => {
+    if (eligibleCount === 0 && confirmed) {
+      setConfirmed(false);
+    }
+  }, [eligibleCount, confirmed]);
 
   if (!isOpen) return null;
 
@@ -33,7 +49,7 @@ export const CleanInventoryModal: React.FC<CleanInventoryModalProps> = ({
   };
 
   const handleClean = async () => {
-    if (!confirmed || isSubmitting) return;
+    if (!confirmed || eligibleCount === 0 || isSubmitting) return;
     setIsSubmitting(true);
     setError(null);
     try {
@@ -61,7 +77,7 @@ export const CleanInventoryModal: React.FC<CleanInventoryModalProps> = ({
         </div>
 
         <p className="text-xs text-[var(--lf-muted)] leading-relaxed">
-          Menyembunyikan item selesai (<strong>Sudah Diserahkan</strong> &amp; <strong>Disalurkan</strong>) dari daftar utama tanpa menghapus jejak audit atau barang <strong>Tersedia (STORED)</strong>. Terdeteksi <strong>{completedCount}</strong> barang selesai aktif.
+          Menyembunyikan item selesai (<strong>Sudah Diserahkan</strong> &amp; <strong>Disalurkan</strong>) dari daftar utama tanpa menghapus jejak audit atau barang <strong>Tersedia (STORED)</strong>. Terdeteksi <strong>{eligibleCount}</strong> barang selesai aktif siap diarsipkan.
         </p>
 
         {error && <div role="alert" className="flex items-center gap-2 p-3 text-xs text-[var(--lf-error)] bg-[var(--lf-error-soft)] rounded-[var(--lf-radius-md)]"><AlertCircle className="w-4 h-4 shrink-0" /><span>{error}</span></div>}
@@ -80,20 +96,44 @@ export const CleanInventoryModal: React.FC<CleanInventoryModalProps> = ({
           )}
         </div>
 
+        {eligibleCount === 0 && (
+          <div role="status" className="flex items-start gap-2 p-3 text-xs text-amber-900 bg-amber-50 border border-amber-300 rounded-[var(--lf-radius-md)]">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <span>
+              {scope === 'month'
+                ? `Tidak ada barang selesai pada bulan ${month} yang dapat diarsipkan. Barang berstatus STORED tetap aman di inventaris aktif.`
+                : 'Belum ada barang selesai (Sudah Diserahkan atau Disalurkan) yang siap diarsipkan. Barang berstatus STORED tetap aman di inventaris aktif.'}
+            </span>
+          </div>
+        )}
+
         {onOpenReport && (
           <Button type="button" variant="secondary" size="sm" leftIcon={<Printer className="w-4 h-4" />} onClick={() => { handleClose(); onOpenReport(); }}>
             Cetak Rekap Dulu
           </Button>
         )}
 
-        <label className="flex items-start gap-2.5 p-3 bg-amber-50/70 border border-amber-200 rounded-[var(--lf-radius-md)] text-xs text-amber-950 cursor-pointer">
-          <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 rounded" />
-          <span>Saya paham barang berstatus STORED tetap aman dan data arsip masih bisa dilihat lewat filter <strong>Tampilkan Arsip</strong>.</span>
+        <label
+          className={clsx(
+            'flex items-start gap-2.5 p-3 border rounded-[var(--lf-radius-md)] text-xs',
+            eligibleCount === 0
+              ? 'bg-gray-50 border-gray-200 text-[var(--lf-muted)] cursor-not-allowed opacity-70'
+              : 'bg-amber-50/70 border-amber-200 text-amber-950 cursor-pointer'
+          )}
+        >
+          <input
+            type="checkbox"
+            checked={eligibleCount > 0 && confirmed}
+            disabled={eligibleCount === 0 || isSubmitting}
+            onChange={(e) => setConfirmed(e.target.checked)}
+            className="mt-0.5 rounded"
+          />
+          <span>Saya paham barang berstatus STORED tetap aman dan data arsip masih bisa dilihat lewat filter <strong>Hanya Arsip</strong>.</span>
         </label>
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" size="sm" onClick={handleClose} disabled={isSubmitting}>Batal</Button>
-          <Button type="button" variant="primary" size="sm" isLoading={isSubmitting} disabled={!confirmed || isSubmitting} onClick={handleClean}>
+          <Button type="button" variant="primary" size="sm" isLoading={isSubmitting} disabled={!confirmed || eligibleCount === 0 || isSubmitting} onClick={handleClean}>
             Bersihkan (Arsipkan)
           </Button>
         </div>

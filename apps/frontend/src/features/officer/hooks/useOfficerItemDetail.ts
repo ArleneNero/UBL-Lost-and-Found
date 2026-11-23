@@ -11,7 +11,11 @@ export interface UseOfficerItemDetailReturn {
   isUpdating: boolean;
   isSubmitting: boolean;
   toggleVisibility: () => Promise<void>;
-  returnItem: (recipientName: string, verificationSummary: string) => Promise<FoundItem | null>;
+  returnItem: (
+    recipientName: string,
+    verificationSummary: string,
+    recipientIdentifier?: string
+  ) => Promise<FoundItem | null>;
   distributeItem: (notes: string) => Promise<FoundItem | null>;
   refetch: () => Promise<void>;
 }
@@ -54,19 +58,33 @@ export function useOfficerItemDetail(id: string | undefined): UseOfficerItemDeta
     } finally { setIsUpdating(false); }
   }, [item]);
 
-  const returnItem = useCallback(async (recipient: string, summary: string): Promise<FoundItem | null> => {
-    if (!item) return null;
-    setIsSubmitting(true);
-    setActionError(null);
-    try {
-      const updated = await services.items.returnItem(item.id, recipient, summary);
-      setItem(updated);
-      return updated;
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Gagal menyerahkan barang ke pemilik');
-      return null;
-    } finally { setIsSubmitting(false); }
-  }, [item]);
+  const returnItem = useCallback(
+    async (
+      recipient: string,
+      summary: string,
+      recipientIdentifier?: string
+    ): Promise<FoundItem | null> => {
+      if (!item) return null;
+      setIsSubmitting(true);
+      setActionError(null);
+      try {
+        const updated = await services.items.returnItem(
+          item.id,
+          recipient,
+          summary,
+          recipientIdentifier
+        );
+        setItem(updated);
+        return updated;
+      } catch (err) {
+        setActionError(err instanceof Error ? err.message : 'Gagal menyerahkan barang ke pemilik');
+        return null;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [item]
+  );
 
   const distributeItem = useCallback(async (notes: string): Promise<FoundItem | null> => {
     if (!item) return null;

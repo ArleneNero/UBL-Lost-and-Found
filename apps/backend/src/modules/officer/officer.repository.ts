@@ -63,6 +63,7 @@ export class OfficerRepository {
     officerUserId: string;
     storagePostId: number;
     recipientName: string;
+    recipientIdentifier?: string | null;
     verificationSummary: string;
   }) {
     return officerDispositionRepository.returnItem(params);

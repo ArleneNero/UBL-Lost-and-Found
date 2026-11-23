@@ -81,6 +81,7 @@ export interface InventoryOfficerDto extends FoundItemPublicDto {
   private_verification_notes: string | null;
   storage_limit_days?: number | null;
   archived_at?: string | null;
+  return_record?: ItemReturnDto | null;
 }
 
 export interface CleanInventoryResponseDto {
@@ -144,6 +145,7 @@ export interface VisibilityRequestDto {
 
 export interface ReturnRequestDto {
   recipient_name: string;
+  recipient_identifier?: string | null;
   verification_summary: string;
 }
 
@@ -151,9 +153,12 @@ export interface ItemReturnDto {
   return_id: string;
   item_id: string;
   recipient_name: string;
+  recipient_identifier?: string | null;
   verification_summary: string;
+  verification_confirmed_at?: string;
   returned_at: string;
-  returned_by_user_id: string;
+  returned_by_user_id?: string;
+  returned_by_name?: string | null;
 }
 
 export interface UploadIntentRequestDto {

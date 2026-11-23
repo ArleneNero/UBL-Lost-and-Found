@@ -11,9 +11,17 @@ export class OfficerDispositionRepository {
     officerUserId: string;
     storagePostId: number;
     recipientName: string;
+    recipientIdentifier?: string | null;
     verificationSummary: string;
   }) {
-    const { itemId, officerUserId, storagePostId, recipientName, verificationSummary } = params;
+    const {
+      itemId,
+      officerUserId,
+      storagePostId,
+      recipientName,
+      recipientIdentifier,
+      verificationSummary,
+    } = params;
 
     return await db.transaction(async (tx) => {
       const existing = await tx.query.foundItems.findFirst({
@@ -52,6 +60,7 @@ export class OfficerDispositionRepository {
           itemId,
           returnedByUserId: officerUserId,
           recipientName,
+          recipientIdentifier: recipientIdentifier || null,
           verificationSummary,
         })
         .returning();

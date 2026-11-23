@@ -1,15 +1,36 @@
 import { resolvePhotoUrl } from "../../utils/photoResolver.js";
-import type { InventoryOfficerDto } from "./officer.dto.js";
+import type { InventoryOfficerDto, ReturnRecordDto } from "./officer.dto.js";
 import type { OfficerContext } from "../auth/auth.types.js";
-import type { foundItems, itemPhotos } from "../../db/schema.js";
+import type { foundItems, itemPhotos, itemReturns } from "../../db/schema.js";
 
 type FoundItemRow = typeof foundItems.$inferSelect;
 type ItemPhotoRow = typeof itemPhotos.$inferSelect;
+export type ItemReturnWithOfficerRow = typeof itemReturns.$inferSelect & {
+  returnedBy?: { fullName: string } | null;
+};
+
+function toIsoString(value: Date | string): string {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+
+export function mapReturnRecordDto(returnRecord: ItemReturnWithOfficerRow): ReturnRecordDto {
+  return {
+    return_id: returnRecord.returnId,
+    item_id: returnRecord.itemId,
+    recipient_name: returnRecord.recipientName,
+    recipient_identifier: returnRecord.recipientIdentifier ?? null,
+    verification_summary: returnRecord.verificationSummary,
+    verification_confirmed_at: toIsoString(returnRecord.verificationConfirmedAt),
+    returned_at: toIsoString(returnRecord.returnedAt),
+    returned_by_name: returnRecord.returnedBy?.fullName ?? null,
+  };
+}
 
 export function mapToOfficerDto(
   item: FoundItemRow,
   photo: ItemPhotoRow | null,
-  context: OfficerContext
+  context: OfficerContext,
+  returnRecord: ItemReturnWithOfficerRow | null = null
 ): InventoryOfficerDto {
   const resolved = photo?.storagePath ? resolvePhotoUrl(photo.storagePath) : null;
 
@@ -22,16 +43,9 @@ export function mapToOfficerDto(
     private_verification_notes: item.privateVerificationNotes ?? null,
     found_location: item.foundLocation ?? null,
     found_on: item.foundOn ? String(item.foundOn).split("T")[0] : null,
-    received_at:
-      item.receivedAt instanceof Date
-        ? item.receivedAt.toISOString()
-        : new Date(item.receivedAt).toISOString(),
+    received_at: toIsoString(item.receivedAt),
     storage_limit_days: item.storageLimitDays ?? null,
-    archived_at: item.archivedAt
-      ? item.archivedAt instanceof Date
-        ? item.archivedAt.toISOString()
-        : new Date(item.archivedAt).toISOString()
-      : null,
+    archived_at: item.archivedAt ? toIsoString(item.archivedAt) : null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,
@@ -50,5 +64,6 @@ export function mapToOfficerDto(
           },
         ]
       : [],
+    return_record: returnRecord ? mapReturnRecordDto(returnRecord) : null,
   };
 }

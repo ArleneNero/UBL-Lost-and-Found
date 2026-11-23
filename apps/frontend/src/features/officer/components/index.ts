@@ -20,3 +20,4 @@ export * from './CleanInventoryModal';
 export * from './InventoryReportSheet';
 export * from './InventoryReportPeriodBar';
 export * from './InventoryReportPrintModal';
+export * from './HandoverReceiptSheet';

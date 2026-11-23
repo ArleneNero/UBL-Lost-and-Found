@@ -49,6 +49,8 @@ export class OfficerService {
       sort?: "received_at_asc" | "received_at_desc";
       page?: number;
       limit?: number;
+      includeArchived?: boolean;
+      archivedOnly?: boolean;
     }
   ) {
     return officerInventoryService.getInventory(context, params);
@@ -77,9 +79,10 @@ export class OfficerService {
   mapToOfficerDto(
     item: Parameters<typeof mapToOfficerDto>[0],
     photo: Parameters<typeof mapToOfficerDto>[1],
-    context: OfficerContext
+    context: OfficerContext,
+    returnRecord?: Parameters<typeof mapToOfficerDto>[3]
   ): InventoryOfficerDto {
-    return mapToOfficerDto(item, photo, context);
+    return mapToOfficerDto(item, photo, context, returnRecord);
   }
 }
 

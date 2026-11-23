@@ -22,7 +22,6 @@ export const OfficerInventoryPage: React.FC = () => {
   const [activePrintReport, setActivePrintReport] = useState<InventoryReportSheetProps | null>(null);
   const [cleanMessage, setCleanMessage] = useState<string | null>(null);
   const {
-    items,
     filteredItems,
     isLoading,
     error,
@@ -32,16 +31,14 @@ export const OfficerInventoryPage: React.FC = () => {
     setStatusFilter,
     sortBy,
     setSortBy,
-    includeArchived,
-    setIncludeArchived,
+    archivedOnly,
+    setArchivedOnly,
+    activeUnarchivedCount,
+    activeCompletedItems,
     cleanArchive,
     fetchAllForReport,
     refetch,
   } = useOfficerInventory();
-
-  const completedCount = items.filter(
-    (i) => !i.archivedAt && (i.status === 'RETURNED_TO_OWNER' || i.status === 'DISTRIBUTED')
-  ).length;
 
   if (error) {
     return (
@@ -130,26 +127,54 @@ export const OfficerInventoryPage: React.FC = () => {
         onStatusChange={setStatusFilter}
         sortBy={sortBy}
         onSortChange={setSortBy}
-        includeArchived={includeArchived}
-        onIncludeArchivedChange={setIncludeArchived}
+        archivedOnly={archivedOnly}
+        onArchivedOnlyChange={setArchivedOnly}
       />
+
+      {archivedOnly && filteredItems.length > 0 && (
+        <div
+          role="status"
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-3 bg-slate-50 border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-ink)]"
+        >
+          <div className="flex items-center gap-2">
+            <Archive className="w-4 h-4 text-[var(--lf-action)] shrink-0" />
+            <span>
+              Mode <strong>Hanya Arsip</strong> aktif — menampilkan <strong>{filteredItems.length}</strong> barang yang telah diarsipkan.
+            </span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setArchivedOnly(false)}
+            className="self-start sm:self-auto"
+          >
+            Lihat Inventaris Aktif
+          </Button>
+        </div>
+      )}
 
       {/* Responsive Item Views */}
       <InventoryTable
         items={filteredItems}
         isLoading={isLoading}
         onDetailClick={(id) => navigate(`/petugas/inventaris/${id}`)}
+        archivedOnly={archivedOnly}
+        activeUnarchivedCount={activeUnarchivedCount}
+        onResetArchiveFilter={() => setArchivedOnly(false)}
       />
       <InventoryCardList
         items={filteredItems}
         isLoading={isLoading}
         onDetailClick={(id) => navigate(`/petugas/inventaris/${id}`)}
+        archivedOnly={archivedOnly}
+        activeUnarchivedCount={activeUnarchivedCount}
+        onResetArchiveFilter={() => setArchivedOnly(false)}
       />
 
       <CleanInventoryModal
         isOpen={isCleanOpen}
         onClose={() => setIsCleanOpen(false)}
-        completedCount={completedCount}
+        completedItems={activeCompletedItems}
         onOpenReport={() => setIsPrintOpen(true)}
         onConfirmClean={async (month) => {
           const count = await cleanArchive(month);

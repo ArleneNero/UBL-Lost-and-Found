@@ -20,6 +20,20 @@ export const itemCreateRequestSchema = z
 
 export type ItemCreateRequest = z.infer<typeof itemCreateRequestSchema>;
 
+export const returnRecordDtoSchema = z
+  .object({
+    return_id: z.string().uuid(),
+    item_id: z.string().uuid(),
+    recipient_name: z.string(),
+    recipient_identifier: z.string().nullable().optional(),
+    verification_summary: z.string(),
+    verification_confirmed_at: z.string().datetime(),
+    returned_at: z.string().datetime(),
+    returned_by_name: z.string().nullable().optional(),
+  })
+  .strict();
+export type ReturnRecordDto = z.infer<typeof returnRecordDtoSchema>;
+
 export const inventoryOfficerDtoSchema = z
   .object({
     item_id: z.string().uuid(),
@@ -49,6 +63,7 @@ export const inventoryOfficerDtoSchema = z
         is_primary: z.boolean(),
       })
     ),
+    return_record: returnRecordDtoSchema.nullable().optional(),
   })
   .strict();
 
@@ -107,6 +122,7 @@ export type VisibilityRequest = z.infer<typeof visibilityRequestSchema>;
 export const returnRequestSchema = z
   .object({
     recipient_name: z.string().trim().min(1, "Nama penerima tidak boleh kosong").max(120),
+    recipient_identifier: z.string().trim().max(50).nullable().optional(),
     verification_summary: z
       .string()
       .trim()
@@ -115,18 +131,6 @@ export const returnRequestSchema = z
   })
   .strict();
 export type ReturnRequest = z.infer<typeof returnRequestSchema>;
-
-export const returnRecordDtoSchema = z
-  .object({
-    return_id: z.string().uuid(),
-    item_id: z.string().uuid(),
-    recipient_name: z.string(),
-    verification_summary: z.string(),
-    verification_confirmed_at: z.string().datetime(),
-    returned_at: z.string().datetime(),
-  })
-  .strict();
-export type ReturnRecordDto = z.infer<typeof returnRecordDtoSchema>;
 
 export const returnResponseSchema = z
   .object({

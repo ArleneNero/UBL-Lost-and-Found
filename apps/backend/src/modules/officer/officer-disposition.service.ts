@@ -1,5 +1,5 @@
 ﻿import { officerDispositionRepository } from "./officer-disposition.repository.js";
-import { mapToOfficerDto } from "./officer.mapper.js";
+import { mapReturnRecordDto, mapToOfficerDto } from "./officer.mapper.js";
 import { AppError } from "../../utils/errors.js";
 import type { InventoryOfficerDto, ReturnRequest, ReturnRecordDto } from "./officer.dto.js";
 import type { OfficerContext } from "../auth/auth.types.js";
@@ -18,6 +18,7 @@ export class OfficerDispositionService {
       officerUserId: context.user.userId,
       storagePostId: context.postId,
       recipientName: request.recipient_name,
+      recipientIdentifier: request.recipient_identifier?.trim() || null,
       verificationSummary: request.verification_summary,
     });
 
@@ -37,21 +38,10 @@ export class OfficerDispositionService {
       }
     }
 
-    const r = result.returnRecord;
-    return {
-      return_id: r.returnId,
-      item_id: r.itemId,
-      recipient_name: r.recipientName,
-      verification_summary: r.verificationSummary,
-      verification_confirmed_at:
-        r.verificationConfirmedAt instanceof Date
-          ? r.verificationConfirmedAt.toISOString()
-          : new Date(r.verificationConfirmedAt).toISOString(),
-      returned_at:
-        r.returnedAt instanceof Date
-          ? r.returnedAt.toISOString()
-          : new Date(r.returnedAt).toISOString(),
-    };
+    return mapReturnRecordDto({
+      ...result.returnRecord,
+      returnedBy: { fullName: context.user.fullName },
+    });
   }
 
   /**

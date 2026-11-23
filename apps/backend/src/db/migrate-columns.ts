@@ -14,6 +14,20 @@ async function migrateColumns() {
     ORDER BY ordinal_position;
   `);
   console.log("✅ found_items columns:", res.rows.map((r) => r.column_name).join(", "));
+
+  console.log("🔧 Running idempotent column migrations on item_returns...");
+  await pool.query(`
+    ALTER TABLE item_returns
+    ADD COLUMN IF NOT EXISTS recipient_identifier VARCHAR(50);
+  `);
+  const returnCols = await pool.query<{ column_name: string }>(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'item_returns'
+    ORDER BY ordinal_position;
+  `);
+  console.log("✅ item_returns columns:", returnCols.rows.map((r) => r.column_name).join(", "));
+
   await pool.end();
 }
 

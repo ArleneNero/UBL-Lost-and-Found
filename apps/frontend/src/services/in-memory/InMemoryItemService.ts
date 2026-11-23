@@ -7,7 +7,7 @@ import {
 import { FoundItem, PaginatedResult, PostSettings, CleanInventoryResult } from '@/types/domain';
 import { mapItemDtoToDomain } from '@/types/domain/mappers';
 import { mockStore } from '@/data/mockStore';
-import { InventoryOfficerDto } from '@/types/api';
+import { InventoryOfficerDto, ItemReturnDto } from '@/types/api';
 
 export class InMemoryItemService implements IItemService {
   async getItems(params?: GetItemsParams): Promise<PaginatedResult<FoundItem>> {
@@ -56,6 +56,7 @@ export class InMemoryItemService implements IItemService {
       items: paginated.map((item) => ({
         ...mapItemDtoToDomain(item),
         privateNotes: null,
+        returnRecord: null,
       })),
       page,
       limit,
@@ -74,7 +75,9 @@ export class InMemoryItemService implements IItemService {
     const status = params?.status;
 
     let filtered = [...mockStore.getState().items];
-    if (!params?.includeArchived) {
+    if (params?.archivedOnly) {
+      filtered = filtered.filter((i) => Boolean(i.archived_at));
+    } else if (!params?.includeArchived) {
       filtered = filtered.filter((i) => !i.archived_at);
     }
 
@@ -118,6 +121,7 @@ export class InMemoryItemService implements IItemService {
     return {
       ...mapItemDtoToDomain(found),
       privateNotes: null,
+      returnRecord: null,
     };
   }
 
@@ -164,10 +168,12 @@ export class InMemoryItemService implements IItemService {
   async returnItem(
     id: string,
     recipientName: string,
-    verificationSummary: string
+    verificationSummary: string,
+    recipientIdentifier?: string
   ): Promise<FoundItem> {
     const trimmedRecipient = recipientName?.trim();
     const trimmedSummary = verificationSummary?.trim();
+    const trimmedIdentifier = recipientIdentifier?.trim() || null;
 
     if (!trimmedRecipient) {
       throw new Error('Nama penerima wajib diisi.');
@@ -189,19 +195,26 @@ export class InMemoryItemService implements IItemService {
       throw new Error('Barang sudah pernah diproses serah terima sebelumnya.');
     }
 
-    // Atomically record return
-    state.returns.push({
+    const returnedAt = new Date().toISOString();
+    const returnRecord: ItemReturnDto = {
       return_id: `ret-${Date.now()}`,
       item_id: id,
       recipient_name: trimmedRecipient,
+      recipient_identifier: trimmedIdentifier,
       verification_summary: trimmedSummary,
-      returned_at: new Date().toISOString(),
+      verification_confirmed_at: returnedAt,
+      returned_at: returnedAt,
       returned_by_user_id: state.currentUser?.userId || 'user-officer-001',
-    });
+      returned_by_name: state.currentUser?.fullName || 'Petugas Pos Pengajaran',
+    };
+
+    // Atomically record return
+    state.returns.push(returnRecord);
 
     item.status = 'RETURNED_TO_OWNER';
     item.is_visible = false;
     item.private_verification_notes = `[DISERAHKAN: ${trimmedRecipient}] ${trimmedSummary}`;
+    item.return_record = returnRecord;
     return mapItemDtoToDomain(item);
   }
 
@@ -262,6 +275,12 @@ export class InMemoryItemService implements IItemService {
       }
       item.archived_at = nowIso;
       count += 1;
+    }
+
+    if (count === 0) {
+      throw new Error(
+        'Tidak ada barang selesai (Sudah Diserahkan atau Disalurkan) yang dapat diarsipkan pada periode tersebut.'
+      );
     }
 
     return { archivedCount: count };

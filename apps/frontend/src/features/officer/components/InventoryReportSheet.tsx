@@ -2,6 +2,7 @@ import React from 'react';
 import { FoundItem } from '@/types/domain';
 import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 import { InventoryReportSummary } from '../selectors/reportSummarySelectors';
+import { formatWibDate, formatWibDateTime } from '../utils/wibDateFormatters';
 
 export interface InventoryReportSheetProps {
   items: FoundItem[];
@@ -10,6 +11,7 @@ export interface InventoryReportSheetProps {
   generatedAt: string;
   servicePostName?: string;
   servicePostLocation?: string;
+  includeReturnDetails?: boolean;
 }
 
 const STATUS_LABELS: Record<FoundItem['status'], string> = {
@@ -17,42 +19,6 @@ const STATUS_LABELS: Record<FoundItem['status'], string> = {
   RETURNED_TO_OWNER: 'Sudah Diserahkan',
   DISTRIBUTED: 'Disalurkan',
 };
-
-const wibDateFormatter = new Intl.DateTimeFormat('id-ID', {
-  timeZone: 'Asia/Jakarta',
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-});
-
-const wibDateLongFormatter = new Intl.DateTimeFormat('id-ID', {
-  timeZone: 'Asia/Jakarta',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-});
-
-const wibDateTimeFormatter = new Intl.DateTimeFormat('id-ID', {
-  timeZone: 'Asia/Jakarta',
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
-
-function formatWibDate(isoString: string, long = false): string {
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return '-';
-  return long ? wibDateLongFormatter.format(date) : wibDateFormatter.format(date);
-}
-
-function formatWibDateTime(isoString: string): string {
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return '-';
-  return `${wibDateTimeFormatter.format(date)} WIB`;
-}
 
 /**
  * Lembar laporan inventaris resmi Pos Pengajaran untuk pratinjau modal dan cetak A4.
@@ -64,6 +30,7 @@ export const InventoryReportSheet: React.FC<InventoryReportSheetProps> = ({
   generatedAt,
   servicePostName = ACTIVE_SERVICE_POST.name,
   servicePostLocation = ACTIVE_SERVICE_POST.locationShort,
+  includeReturnDetails = false,
 }) => {
   const printedAtLabel = formatWibDateTime(generatedAt);
   const signatureDateLabel = formatWibDate(generatedAt, true);
@@ -177,13 +144,18 @@ export const InventoryReportSheet: React.FC<InventoryReportSheetProps> = ({
                 <th scope="col" className="border border-gray-300 px-2.5 py-2 font-semibold whitespace-nowrap">
                   Status
                 </th>
+                {includeReturnDetails && (
+                  <th scope="col" className="border border-gray-300 px-2.5 py-2 font-semibold">
+                    Detail Serah Terima
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={includeReturnDetails ? 8 : 7}
                     className="border border-gray-300 px-3 py-6 text-center text-gray-500"
                   >
                     Tidak ada barang inventaris pada periode dan filter yang dipilih.
@@ -213,6 +185,33 @@ export const InventoryReportSheet: React.FC<InventoryReportSheetProps> = ({
                     <td className="border border-gray-300 px-2.5 py-2 text-gray-800 whitespace-nowrap">
                       {STATUS_LABELS[item.status] || item.status}
                     </td>
+                    {includeReturnDetails && (
+                      <td className="border border-gray-300 px-2.5 py-2 text-gray-800 align-top">
+                        {item.status === 'RETURNED_TO_OWNER' && item.returnRecord ? (
+                          <div className="space-y-0.5 leading-snug">
+                            <div className="font-semibold text-gray-900">
+                              {item.returnRecord.recipientName}
+                              {item.returnRecord.recipientIdentifier && (
+                                <span className="font-normal text-gray-600">
+                                  {' '}({item.returnRecord.recipientIdentifier})
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-gray-600">
+                              {formatWibDateTime(item.returnRecord.returnedAt)}
+                            </div>
+                            <div className="text-[10px] text-gray-700">
+                              Verifikasi: {item.returnRecord.verificationSummary}
+                            </div>
+                            <div className="text-[10px] text-gray-600">
+                              Petugas: {item.returnRecord.returnedByName || 'Petugas Pos Pengajaran'}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

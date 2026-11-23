@@ -14,6 +14,7 @@ import {
   ItemCreateRequestDto,
   PostSettingsDto,
   CleanInventoryResponseDto,
+  ReturnRequestDto,
 } from '@/types/api';
 import { apiClient, ApiError } from './apiClient';
 import { mockStore } from '@/data/mockStore';
@@ -56,6 +57,7 @@ export class HttpItemService implements IItemService {
     if (params?.category && params.category !== 'ALL') qp.set('category', params.category);
     if (params?.status) qp.set('status', params.status);
     if (params?.includeArchived) qp.set('include_archived', 'true');
+    if (params?.archivedOnly) qp.set('archived_only', 'true');
     const sortVal = params?.sort === 'oldest' ? 'received_at_asc' : 'received_at_desc';
     qp.set('sort', sortVal);
 
@@ -156,16 +158,19 @@ export class HttpItemService implements IItemService {
   async returnItem(
     id: string,
     recipientName: string,
-    verificationSummary: string
+    verificationSummary: string,
+    recipientIdentifier?: string
   ): Promise<FoundItem> {
+    const payload: ReturnRequestDto = {
+      recipient_name: recipientName.trim(),
+      recipient_identifier: recipientIdentifier?.trim() || null,
+      verification_summary: verificationSummary.trim(),
+    };
     await apiClient<ApiDataResponse<unknown>>(
       `/officer/items/${id}/return`,
       {
         method: 'POST',
-        body: JSON.stringify({
-          recipient_name: recipientName.trim(),
-          verification_summary: verificationSummary.trim(),
-        }),
+        body: JSON.stringify(payload),
       }
     );
 

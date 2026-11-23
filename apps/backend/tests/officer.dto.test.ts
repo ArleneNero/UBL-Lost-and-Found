@@ -3,6 +3,8 @@ import {
   itemCreateRequestSchema,
   inventoryOfficerDtoSchema,
   receiveRequestSchema,
+  returnRequestSchema,
+  returnRecordDtoSchema,
 } from "../src/modules/officer/officer.dto.js";
 
 describe("Officer DTO Contract (OpenAPI v1.0 parity)", () => {
@@ -187,6 +189,78 @@ describe("Officer DTO Contract (OpenAPI v1.0 parity)", () => {
 
       const result = receiveRequestSchema.safeParse(invalid);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe("ReturnRequest & ReturnRecordDto Schemas", () => {
+    it("accepts ReturnRequest with optional recipient_identifier or omitted", () => {
+      expect(
+        returnRequestSchema.safeParse({
+          recipient_name: "Budi Santoso",
+          recipient_identifier: "2111500123",
+          verification_summary: "Cocok dengan ciri khusus di tas",
+        }).success
+      ).toBe(true);
+
+      expect(
+        returnRequestSchema.safeParse({
+          recipient_name: "Budi Santoso",
+          recipient_identifier: null,
+          verification_summary: "Cocok dengan ciri khusus di tas",
+        }).success
+      ).toBe(true);
+    });
+
+    it("rejects ReturnRequest when recipient_identifier exceeds 50 chars or contains unknown keys", () => {
+      expect(
+        returnRequestSchema.safeParse({
+          recipient_name: "Budi",
+          recipient_identifier: "x".repeat(51),
+          verification_summary: "Valid",
+        }).success
+      ).toBe(false);
+
+      expect(
+        returnRequestSchema.safeParse({
+          recipient_name: "Budi",
+          verification_summary: "Valid",
+          extra_field: "forbidden",
+        }).success
+      ).toBe(false);
+    });
+
+    it("validates ReturnRecordDto and InventoryOfficerDto with return_record", () => {
+      const record = {
+        return_id: "550e8400-e29b-41d4-a716-446655440010",
+        item_id: "550e8400-e29b-41d4-a716-446655440000",
+        recipient_name: "Budi Santoso",
+        recipient_identifier: "2111500123",
+        verification_summary: "Cocok dengan ciri khusus",
+        verification_confirmed_at: "2026-10-21T10:00:00.000Z",
+        returned_at: "2026-10-21T10:00:00.000Z",
+        returned_by_name: "Petugas Pos Pengajaran",
+      };
+      expect(returnRecordDtoSchema.safeParse(record).success).toBe(true);
+
+      const dtoWithReturn = {
+        item_id: "550e8400-e29b-41d4-a716-446655440000",
+        inventory_code: "INV-2026-0001",
+        item_name: "Laptop Asus",
+        category: "Elektronik",
+        public_description: "Laptop Asus Zenbook biru",
+        private_verification_notes: null,
+        found_location: null,
+        found_on: null,
+        received_at: "2026-10-20T10:00:00.000Z",
+        status: "RETURNED_TO_OWNER",
+        is_visible: false,
+        storage_post_id: 1,
+        source_submission_id: null,
+        post: { post_id: 1, name: "Pos Pengajaran" },
+        photos: [],
+        return_record: record,
+      };
+      expect(inventoryOfficerDtoSchema.safeParse(dtoWithReturn).success).toBe(true);
     });
   });
 });

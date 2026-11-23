@@ -24,6 +24,10 @@ const inventoryQuerySchema = z.object({
     .enum(["true", "false"])
     .optional()
     .transform((v) => v === "true"),
+  archived_only: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true"),
 });
 
 export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
@@ -65,7 +69,13 @@ export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
       const parsedQuery = inventoryQuerySchema.safeParse(request.query);
       const query = parsedQuery.success
         ? parsedQuery.data
-        : { sort: "received_at_desc" as const, page: 1, limit: 10, include_archived: false };
+        : {
+            sort: "received_at_desc" as const,
+            page: 1,
+            limit: 10,
+            include_archived: false,
+            archived_only: false,
+          };
 
       const result = await officerInventoryService.getInventory(
         request.officerContext!,
@@ -77,6 +87,7 @@ export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
           page: query.page,
           limit: query.limit,
           includeArchived: query.include_archived,
+          archivedOnly: query.archived_only,
         }
       );
 

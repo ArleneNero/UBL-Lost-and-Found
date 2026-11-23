@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Calendar, MapPin, Building2, AlertCircle, AlertTriangle, CheckCircle2, Share2, UserCheck, X } from 'lucide-react';
+import { ArrowLeft, Lock, Calendar, MapPin, Building2, AlertCircle, AlertTriangle, CheckCircle2, Share2, UserCheck, Printer, X } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
 import { Button } from '@/components/ui/Button';
 import { Badge, BadgeVariant } from '@/components/ui/Badge';
@@ -12,7 +12,13 @@ import {
   DEFAULT_STORAGE_LIMIT_DAYS,
   isItemOverdue,
 } from '@/features/officer/selectors/inventorySelectors';
-import { ItemVisibilityToggle, ReturnItemModal, DistributeItemModal } from '@/features/officer/components';
+import {
+  ItemVisibilityToggle,
+  ReturnItemModal,
+  DistributeItemModal,
+  HandoverReceiptSheet,
+} from '@/features/officer/components';
+import { formatWibDateTime } from '@/features/officer/utils/wibDateFormatters';
 
 const statusMap: Record<string, { variant: BadgeVariant; label: string }> = {
   STORED: { variant: 'available', label: 'Tersedia di pos' },
@@ -76,10 +82,11 @@ export const OfficerItemDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl">
-      <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={handleBack} className="w-fit -ml-2">
-        Kembali
-      </Button>
+    <>
+      <div className="flex flex-col gap-6 max-w-4xl print:hidden">
+        <Button variant="ghost" size="sm" leftIcon={<ArrowLeft className="w-4 h-4" />} onClick={handleBack} className="w-fit -ml-2">
+          Kembali
+        </Button>
 
       {actionError && (
         <div
@@ -160,9 +167,53 @@ export const OfficerItemDetailPage: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 p-3 bg-[var(--lf-success-soft)] border border-[rgba(15,151,61,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-success)] font-medium">
-              <CheckCircle2 className="w-4 h-4 shrink-0" />
-              {item.status === 'RETURNED_TO_OWNER' ? 'Barang telah diserahkan kepada pemilik sah.' : 'Barang telah disalurkan dan ditarik dari katalog.'}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 p-3 bg-[var(--lf-success-soft)] border border-[rgba(15,151,61,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-success)] font-medium">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                {item.status === 'RETURNED_TO_OWNER' ? 'Barang telah diserahkan kepada pemilik sah.' : 'Barang telah disalurkan dan ditarik dari katalog.'}
+              </div>
+
+              {item.status === 'RETURNED_TO_OWNER' && (
+                <div className="p-4 bg-[var(--lf-surface)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] space-y-3 text-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h3 className="text-xs font-bold text-[var(--lf-ink)] uppercase tracking-wide">
+                      Ringkasan Serah Terima
+                    </h3>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      leftIcon={<Printer className="w-4 h-4" />}
+                      onClick={() => window.print()}
+                    >
+                      Cetak Berita Acara (BAST)
+                    </Button>
+                  </div>
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-[var(--lf-ink)]">
+                    <div>
+                      <dt className="text-[11px] text-[var(--lf-muted)]">Nama Penerima</dt>
+                      <dd className="font-semibold">{item.returnRecord?.recipientName || '-'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[11px] text-[var(--lf-muted)]">NIM / ID Kampus</dt>
+                      <dd className="font-medium">{item.returnRecord?.recipientIdentifier || '-'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[11px] text-[var(--lf-muted)]">Waktu Serah Terima</dt>
+                      <dd className="font-medium">
+                        {item.returnRecord?.returnedAt ? formatWibDateTime(item.returnRecord.returnedAt) : '-'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[11px] text-[var(--lf-muted)]">Petugas Penyerah</dt>
+                      <dd className="font-medium">{item.returnRecord?.returnedByName || 'Petugas Pos Pengajaran'}</dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                      <dt className="text-[11px] text-[var(--lf-muted)]">Ringkasan Verifikasi</dt>
+                      <dd className="font-medium leading-relaxed">{item.returnRecord?.verificationSummary || '-'}</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -171,8 +222,8 @@ export const OfficerItemDetailPage: React.FC = () => {
       <ReturnItemModal
         isOpen={isReturnOpen}
         onClose={() => setIsReturnOpen(false)}
-        onConfirm={async (rec, sum) => {
-          await returnItem(rec, sum);
+        onConfirm={async (rec, sum, recipientIdentifier) => {
+          await returnItem(rec, sum, recipientIdentifier);
           setIsReturnOpen(false);
         }}
         item={item}
@@ -188,6 +239,13 @@ export const OfficerItemDetailPage: React.FC = () => {
         item={item}
         isSubmitting={isSubmitting}
       />
-    </div>
+      </div>
+
+      {item.status === 'RETURNED_TO_OWNER' && (
+        <div className="hidden print:block">
+          <HandoverReceiptSheet item={item} />
+        </div>
+      )}
+    </>
   );
 };

@@ -39,12 +39,16 @@ export interface InventoryReportPeriodBarProps {
   onStartDateChange: (val: string) => void;
   onEndDateChange: (val: string) => void;
   onStatusFilterChange: (val: string) => void;
+  includeReturnDetails?: boolean;
+  onIncludeReturnDetailsChange?: (include: boolean) => void;
 }
 
 export const InventoryReportPeriodBar: React.FC<InventoryReportPeriodBarProps> = ({
   mode, date, weekDate, month, year, startDate, endDate, statusFilter, periodLabel,
   onModeChange, onDateChange, onWeekDateChange, onMonthChange, onYearChange,
   onStartDateChange, onEndDateChange, onStatusFilterChange,
+  includeReturnDetails = false,
+  onIncludeReturnDetailsChange,
 }) => (
   <div className="px-6 py-4 bg-[#F9FAFB] border-b border-[var(--lf-border)] space-y-4 shrink-0">
     <div role="tablist" aria-label="Periode Laporan" className="flex flex-wrap gap-1.5">
@@ -116,5 +120,19 @@ export const InventoryReportPeriodBar: React.FC<InventoryReportPeriodBarProps> =
         <Select label="Filter Status" value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)} options={STATUS_OPTIONS} className="!h-[42px] !rounded-[10px]" />
       </div>
     </div>
+
+    {onIncludeReturnDetailsChange && (
+      <div className="pt-1">
+        <label className="inline-flex items-center gap-2 text-xs font-medium text-[var(--lf-ink)] cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={includeReturnDetails}
+            onChange={(e) => onIncludeReturnDetailsChange(e.target.checked)}
+            className="rounded accent-[var(--lf-action)]"
+          />
+          <span>Sertakan Detail Penerima (Serah Terima)</span>
+        </label>
+      </div>
+    )}
   </div>
 );

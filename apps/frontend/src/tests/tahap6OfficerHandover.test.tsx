@@ -232,7 +232,7 @@ describe('Officer Handover, Distribution & Gate Submilestone (F/B.5)', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Kunci Motor Honda Vario')).toBeDefined();
+        expect(screen.getByRole('heading', { level: 1, name: 'Kunci Motor Honda Vario' })).toBeDefined();
         expect(screen.getByText(/Barang telah diserahkan kepada pemilik sah/i)).toBeDefined();
       });
       expect(screen.queryByText('Visibilitas Katalog Publik')).toBeNull();

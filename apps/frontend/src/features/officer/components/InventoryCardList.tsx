@@ -5,11 +5,15 @@ import { Badge, BadgeVariant } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { isItemOverdue } from '../selectors/inventorySelectors';
+import { InventoryEmptyState } from './InventoryEmptyState';
 
 export interface InventoryCardListProps {
   items: FoundItem[];
   isLoading: boolean;
   onDetailClick: (id: string) => void;
+  archivedOnly?: boolean;
+  activeUnarchivedCount?: number;
+  onResetArchiveFilter?: () => void;
 }
 
 const statusMap: Record<FoundItem['status'], { variant: BadgeVariant; label: string }> = {
@@ -18,15 +22,26 @@ const statusMap: Record<FoundItem['status'], { variant: BadgeVariant; label: str
   DISTRIBUTED: { variant: 'neutral', label: 'Disalurkan' },
 };
 
-export const InventoryCardList: React.FC<InventoryCardListProps> = ({ items, isLoading, onDetailClick }) => {
+export const InventoryCardList: React.FC<InventoryCardListProps> = ({
+  items,
+  isLoading,
+  onDetailClick,
+  archivedOnly = false,
+  activeUnarchivedCount = 0,
+  onResetArchiveFilter,
+}) => {
   if (isLoading) {
     return <div className="flex flex-col gap-3 sm:hidden">{[1, 2, 3].map((i) => <Skeleton key={i} height={80} className="w-full" />)}</div>;
   }
   if (items.length === 0) {
     return (
-      <div className="sm:hidden text-center py-8 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-lg)]">
-        <p className="text-sm text-[var(--lf-muted)]">Tidak ada barang inventaris yang ditemukan.</p>
-      </div>
+      <InventoryEmptyState
+        archivedOnly={archivedOnly}
+        activeUnarchivedCount={activeUnarchivedCount}
+        onResetArchiveFilter={onResetArchiveFilter}
+        defaultMessage="Tidak ada barang inventaris yang ditemukan."
+        className="sm:hidden"
+      />
     );
   }
   return (
@@ -44,6 +59,9 @@ export const InventoryCardList: React.FC<InventoryCardListProps> = ({ items, isL
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <Badge variant={cfg.variant} className="whitespace-nowrap">{cfg.label}</Badge>
+                {Boolean(item.archivedAt) && (
+                  <Badge variant="neutral" dot={false} className="whitespace-nowrap">Diarsipkan</Badge>
+                )}
                 {overdue && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--lf-warning)] bg-[var(--lf-warning-soft)] px-2 py-0.5 rounded-full whitespace-nowrap">
                     <AlertTriangle className="w-2.5 h-2.5" /> Overdue

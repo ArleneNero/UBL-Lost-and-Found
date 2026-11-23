@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { FoundItem } from '@/types/domain';
 import { ItemStatus } from '@/types/api';
@@ -19,11 +19,20 @@ export interface UseOfficerInventoryReturn {
   setStatusFilter: (status: ItemStatus | 'ALL') => void;
   sortBy: 'newest' | 'oldest';
   setSortBy: (sort: 'newest' | 'oldest') => void;
-  includeArchived: boolean;
-  setIncludeArchived: (include: boolean) => void;
+  archivedOnly: boolean;
+  setArchivedOnly: (archivedOnly: boolean) => void;
+  activeUnarchivedCount: number;
+  activeCompletedItems: FoundItem[];
   cleanArchive: (month?: string) => Promise<number>;
   fetchAllForReport: () => Promise<FoundItem[]>;
   refetch: () => Promise<void>;
+}
+
+function isCompletedActiveItem(item: FoundItem): boolean {
+  return (
+    !item.archivedAt &&
+    (item.status === 'RETURNED_TO_OWNER' || item.status === 'DISTRIBUTED')
+  );
 }
 
 function resolveInitialItemStatus(raw: string | null): ItemStatus | 'ALL' {
@@ -45,7 +54,10 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     resolveInitialItemStatus(searchParams.get('status'))
   );
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
-  const [includeArchived, setIncludeArchived] = useState(false);
+  const [archivedOnly, setArchivedOnly] = useState(false);
+  const [activeUnarchivedCount, setActiveUnarchivedCount] = useState(0);
+  const [activeCompletedItems, setActiveCompletedItems] = useState<FoundItem[]>([]);
+  const hasActiveSnapshotRef = useRef(false);
 
   useEffect(() => {
     setStatusFilterState(resolveInitialItemStatus(searchParams.get('status')));
@@ -65,27 +77,63 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     [searchParams, setSearchParams]
   );
 
-  const fetchInventory = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const res = await services.items.getOfficerItems({ limit: 100, includeArchived });
-      setItems(res.items);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal memuat inventaris');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [includeArchived]);
+  const fetchInventory = useCallback(
+    async (forceSyncActive = false) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        if (!archivedOnly) {
+          const res = await services.items.getOfficerItems({
+            limit: 100,
+            archivedOnly: false,
+          });
+          setItems(res.items);
+          setActiveUnarchivedCount(
+            typeof res.total === 'number' ? res.total : res.items.length
+          );
+          setActiveCompletedItems(res.items.filter(isCompletedActiveItem));
+          hasActiveSnapshotRef.current = true;
+        } else if (!hasActiveSnapshotRef.current || forceSyncActive) {
+          const [archivedRes, activeRes] = await Promise.all([
+            services.items.getOfficerItems({ limit: 100, archivedOnly: true }),
+            services.items.getOfficerItems({ limit: 100, archivedOnly: false }),
+          ]);
+          setItems(archivedRes.items);
+          setActiveUnarchivedCount(
+            typeof activeRes.total === 'number'
+              ? activeRes.total
+              : activeRes.items.length
+          );
+          setActiveCompletedItems(activeRes.items.filter(isCompletedActiveItem));
+          hasActiveSnapshotRef.current = true;
+        } else {
+          const archivedRes = await services.items.getOfficerItems({
+            limit: 100,
+            archivedOnly: true,
+          });
+          setItems(archivedRes.items);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Gagal memuat inventaris');
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [archivedOnly]
+  );
 
   const cleanArchive = useCallback(
     async (month?: string): Promise<number> => {
       const res = await services.items.cleanCompletedInventory(month);
-      await fetchInventory();
+      await fetchInventory(true);
       return res.archivedCount;
     },
     [fetchInventory]
   );
+
+  const refetch = useCallback(async () => {
+    await fetchInventory(true);
+  }, [fetchInventory]);
 
   const fetchAllForReport = useCallback(async (): Promise<FoundItem[]> => {
     const collected: FoundItem[] = [];
@@ -101,7 +149,7 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
   }, []);
 
   useEffect(() => {
-    fetchInventory();
+    void fetchInventory();
   }, [fetchInventory]);
 
   const filteredItems = useMemo(() => {
@@ -124,10 +172,12 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     setStatusFilter,
     sortBy,
     setSortBy,
-    includeArchived,
-    setIncludeArchived,
+    archivedOnly,
+    setArchivedOnly,
+    activeUnarchivedCount,
+    activeCompletedItems,
     cleanArchive,
     fetchAllForReport,
-    refetch: fetchInventory,
+    refetch,
   };
 }

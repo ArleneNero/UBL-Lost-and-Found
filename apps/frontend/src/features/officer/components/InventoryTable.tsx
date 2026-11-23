@@ -5,11 +5,15 @@ import { Badge, BadgeVariant } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { isItemOverdue } from '../selectors/inventorySelectors';
+import { InventoryEmptyState } from './InventoryEmptyState';
 
 export interface InventoryTableProps {
   items: FoundItem[];
   isLoading: boolean;
   onDetailClick: (id: string) => void;
+  archivedOnly?: boolean;
+  activeUnarchivedCount?: number;
+  onResetArchiveFilter?: () => void;
 }
 
 const statusMap: Record<FoundItem['status'], { variant: BadgeVariant; label: string }> = {
@@ -18,15 +22,26 @@ const statusMap: Record<FoundItem['status'], { variant: BadgeVariant; label: str
   DISTRIBUTED: { variant: 'neutral', label: 'Disalurkan' },
 };
 
-export const InventoryTable: React.FC<InventoryTableProps> = ({ items, isLoading, onDetailClick }) => {
+export const InventoryTable: React.FC<InventoryTableProps> = ({
+  items,
+  isLoading,
+  onDetailClick,
+  archivedOnly = false,
+  activeUnarchivedCount = 0,
+  onResetArchiveFilter,
+}) => {
   if (isLoading) {
     return <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} height={48} className="w-full" />)}</div>;
   }
   if (items.length === 0) {
     return (
-      <div className="text-center py-10 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-lg)]">
-        <p className="text-sm text-[var(--lf-muted)]">Tidak ada barang inventaris yang sesuai dengan filter.</p>
-      </div>
+      <InventoryEmptyState
+        archivedOnly={archivedOnly}
+        activeUnarchivedCount={activeUnarchivedCount}
+        onResetArchiveFilter={onResetArchiveFilter}
+        defaultMessage="Tidak ada barang inventaris yang sesuai dengan filter."
+        className="hidden sm:flex"
+      />
     );
   }
   return (
@@ -56,8 +71,11 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ items, isLoading
                 <td className="px-4 py-3 text-xs font-mono text-[var(--lf-muted)] whitespace-nowrap">{item.inventoryCode}</td>
                 <td className="px-4 py-3 text-xs text-[var(--lf-muted)] whitespace-nowrap">{dateStr}</td>
                 <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5 whitespace-nowrap">
+                  <div className="flex items-center gap-1.5 whitespace-nowrap flex-wrap">
                     <Badge variant={cfg.variant}>{cfg.label}</Badge>
+                    {Boolean(item.archivedAt) && (
+                      <Badge variant="neutral" dot={false}>Diarsipkan</Badge>
+                    )}
                     {overdue && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-100/80 border border-amber-200 px-2 py-0.5 rounded-full whitespace-nowrap shrink-0">
                         <AlertTriangle className="w-3 h-3 text-amber-600" /> Overdue

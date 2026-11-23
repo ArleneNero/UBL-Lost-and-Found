@@ -81193,7 +81193,7 @@ function resolveFallbackVersion() {
   }
   return "0.0.0";
 }
-var APP_VERSION = "1.2.1".length > 0 ? "1.2.1" : resolveFallbackVersion();
+var APP_VERSION = "1.3.0".length > 0 ? "1.3.0" : resolveFallbackVersion();
 function getDeployCommit() {
   return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local";
 }
@@ -93717,6 +93717,7 @@ var itemReturns = pgTable("item_returns", {
   itemId: uuid("item_id").notNull().unique().references(() => foundItems.itemId),
   returnedByUserId: uuid("returned_by_user_id").notNull().references(() => users.userId),
   recipientName: varchar("recipient_name", { length: 120 }).notNull(),
+  recipientIdentifier: varchar("recipient_identifier", { length: 50 }),
   verificationSummary: text("verification_summary").notNull(),
   verificationConfirmedAt: timestamp("verification_confirmed_at", {
     withTimezone: true
@@ -97371,6 +97372,16 @@ var itemCreateRequestSchema = external_exports.object({
   found_on: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD").nullable().optional(),
   item_photo_upload_tokens: external_exports.array(external_exports.string().min(1)).length(1, "Pencatatan barang mewajibkan tepat 1 token foto")
 }).strict();
+var returnRecordDtoSchema = external_exports.object({
+  return_id: external_exports.string().uuid(),
+  item_id: external_exports.string().uuid(),
+  recipient_name: external_exports.string(),
+  recipient_identifier: external_exports.string().nullable().optional(),
+  verification_summary: external_exports.string(),
+  verification_confirmed_at: external_exports.string().datetime(),
+  returned_at: external_exports.string().datetime(),
+  returned_by_name: external_exports.string().nullable().optional()
+}).strict();
 var inventoryOfficerDtoSchema = external_exports.object({
   item_id: external_exports.string().uuid(),
   inventory_code: external_exports.string().min(1),
@@ -97398,7 +97409,8 @@ var inventoryOfficerDtoSchema = external_exports.object({
       expires_at: external_exports.string().datetime(),
       is_primary: external_exports.boolean()
     })
-  )
+  ),
+  return_record: returnRecordDtoSchema.nullable().optional()
 }).strict();
 var itemCreateResponseSchema = external_exports.object({
   data: inventoryOfficerDtoSchema
@@ -97425,15 +97437,8 @@ var visibilityRequestSchema = external_exports.object({
 }).strict();
 var returnRequestSchema = external_exports.object({
   recipient_name: external_exports.string().trim().min(1, "Nama penerima tidak boleh kosong").max(120),
+  recipient_identifier: external_exports.string().trim().max(50).nullable().optional(),
   verification_summary: external_exports.string().trim().min(1, "Ringkasan verifikasi kepemilikan tidak boleh kosong").max(5e3)
-}).strict();
-var returnRecordDtoSchema = external_exports.object({
-  return_id: external_exports.string().uuid(),
-  item_id: external_exports.string().uuid(),
-  recipient_name: external_exports.string(),
-  verification_summary: external_exports.string(),
-  verification_confirmed_at: external_exports.string().datetime(),
-  returned_at: external_exports.string().datetime()
 }).strict();
 var returnResponseSchema = external_exports.object({
   data: returnRecordDtoSchema
@@ -97493,127 +97498,8 @@ async function generateInventoryCode(tx, year2) {
   return candidate;
 }
 
-// src/modules/officer/officer-inventory.repository.ts
-var OfficerInventoryRepository = class {
-  /**
-   * B/F.1: Executes atomic insertion of found item and its primary photo within a transaction
-   */
-  async insertItemWithPhoto(params) {
-    const { request, officerUserId, storagePostId, storagePath } = params;
-    return await db.transaction(async (tx) => {
-      const post = await tx.query.servicePosts.findFirst({
-        where: eq(servicePosts.postId, storagePostId),
-        columns: { storageLimitDays: true }
-      });
-      const snapshotLimitDays = post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
-      const inventoryCode = await generateInventoryCode(tx);
-      const [item] = await tx.insert(foundItems).values({
-        inventoryCode,
-        recordedByUserId: officerUserId,
-        storagePostId,
-        itemName: request.item_name,
-        category: request.category,
-        publicDescription: request.public_description,
-        privateVerificationNotes: request.private_verification_notes ?? null,
-        foundLocation: request.found_location ?? null,
-        foundOn: request.found_on ?? null,
-        storageLimitDays: snapshotLimitDays,
-        status: "STORED",
-        isVisible: true
-      }).returning();
-      const [photo] = await tx.insert(itemPhotos).values({
-        itemId: item.itemId,
-        storagePath,
-        isPrimary: true
-      }).returning();
-      return { item, photo };
-    });
-  }
-  /**
-   * B/G.1.0: Lists inventory items stored at this post with filters and pagination
-   */
-  async getInventoryByPost(params) {
-    const { storagePostId, status, category, q: q3, includeArchived = false } = params;
-    const page = Math.max(1, params.page || 1);
-    const limit = Math.min(100, Math.max(1, params.limit || 10));
-    const offset = (page - 1) * limit;
-    const conditions = [eq(foundItems.storagePostId, storagePostId)];
-    if (!includeArchived) {
-      conditions.push(isNull(foundItems.archivedAt));
-    }
-    if (status) {
-      conditions.push(eq(foundItems.status, status));
-    }
-    if (category && category !== "ALL") {
-      conditions.push(eq(foundItems.category, category));
-    }
-    if (q3?.trim()) {
-      const escaped = q3.trim().replace(/[%_\\]/g, "\\$&");
-      const term = `%${escaped}%`;
-      conditions.push(
-        sql`(${foundItems.itemName} ILIKE ${term} ESCAPE '\\' OR ${foundItems.publicDescription} ILIKE ${term} ESCAPE '\\')`
-      );
-    }
-    const whereClause = and(...conditions);
-    const [countResult] = await db.select({ count: sql`count(*)::int` }).from(foundItems).where(whereClause);
-    const total = countResult?.count || 0;
-    const totalPages = Math.ceil(total / limit) || 1;
-    const sortOrder = params.sort === "received_at_asc" ? asc(foundItems.receivedAt) : desc(foundItems.receivedAt);
-    const items = await db.query.foundItems.findMany({
-      where: whereClause,
-      with: {
-        photo: true
-      },
-      orderBy: [sortOrder],
-      limit,
-      offset
-    });
-    return { items, total, page, limit, totalPages };
-  }
-  /**
-   * B/G.1.1: Get single inventory item detail for post officer
-   */
-  async getItemById(itemId, storagePostId) {
-    const item = await db.query.foundItems.findFirst({
-      where: eq(foundItems.itemId, itemId),
-      with: {
-        photo: true
-      }
-    });
-    if (!item) {
-      return { item: null, photo: null, forbidden: false };
-    }
-    if (item.storagePostId !== storagePostId) {
-      return { item: null, photo: null, forbidden: true };
-    }
-    return { item, photo: item.photo || null, forbidden: false };
-  }
-  /**
-   * B/G.1.2: Updates item visibility (only allowed when status = STORED)
-   */
-  async updateItemVisibility(itemId, storagePostId, isVisible) {
-    return await db.transaction(async (tx) => {
-      const existing = await db.query.foundItems.findFirst({
-        where: eq(foundItems.itemId, itemId),
-        with: { photo: true }
-      });
-      if (!existing) {
-        return { success: false, error: "NOT_FOUND" };
-      }
-      if (existing.storagePostId !== storagePostId) {
-        return { success: false, error: "FORBIDDEN" };
-      }
-      if (existing.status !== "STORED") {
-        return {
-          success: false,
-          error: "INVALID_STATUS",
-          currentStatus: existing.status
-        };
-      }
-      const [updated] = await tx.update(foundItems).set({ isVisible }).where(eq(foundItems.itemId, itemId)).returning();
-      return { success: true, item: updated, photo: existing.photo || null };
-    });
-  }
+// src/modules/officer/officer-policy.repository.ts
+var OfficerPolicyRepository = class {
   /**
    * B/G.2.0: Calculates overdue items dynamically from received_at and storage_limit_days
    */
@@ -97691,6 +97577,165 @@ var OfficerInventoryRepository = class {
       storage_limit_days: updated.storageLimitDays ?? storageLimitDays
     };
   }
+};
+var officerPolicyRepository = new OfficerPolicyRepository();
+
+// src/modules/officer/officer-inventory.repository.ts
+var officerItemWithRelations = {
+  photo: true,
+  returnRecord: {
+    with: {
+      returnedBy: {
+        columns: {
+          fullName: true
+        }
+      }
+    }
+  }
+};
+var OfficerInventoryRepository = class {
+  /**
+   * B/F.1: Executes atomic insertion of found item and its primary photo within a transaction
+   */
+  async insertItemWithPhoto(params) {
+    const { request, officerUserId, storagePostId, storagePath } = params;
+    return await db.transaction(async (tx) => {
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true }
+      });
+      const snapshotLimitDays = post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
+      const inventoryCode = await generateInventoryCode(tx);
+      const [item] = await tx.insert(foundItems).values({
+        inventoryCode,
+        recordedByUserId: officerUserId,
+        storagePostId,
+        itemName: request.item_name,
+        category: request.category,
+        publicDescription: request.public_description,
+        privateVerificationNotes: request.private_verification_notes ?? null,
+        foundLocation: request.found_location ?? null,
+        foundOn: request.found_on ?? null,
+        storageLimitDays: snapshotLimitDays,
+        status: "STORED",
+        isVisible: true
+      }).returning();
+      const [photo] = await tx.insert(itemPhotos).values({
+        itemId: item.itemId,
+        storagePath,
+        isPrimary: true
+      }).returning();
+      return { item, photo };
+    });
+  }
+  /**
+   * B/G.1.0: Lists inventory items stored at this post with filters and pagination
+   */
+  async getInventoryByPost(params) {
+    const {
+      storagePostId,
+      status,
+      category,
+      q: q3,
+      includeArchived = false,
+      archivedOnly = false
+    } = params;
+    const page = Math.max(1, params.page || 1);
+    const limit = Math.min(100, Math.max(1, params.limit || 10));
+    const offset = (page - 1) * limit;
+    const conditions = [eq(foundItems.storagePostId, storagePostId)];
+    if (archivedOnly) {
+      conditions.push(isNotNull(foundItems.archivedAt));
+    } else if (!includeArchived) {
+      conditions.push(isNull(foundItems.archivedAt));
+    }
+    if (status) {
+      conditions.push(eq(foundItems.status, status));
+    }
+    if (category && category !== "ALL") {
+      conditions.push(eq(foundItems.category, category));
+    }
+    if (q3?.trim()) {
+      const escaped = q3.trim().replace(/[%_\\]/g, "\\$&");
+      const term = `%${escaped}%`;
+      conditions.push(
+        sql`(${foundItems.itemName} ILIKE ${term} ESCAPE '\\' OR ${foundItems.publicDescription} ILIKE ${term} ESCAPE '\\')`
+      );
+    }
+    const whereClause = and(...conditions);
+    const [countResult] = await db.select({ count: sql`count(*)::int` }).from(foundItems).where(whereClause);
+    const total = countResult?.count || 0;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const sortOrder = params.sort === "received_at_asc" ? asc(foundItems.receivedAt) : desc(foundItems.receivedAt);
+    const items = await db.query.foundItems.findMany({
+      where: whereClause,
+      with: officerItemWithRelations,
+      orderBy: [sortOrder],
+      limit,
+      offset
+    });
+    return { items, total, page, limit, totalPages };
+  }
+  /**
+   * B/G.1.1: Get single inventory item detail for post officer
+   */
+  async getItemById(itemId, storagePostId) {
+    const item = await db.query.foundItems.findFirst({
+      where: eq(foundItems.itemId, itemId),
+      with: officerItemWithRelations
+    });
+    if (!item) {
+      return { item: null, photo: null, forbidden: false };
+    }
+    if (item.storagePostId !== storagePostId) {
+      return { item: null, photo: null, forbidden: true };
+    }
+    return { item, photo: item.photo || null, forbidden: false };
+  }
+  /**
+   * B/G.1.2: Updates item visibility (only allowed when status = STORED)
+   */
+  async updateItemVisibility(itemId, storagePostId, isVisible) {
+    return await db.transaction(async (tx) => {
+      const existing = await db.query.foundItems.findFirst({
+        where: eq(foundItems.itemId, itemId),
+        with: { photo: true }
+      });
+      if (!existing) {
+        return { success: false, error: "NOT_FOUND" };
+      }
+      if (existing.storagePostId !== storagePostId) {
+        return { success: false, error: "FORBIDDEN" };
+      }
+      if (existing.status !== "STORED") {
+        return {
+          success: false,
+          error: "INVALID_STATUS",
+          currentStatus: existing.status
+        };
+      }
+      const [updated] = await tx.update(foundItems).set({ isVisible }).where(eq(foundItems.itemId, itemId)).returning();
+      return { success: true, item: updated, photo: existing.photo || null };
+    });
+  }
+  /**
+   * B/G.2.0: Calculates overdue items dynamically from received_at and storage_limit_days
+   */
+  getOverdueItems(storagePostId) {
+    return officerPolicyRepository.getOverdueItems(storagePostId);
+  }
+  /**
+   * Read officer service post policy settings
+   */
+  getPostSettings(storagePostId) {
+    return officerPolicyRepository.getPostSettings(storagePostId);
+  }
+  /**
+   * Update officer service post storage limit (non-retroactive for existing items)
+   */
+  updatePostStorageLimit(storagePostId, storageLimitDays) {
+    return officerPolicyRepository.updatePostStorageLimit(storagePostId, storageLimitDays);
+  }
   /**
    * Soft-archives completed items (RETURNED_TO_OWNER & DISTRIBUTED), preserving audit rows & STORED items
    */
@@ -97717,7 +97762,22 @@ var OfficerInventoryRepository = class {
 var officerInventoryRepository = new OfficerInventoryRepository();
 
 // src/modules/officer/officer.mapper.ts
-function mapToOfficerDto(item, photo, context) {
+function toIsoString(value) {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+function mapReturnRecordDto(returnRecord) {
+  return {
+    return_id: returnRecord.returnId,
+    item_id: returnRecord.itemId,
+    recipient_name: returnRecord.recipientName,
+    recipient_identifier: returnRecord.recipientIdentifier ?? null,
+    verification_summary: returnRecord.verificationSummary,
+    verification_confirmed_at: toIsoString(returnRecord.verificationConfirmedAt),
+    returned_at: toIsoString(returnRecord.returnedAt),
+    returned_by_name: returnRecord.returnedBy?.fullName ?? null
+  };
+}
+function mapToOfficerDto(item, photo, context, returnRecord = null) {
   const resolved = photo?.storagePath ? resolvePhotoUrl(photo.storagePath) : null;
   return {
     item_id: item.itemId,
@@ -97728,9 +97788,9 @@ function mapToOfficerDto(item, photo, context) {
     private_verification_notes: item.privateVerificationNotes ?? null,
     found_location: item.foundLocation ?? null,
     found_on: item.foundOn ? String(item.foundOn).split("T")[0] : null,
-    received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
+    received_at: toIsoString(item.receivedAt),
     storage_limit_days: item.storageLimitDays ?? null,
-    archived_at: item.archivedAt ? item.archivedAt instanceof Date ? item.archivedAt.toISOString() : new Date(item.archivedAt).toISOString() : null,
+    archived_at: item.archivedAt ? toIsoString(item.archivedAt) : null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,
@@ -97746,7 +97806,8 @@ function mapToOfficerDto(item, photo, context) {
         expires_at: resolved.expires_at,
         is_primary: true
       }
-    ] : []
+    ] : [],
+    return_record: returnRecord ? mapReturnRecordDto(returnRecord) : null
   };
 }
 
@@ -97779,7 +97840,9 @@ var OfficerInventoryService = class {
       ...params
     });
     return {
-      data: result.items.map((item) => mapToOfficerDto(item, item.photo || null, context)),
+      data: result.items.map(
+        (item) => mapToOfficerDto(item, item.photo || null, context, item.returnRecord || null)
+      ),
       meta: {
         page: result.page,
         limit: result.limit,
@@ -97802,7 +97865,7 @@ var OfficerInventoryService = class {
     if (!item) {
       throw new AppError("NOT_FOUND", "Barang inventaris tidak ditemukan", 404);
     }
-    return mapToOfficerDto(item, photo, context);
+    return mapToOfficerDto(item, photo, context, item.returnRecord || null);
   }
   /**
    * B/G.1.2: Toggle visibility
@@ -97863,7 +97926,15 @@ var OfficerInventoryService = class {
    * Soft-archive completed items (RETURNED_TO_OWNER / DISTRIBUTED)
    */
   async cleanCompletedInventory(context, month) {
-    return await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
+    const result = await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
+    if (result.archived_count === 0) {
+      throw new AppError(
+        "NO_ARCHIVABLE_ITEMS",
+        "Tidak ada barang selesai (Sudah Diserahkan atau Disalurkan) yang dapat diarsipkan pada periode tersebut.",
+        409
+      );
+    }
+    return result;
   }
 };
 var officerInventoryService = new OfficerInventoryService();
@@ -97879,7 +97950,8 @@ var inventoryQuerySchema = external_exports.object({
   sort: external_exports.enum(["received_at_asc", "received_at_desc"]).default("received_at_desc"),
   page: external_exports.coerce.number().int().min(1).default(1),
   limit: external_exports.coerce.number().int().min(1).max(100).default(10),
-  include_archived: external_exports.enum(["true", "false"]).optional().transform((v2) => v2 === "true")
+  include_archived: external_exports.enum(["true", "false"]).optional().transform((v2) => v2 === "true"),
+  archived_only: external_exports.enum(["true", "false"]).optional().transform((v2) => v2 === "true")
 });
 var officerInventoryRoutes = async (app2) => {
   app2.post(
@@ -97909,7 +97981,13 @@ var officerInventoryRoutes = async (app2) => {
     { preHandler: [requireOfficer] },
     async (request, reply) => {
       const parsedQuery = inventoryQuerySchema.safeParse(request.query);
-      const query = parsedQuery.success ? parsedQuery.data : { sort: "received_at_desc", page: 1, limit: 10, include_archived: false };
+      const query = parsedQuery.success ? parsedQuery.data : {
+        sort: "received_at_desc",
+        page: 1,
+        limit: 10,
+        include_archived: false,
+        archived_only: false
+      };
       const result = await officerInventoryService.getInventory(
         request.officerContext,
         {
@@ -97919,7 +97997,8 @@ var officerInventoryRoutes = async (app2) => {
           sort: query.sort,
           page: query.page,
           limit: query.limit,
-          includeArchived: query.include_archived
+          includeArchived: query.include_archived,
+          archivedOnly: query.archived_only
         }
       );
       return reply.status(200).send(result);
@@ -98659,7 +98738,14 @@ var OfficerDispositionRepository = class {
    * B/J.1.0: Returns item to verified owner atomically
    */
   async returnItem(params) {
-    const { itemId, officerUserId, storagePostId, recipientName, verificationSummary } = params;
+    const {
+      itemId,
+      officerUserId,
+      storagePostId,
+      recipientName,
+      recipientIdentifier,
+      verificationSummary
+    } = params;
     return await db.transaction(async (tx) => {
       const existing = await tx.query.foundItems.findFirst({
         where: eq(foundItems.itemId, itemId)
@@ -98685,6 +98771,7 @@ var OfficerDispositionRepository = class {
         itemId,
         returnedByUserId: officerUserId,
         recipientName,
+        recipientIdentifier: recipientIdentifier || null,
         verificationSummary
       }).returning();
       return { success: true, returnRecord: record };
@@ -98733,6 +98820,7 @@ var OfficerDispositionService = class {
       officerUserId: context.user.userId,
       storagePostId: context.postId,
       recipientName: request.recipient_name,
+      recipientIdentifier: request.recipient_identifier?.trim() || null,
       verificationSummary: request.verification_summary
     });
     if (!result.success) {
@@ -98750,15 +98838,10 @@ var OfficerDispositionService = class {
         );
       }
     }
-    const r5 = result.returnRecord;
-    return {
-      return_id: r5.returnId,
-      item_id: r5.itemId,
-      recipient_name: r5.recipientName,
-      verification_summary: r5.verificationSummary,
-      verification_confirmed_at: r5.verificationConfirmedAt instanceof Date ? r5.verificationConfirmedAt.toISOString() : new Date(r5.verificationConfirmedAt).toISOString(),
-      returned_at: r5.returnedAt instanceof Date ? r5.returnedAt.toISOString() : new Date(r5.returnedAt).toISOString()
-    };
+    return mapReturnRecordDto({
+      ...result.returnRecord,
+      returnedBy: { fullName: context.user.fullName }
+    });
   }
   /**
    * B/J.1.2: Distribute item under post policy

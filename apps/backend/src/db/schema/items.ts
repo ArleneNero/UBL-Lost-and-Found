@@ -77,6 +77,7 @@ export const itemReturns = pgTable("item_returns", {
     .notNull()
     .references(() => users.userId),
   recipientName: varchar("recipient_name", { length: 120 }).notNull(),
+  recipientIdentifier: varchar("recipient_identifier", { length: 50 }),
   verificationSummary: text("verification_summary").notNull(),
   verificationConfirmedAt: timestamp("verification_confirmed_at", {
     withTimezone: true,

@@ -18,6 +18,7 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
   let app: FastifyInstance;
   let officerToken: string;
   let officerUserId: string;
+  let officerFullName: string;
   let studentToken: string;
   let studentUserId: string;
 
@@ -27,6 +28,7 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
   let receivedItemId: string;
   let receivedWithoutTokenItemId: string;
   let directItemId: string;
+  let returnWithoutIdentifierItemId: string;
 
   beforeAll(async () => {
     app = buildApp();
@@ -38,6 +40,7 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
     });
     if (!officer) throw new Error("Seeded officer not found");
     officerUserId = officer.userId;
+    officerFullName = officer.fullName;
     officerToken = authService.createToken({ sub: officer.authUserId });
 
     // 2. Setup Student
@@ -77,6 +80,11 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       await db.delete(itemReturns).where(eq(itemReturns.itemId, directItemId));
       await db.delete(itemPhotos).where(eq(itemPhotos.itemId, directItemId));
       await db.delete(foundItems).where(eq(foundItems.itemId, directItemId));
+    }
+    if (returnWithoutIdentifierItemId) {
+      await db.delete(itemReturns).where(eq(itemReturns.itemId, returnWithoutIdentifierItemId));
+      await db.delete(itemPhotos).where(eq(itemPhotos.itemId, returnWithoutIdentifierItemId));
+      await db.delete(foundItems).where(eq(foundItems.itemId, returnWithoutIdentifierItemId));
     }
     if (submissionToReceiveId) {
       await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, submissionToReceiveId));
@@ -339,13 +347,14 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
   });
 
   describe("B/J: Physical Return & Distribution", () => {
-    it("POST /officer/items/:id/return: returns item to verified owner", async () => {
+    it("POST /officer/items/:id/return: returns item to verified owner with optional recipient_identifier", async () => {
       const res = await app.inject({
         method: "POST",
         url: `/api/v1/officer/items/${receivedItemId}/return`,
         headers: { authorization: `Bearer ${officerToken}` },
         payload: {
           recipient_name: "Dimas Pemilik",
+          recipient_identifier: "2111500999",
           verification_summary: "Pemilik menunjukkan foto tumbler dan stiker yang cocok secara fisik di pos",
         },
       });
@@ -355,6 +364,8 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       expect(body.data.return_id).toBeDefined();
       expect(body.data.item_id).toBe(receivedItemId);
       expect(body.data.recipient_name).toBe("Dimas Pemilik");
+      expect(body.data.recipient_identifier).toBe("2111500999");
+      expect(body.data.returned_by_name).toBe(officerFullName);
 
       // Verify item status in DB changed to RETURNED_TO_OWNER and is_visible is false
       const itemInDb = await db.query.foundItems.findFirst({
@@ -362,6 +373,87 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       });
       expect(itemInDb?.status).toBe("RETURNED_TO_OWNER");
       expect(itemInDb?.isVisible).toBe(false);
+
+      const returnInDb = await db.query.itemReturns.findFirst({
+        where: eq(itemReturns.itemId, receivedItemId),
+      });
+      expect(returnInDb?.recipientIdentifier).toBe("2111500999");
+
+      // Verify GET /officer/inventory & GET /officer/items/:id include return_record
+      const invRes = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/inventory?limit=100",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(invRes.statusCode).toBe(200);
+      const invData = JSON.parse(invRes.body).data as Array<Record<string, any>>;
+      const invItem = invData.find((i) => i.item_id === receivedItemId);
+      expect(invItem?.return_record).toMatchObject({
+        return_id: body.data.return_id,
+        item_id: receivedItemId,
+        recipient_name: "Dimas Pemilik",
+        recipient_identifier: "2111500999",
+        returned_by_name: officerFullName,
+      });
+      const storedItem = invData.find((i) => i.item_id === receivedWithoutTokenItemId);
+      expect(storedItem?.return_record).toBeNull();
+
+      const detailRes = await app.inject({
+        method: "GET",
+        url: `/api/v1/officer/items/${receivedItemId}`,
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(detailRes.statusCode).toBe(200);
+      const detailBody = JSON.parse(detailRes.body);
+      expect(detailBody.data.return_record).toMatchObject({
+        return_id: body.data.return_id,
+        item_id: receivedItemId,
+        recipient_name: "Dimas Pemilik",
+        recipient_identifier: "2111500999",
+        returned_by_name: officerFullName,
+        verification_summary: "Pemilik menunjukkan foto tumbler dan stiker yang cocok secara fisik di pos",
+      });
+    });
+
+    it("POST /officer/items/:id/return: works when optional recipient_identifier is omitted", async () => {
+      const photoToken = await createUploadToken(officerToken, "ITEM_PHOTO");
+      const createRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/items",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          item_name: "Kartu Akses Gedung",
+          category: "Aksesori",
+          public_description: "Kartu akses putih polos tanpa nomor",
+          item_photo_upload_tokens: [photoToken],
+        },
+      });
+      expect(createRes.statusCode).toBe(201);
+      returnWithoutIdentifierItemId = JSON.parse(createRes.body).data.item_id;
+
+      const returnRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/officer/items/${returnWithoutIdentifierItemId}/return`,
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          recipient_name: "Tamu Kampus",
+          verification_summary: "Menyebutkan ruangan tempat kartu terjatuh",
+        },
+      });
+      expect(returnRes.statusCode).toBe(201);
+      const returnBody = JSON.parse(returnRes.body);
+      expect(returnBody.data.recipient_identifier).toBeNull();
+      expect(returnBody.data.returned_by_name).toBe(officerFullName);
+
+      const detailRes = await app.inject({
+        method: "GET",
+        url: `/api/v1/officer/items/${returnWithoutIdentifierItemId}`,
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(detailRes.statusCode).toBe(200);
+      const detailData = JSON.parse(detailRes.body).data;
+      expect(detailData.return_record.recipient_identifier).toBeNull();
+      expect(detailData.return_record.returned_by_name).toBe(officerFullName);
     });
 
     it("POST /officer/items/:id/return: returns 409 CONFLICT if already returned", async () => {
@@ -407,6 +499,7 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       const distBody = JSON.parse(distRes.body);
       expect(distBody.data.status).toBe("DISTRIBUTED");
       expect(distBody.data.is_visible).toBe(false);
+      expect(distBody.data.return_record).toBeNull();
 
       // Verify item in DB
       const itemInDb = await db.query.foundItems.findFirst({
@@ -521,7 +614,18 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
   });
 
   describe("Soft-Archive Clean Completed Inventory", () => {
-    it("archives only RETURNED_TO_OWNER & DISTRIBUTED items while preserving STORED and include_archived=true query", async () => {
+    it("returns 409 NO_ARCHIVABLE_ITEMS for month with zero completed items", async () => {
+      const emptyMonthRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/inventory/clean",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { month: "1999-01" },
+      });
+      expect(emptyMonthRes.statusCode).toBe(409);
+      expect(JSON.parse(emptyMonthRes.body).error.code).toBe("NO_ARCHIVABLE_ITEMS");
+    });
+
+    it("archives only RETURNED_TO_OWNER & DISTRIBUTED items, supports archived_only=true & include_archived=true, and guards empty clean with 409", async () => {
       const cleanRes = await app.inject({
         method: "POST",
         url: "/api/v1/officer/inventory/clean",
@@ -532,7 +636,7 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       const { archived_count } = JSON.parse(cleanRes.body).data;
       expect(archived_count).toBeGreaterThanOrEqual(2);
 
-      // Default listing hides archived items and supports limit=100
+      // Default listing hides archived items and preserves STORED items
       const listActive = await app.inject({
         method: "GET",
         url: "/api/v1/officer/inventory?limit=100",
@@ -542,8 +646,9 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       const activeIds = JSON.parse(listActive.body).data.map((i: { item_id: string }) => i.item_id);
       expect(activeIds).not.toContain(receivedItemId);
       expect(activeIds).not.toContain(directItemId);
+      expect(activeIds).toContain(receivedWithoutTokenItemId);
 
-      // include_archived=true returns archived items
+      // include_archived=true returns both active and archived items
       const listAll = await app.inject({
         method: "GET",
         url: "/api/v1/officer/inventory?limit=100&include_archived=true",
@@ -553,6 +658,38 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       const allIds = JSON.parse(listAll.body).data.map((i: { item_id: string }) => i.item_id);
       expect(allIds).toContain(receivedItemId);
       expect(allIds).toContain(directItemId);
+      expect(allIds).toContain(receivedWithoutTokenItemId);
+
+      // archived_only=true returns ONLY items with archived_at != null (STORED items excluded)
+      const listArchivedOnly = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/inventory?limit=100&archived_only=true",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(listArchivedOnly.statusCode).toBe(200);
+      const archivedOnlyItems = JSON.parse(listArchivedOnly.body).data as Array<{
+        item_id: string;
+        status: string;
+        archived_at: string | null;
+      }>;
+      const archivedOnlyIds = archivedOnlyItems.map((i) => i.item_id);
+      expect(archivedOnlyIds).toContain(receivedItemId);
+      expect(archivedOnlyIds).toContain(directItemId);
+      expect(archivedOnlyIds).not.toContain(receivedWithoutTokenItemId);
+      for (const item of archivedOnlyItems) {
+        expect(item.archived_at).not.toBeNull();
+        expect(item.status).not.toBe("STORED");
+      }
+
+      // Subsequent clean when 0 completed items remain returns 409 NO_ARCHIVABLE_ITEMS
+      const secondCleanRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/inventory/clean",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {},
+      });
+      expect(secondCleanRes.statusCode).toBe(409);
+      expect(JSON.parse(secondCleanRes.body).error.code).toBe("NO_ARCHIVABLE_ITEMS");
     });
 
     it("rejects invalid month format on /officer/inventory/clean with 422", async () => {

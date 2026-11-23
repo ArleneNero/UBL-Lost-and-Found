@@ -46,6 +46,7 @@ export const InventoryReportPrintModal: React.FC<InventoryReportPrintModalProps>
   const [startDate, setStartDate] = useState(`${initialToday.slice(0, 7)}-01`);
   const [endDate, setEndDate] = useState(initialToday);
   const [statusFilter, setStatusFilter] = useState<ReportStatusFilter>('ALL');
+  const [includeReturnDetails, setIncludeReturnDetails] = useState(false);
 
   const [items, setItems] = useState<FoundItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -97,8 +98,14 @@ export const InventoryReportPrintModal: React.FC<InventoryReportPrintModalProps>
 
   const sheetProps = useMemo<InventoryReportSheetProps | null>(() => {
     if (!isOpen || isLoading || error) return null;
-    return { items: filteredItems, summary, periodLabel: dateRange.periodLabel, generatedAt };
-  }, [isOpen, isLoading, error, filteredItems, summary, dateRange.periodLabel, generatedAt]);
+    return {
+      items: filteredItems,
+      summary,
+      periodLabel: dateRange.periodLabel,
+      generatedAt,
+      includeReturnDetails,
+    };
+  }, [isOpen, isLoading, error, filteredItems, summary, dateRange.periodLabel, generatedAt, includeReturnDetails]);
 
   useEffect(() => {
     onReportChange?.(sheetProps);
@@ -152,7 +159,15 @@ export const InventoryReportPrintModal: React.FC<InventoryReportPrintModalProps>
           onYearChange={setYear}
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
-          onStatusFilterChange={(val) => setStatusFilter(val as ReportStatusFilter)}
+          onStatusFilterChange={(val) => {
+            const nextStatus = val as ReportStatusFilter;
+            setStatusFilter(nextStatus);
+            if (nextStatus === 'RETURNED_TO_OWNER') {
+              setIncludeReturnDetails(true);
+            }
+          }}
+          includeReturnDetails={includeReturnDetails}
+          onIncludeReturnDetailsChange={setIncludeReturnDetails}
         />
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-100">

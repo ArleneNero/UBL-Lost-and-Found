@@ -1,11 +1,18 @@
 import {
   FoundItemPublicDto,
   InventoryOfficerDto,
+  ItemReturnDto,
   FoundSubmissionDto,
   ServicePostPublicDto,
   MeDto,
 } from '../api';
-import { FoundItem, Submission, ServicePost, UserSession } from './index';
+import {
+  FoundItem,
+  ItemReturnRecord,
+  Submission,
+  ServicePost,
+  UserSession,
+} from './index';
 import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 
 export function cleanPhotoUrl(url?: string): string {
@@ -16,6 +23,18 @@ export function cleanPhotoUrl(url?: string): string {
     return url.substring(idx);
   }
   return url;
+}
+
+function mapReturnRecordDtoToDomain(dto?: ItemReturnDto | null): ItemReturnRecord | null {
+  if (!dto) return null;
+  return {
+    returnId: dto.return_id,
+    recipientName: dto.recipient_name,
+    recipientIdentifier: dto.recipient_identifier ?? null,
+    verificationSummary: dto.verification_summary,
+    returnedAt: dto.returned_at,
+    returnedByName: dto.returned_by_name ?? null,
+  };
 }
 
 export function mapItemDtoToDomain(
@@ -45,6 +64,9 @@ export function mapItemDtoToDomain(
       : null,
     archivedAt: isOfficer
       ? (dto as InventoryOfficerDto).archived_at ?? null
+      : null,
+    returnRecord: isOfficer
+      ? mapReturnRecordDtoToDomain((dto as InventoryOfficerDto).return_record)
       : null,
   };
 }
