@@ -1,11 +1,11 @@
 {
   "name": "ubl-lostnfound-backend",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "private": true,
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc --noEmit && esbuild src/index.ts --bundle --platform=node --target=node20 --format=cjs --footer:js=\"if (module.exports && module.exports.default) { const fn = module.exports.default; module.exports = fn; module.exports.default = fn; }\" --outfile=index.js && node -e \"const fs = require('fs'); fs.copyFileSync('index.js', 'app.js'); fs.copyFileSync('index.js', 'index.cjs'); fs.copyFileSync('index.js', 'app.cjs'); fs.copyFileSync('index.js', 'bundle.cjs');\"",
+    "build": "tsc --noEmit && node scripts/build.mjs",
     "start": "node index.js",
     "db:push": "tsx ./node_modules/drizzle-kit/bin.cjs push",
     "db:generate": "tsx ./node_modules/drizzle-kit/bin.cjs generate",

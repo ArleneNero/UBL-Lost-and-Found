@@ -4,6 +4,7 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import path from "path";
 import { env } from "./config/env.js";
+import { APP_VERSION, getDeployCommit } from "./config/version.js";
 import { postsRoutes } from "./modules/posts/posts.routes.js";
 import { itemsRoutes } from "./modules/items/items.routes.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
@@ -128,6 +129,8 @@ export function buildApp(): FastifyInstance {
   // Health check endpoint (Internal)
   const healthHandler = async (request: FastifyRequest) => ({
     status: "ok",
+    version: APP_VERSION,
+    commit: getDeployCommit(),
     timestamp: new Date().toISOString(),
     request_id: request.id,
   });

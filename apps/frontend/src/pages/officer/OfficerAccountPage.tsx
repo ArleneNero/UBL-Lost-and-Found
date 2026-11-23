@@ -36,7 +36,10 @@ export const OfficerAccountPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-4 border-t border-[var(--lf-border)] flex justify-end">
+        <div className="pt-4 border-t border-[var(--lf-border)] flex items-center justify-between gap-3">
+          <span className="text-xs font-medium text-[var(--lf-muted)]">
+            Versi Aplikasi: <strong className="text-[var(--lf-ink)]">v{__APP_VERSION__}</strong>
+          </span>
           <Button
             variant="danger"
             size="sm"
