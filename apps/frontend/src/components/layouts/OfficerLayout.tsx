@@ -43,7 +43,7 @@ export const OfficerLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[var(--lf-canvas)] flex flex-col lg:flex-row">
       {/* Desktop Sidebar (244px) matching Figma Node 27:50 */}
-      <aside className="hidden lg:flex flex-col w-[244px] bg-white border-r border-[var(--lf-border)] shrink-0 sticky top-0 h-screen">
+      <aside className="hidden lg:flex flex-col w-[244px] bg-white border-r border-[var(--lf-border)] shrink-0 sticky top-0 h-screen print:hidden">
         {/* Brand Header */}
         <NavLink
           to={RoutePaths.OFFICER_DASHBOARD}
@@ -111,9 +111,9 @@ export const OfficerLayout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-24 lg:pb-0 print:pb-0">
         {/* Mobile Top Header */}
-        <header className="lg:hidden bg-white border-b border-[var(--lf-border)] px-4 py-3 flex items-center justify-between sticky top-0 z-30">
+        <header className="lg:hidden bg-white border-b border-[var(--lf-border)] px-4 py-3 flex items-center justify-between sticky top-0 z-30 print:hidden">
           <NavLink to={RoutePaths.OFFICER_DASHBOARD} className="flex items-center gap-2.5">
             <img
               src={`${import.meta.env.BASE_URL}assets/branding/Logo_LostnFound.png`}
@@ -131,13 +131,13 @@ export const OfficerLayout: React.FC = () => {
         </header>
 
         {/* Page View Slot */}
-        <main className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 lg:p-8 max-w-7xl mx-auto w-full print:p-0 print:max-w-none">
           <Outlet />
         </main>
       </div>
 
       {/* Mobile Fixed Bottom Navigation (Figma exact: Dashboard, Inventaris, Laporan, Akun) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--lf-border)] z-40 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--lf-border)] z-40 pb-[env(safe-area-inset-bottom)] shadow-[0_-2px_10px_rgba(0,0,0,0.04)] print:hidden">
         <div className="h-[64px] w-full flex items-center justify-around px-2">
           {officerNavItems.map((item) => {
             const Icon = item.icon;

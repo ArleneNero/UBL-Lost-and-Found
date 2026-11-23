@@ -22,6 +22,7 @@ export interface UseOfficerInventoryReturn {
   includeArchived: boolean;
   setIncludeArchived: (include: boolean) => void;
   cleanArchive: (month?: string) => Promise<number>;
+  fetchAllForReport: () => Promise<FoundItem[]>;
   refetch: () => Promise<void>;
 }
 
@@ -86,6 +87,19 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     [fetchInventory]
   );
 
+  const fetchAllForReport = useCallback(async (): Promise<FoundItem[]> => {
+    const collected: FoundItem[] = [];
+    let page = 1;
+    let totalPages = 1;
+    while (page <= totalPages) {
+      const res = await services.items.getOfficerItems({ page, limit: 100, includeArchived: true });
+      collected.push(...res.items);
+      totalPages = Math.max(1, res.totalPages || 1);
+      page += 1;
+    }
+    return collected;
+  }, []);
+
   useEffect(() => {
     fetchInventory();
   }, [fetchInventory]);
@@ -113,6 +127,7 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     includeArchived,
     setIncludeArchived,
     cleanArchive,
+    fetchAllForReport,
     refetch: fetchInventory,
   };
 }

@@ -125,4 +125,22 @@ describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
     // STORED item must remain visible
     expect(screen.getAllByText('Kunci Motor Honda Vario').length).toBeGreaterThan(0);
   });
+
+  it('opens multi-period Rekap & Cetak report modal from OfficerInventoryPage', async () => {
+    render(
+      <MemoryRouter>
+        <OfficerInventoryPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Kunci Motor Honda Vario').length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Rekap & Cetak/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /Cetak Laporan Inventaris/i })).toBeDefined();
+      expect(screen.getByRole('tab', { name: 'Tahunan' })).toBeDefined();
+    });
+  });
 });
