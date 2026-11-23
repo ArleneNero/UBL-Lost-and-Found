@@ -206,23 +206,25 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 
 *Ringkasan Lokal:* **6/6 probes PASSED** (exit code `0`).
 
-#### B. Eksekusi Produksi (`node scripts/smoke-test.mjs --base-url=https://lostandfound-budiluhur.web.id`)
+#### B. Eksekusi Produksi (`npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` — Rilis `v1.2.1` commit `685f4c6`)
 | Probe | Endpoint | Status HTTP | Latensi (ms) | Hasil |
 | :--- | :--- | :---: | :---: | :---: |
-| 1. Health Check & Version | `https://lostandfound-budiluhur.web.id/api/v1/health` | `[200]` | `[__._ ms]` | `[PENDING DEPLOY]` |
-| 2. Public Service Posts | `https://lostandfound-budiluhur.web.id/api/v1/posts` | `[200]` | `[__._ ms]` | `[PENDING DEPLOY]` |
-| 3. Public Items (Zero PII Leak) | `https://lostandfound-budiluhur.web.id/api/v1/items?page=1&limit=5` | `[200]` | `[__._ ms]` | `[PENDING DEPLOY]` |
-| 4. Officer RBAC Guard (Unauth) | `https://lostandfound-budiluhur.web.id/api/v1/officer/inventory` | `[401]` | `[__._ ms]` | `[PENDING DEPLOY]` |
-| 5. OpenAPI YAML Contract | `https://lostandfound-budiluhur.web.id/openapi.yaml` | `[200]` | `[__._ ms]` | `[PENDING DEPLOY]` |
-| 6. Frontend SPA Entrypoint | `https://lostandfound-budiluhur.web.id/` | `[200]` | `[__._ ms]` | `[PENDING DEPLOY]` |
+| 1. Health Check & Version | `https://lostandfound-budiluhur.web.id/api/v1/health` | `200` | `1698.3 ms` | **PASS** |
+| 2. Public Service Posts | `https://lostandfound-budiluhur.web.id/api/v1/posts` | `200` | `2901.5 ms` | **PASS** |
+| 3. Public Items (Zero PII Leak) | `https://lostandfound-budiluhur.web.id/api/v1/items?page=1&limit=5` | `200` | `3336.8 ms` | **PASS** |
+| 4. Officer RBAC Guard (Unauth) | `https://lostandfound-budiluhur.web.id/api/v1/officer/inventory` | `401` | `594.3 ms` | **PASS** |
+| 5. OpenAPI YAML Contract | `https://lostandfound-budiluhur.web.id/openapi.yaml` | `200` | `567.3 ms` | **PASS** |
+| 6. Frontend SPA Entrypoint | `https://lostandfound-budiluhur.web.id/` | `200` | `782.4 ms` | **PASS** |
 
-### 6.3 Checklist Deployment Rilis `v1.2.0`
+*Ringkasan Produksi:* **6/6 probes PASSED** (`version: "1.2.1"`, `commit: "685f4c6"`, `<meta name="app-version" content="1.2.1" />`).
+
+### 6.3 Checklist Deployment Rilis `v1.2.0` / `v1.2.1`
 
 - [x] **Sinkronisasi Versi & Build Monorepo:** Root `package.json`, `apps/backend/package.json`, dan `apps/frontend/package.json` disinkronkan; `npm run build` di root memproduksi bundle backend `api/*.cjs` dan frontend `apps/frontend/dist`.
 - [x] **Migrasi Skema Database Neon PostgreSQL:** `npm run db:migrate --prefix apps/backend` menerapkan kolom aditif `found_items.storage_limit_days` dan `found_items.archived_at`, serta `servicePost.fixture.ts` & `db:seed` menetapkan default `365 hari`.
 - [x] **Verifikasi Test Suite Lintas Workspace:** Backend (`14 test files / 140 tests PASS`) dan Frontend (`15 test files / 89 tests PASS`) lulus 100%.
 - [x] **Verifikasi Smoke Test Staging Lokal:** `npm run smoke -- --base-url=http://localhost:3000 --frontend-url=http://localhost:4173` lulus `6/6 probes PASSED`.
-- [ ] **Verifikasi Environment Variables & Smoke Test Produksi:** Pastikan `DATABASE_URL`, `JWT_SECRET`, `UPLOAD_TOKEN_SECRET`, `R2_*`, `RESEND_API_KEY`, dan `VITE_USE_MOCK=false` aktif di Vercel Project Settings, lalu jalankan `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` setelah push.
+- [x] **Verifikasi Environment Variables & Smoke Test Produksi:** `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` lulus `6/6 probes PASSED` dengan `version: "1.2.1"` & `commit: "685f4c6"`.
 
 ### 6.4 Prosedur Rollback (Mitigasi Kegagalan Produksi)
 
