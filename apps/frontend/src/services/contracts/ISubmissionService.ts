@@ -21,7 +21,7 @@ export interface CreateSubmissionInput {
 export interface ReceiveSubmissionInput {
   publicDescription: string;
   privateNotes?: string;
-  photoToken: string;
+  photoToken?: string;
 }
 
 export interface ISubmissionService {

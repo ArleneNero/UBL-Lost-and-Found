@@ -21,7 +21,18 @@ const statusMap: Record<string, { variant: BadgeVariant; label: string }> = {
 export const OfficerReportDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { submission, createdItem, isLoading, error, isActionLoading, receive, reject, refetch } = useOfficerReportDetail(id);
+  const {
+    submission,
+    createdItem,
+    isLoading,
+    error,
+    actionError,
+    clearActionError,
+    isActionLoading,
+    receive,
+    reject,
+    refetch,
+  } = useOfficerReportDetail(id);
 
   const [isReceiveOpen, setIsReceiveOpen] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
@@ -47,13 +58,33 @@ export const OfficerReportDetailPage: React.FC = () => {
   const isPending = submission.status === 'PENDING_RECEIPT';
 
   const handleReceiveConfirm = async (notes: string) => {
-    const item = await receive({ publicDescription: submission.description, privateNotes: notes, photoToken: 'mock-verified-receipt-token' });
+    const item = await receive({ publicDescription: submission.description, privateNotes: notes });
     if (item) setIsReceiveOpen(false);
   };
 
   const handleRejectConfirm = async (reason: string) => {
     const ok = await reject(reason);
     if (ok) setIsRejectOpen(false);
+  };
+
+  const handleOpenReceive = () => {
+    clearActionError();
+    setIsReceiveOpen(true);
+  };
+
+  const handleCloseReceive = () => {
+    clearActionError();
+    setIsReceiveOpen(false);
+  };
+
+  const handleOpenReject = () => {
+    clearActionError();
+    setIsRejectOpen(true);
+  };
+
+  const handleCloseReject = () => {
+    clearActionError();
+    setIsRejectOpen(false);
   };
 
   const handleBack = () => {
@@ -99,8 +130,8 @@ export const OfficerReportDetailPage: React.FC = () => {
             <div className="flex flex-col gap-3 pt-3 border-t border-[var(--lf-border)]">
               <p className="text-xs text-[var(--lf-muted)]">Pastikan mahasiswa sudah menyerahkan barang fisik. Cocokkan foto, ciri, dan keterangan.</p>
               <div className="flex items-center gap-3">
-                <Button variant="primary" size="sm" leftIcon={<CheckSquare className="w-4 h-4" />} onClick={() => setIsReceiveOpen(true)}>Lanjut Konfirmasi Fisik</Button>
-                <Button variant="secondary" size="sm" leftIcon={<AlertTriangle className="w-4 h-4 text-[var(--lf-error)]" />} onClick={() => setIsRejectOpen(true)}>Tolak Laporan</Button>
+                <Button variant="primary" size="sm" leftIcon={<CheckSquare className="w-4 h-4" />} onClick={handleOpenReceive}>Lanjut Konfirmasi Fisik</Button>
+                <Button variant="secondary" size="sm" leftIcon={<AlertTriangle className="w-4 h-4 text-[var(--lf-error)]" />} onClick={handleOpenReject}>Tolak Laporan</Button>
               </div>
             </div>
           ) : submission.status === 'RECEIVED' ? (
@@ -115,8 +146,24 @@ export const OfficerReportDetailPage: React.FC = () => {
         </div>
       </Card>
 
-      <ReceivePhysicalModal isOpen={isReceiveOpen} onClose={() => setIsReceiveOpen(false)} onConfirm={handleReceiveConfirm} isSubmitting={isActionLoading} itemName={submission.itemName} reportCode={submission.reportCode} />
-      <RejectReportModal isOpen={isRejectOpen} onClose={() => setIsRejectOpen(false)} onConfirm={handleRejectConfirm} isSubmitting={isActionLoading} itemName={submission.itemName} reportCode={submission.reportCode} />
+      <ReceivePhysicalModal
+        isOpen={isReceiveOpen}
+        onClose={handleCloseReceive}
+        onConfirm={handleReceiveConfirm}
+        isSubmitting={isActionLoading}
+        itemName={submission.itemName}
+        reportCode={submission.reportCode}
+        errorMessage={actionError}
+      />
+      <RejectReportModal
+        isOpen={isRejectOpen}
+        onClose={handleCloseReject}
+        onConfirm={handleRejectConfirm}
+        isSubmitting={isActionLoading}
+        itemName={submission.itemName}
+        reportCode={submission.reportCode}
+        errorMessage={actionError}
+      />
     </div>
   );
 };

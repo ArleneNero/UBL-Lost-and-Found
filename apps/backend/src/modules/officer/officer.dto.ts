@@ -79,7 +79,8 @@ export const receiveRequestSchema = z
     private_verification_notes: z.string().trim().nullable().optional(),
     item_photo_upload_tokens: z
       .array(z.string().min(1))
-      .length(1, "Penerimaan barang mewajibkan tepat 1 token foto"),
+      .max(1, "Maksimal 1 token foto yang diperbolehkan")
+      .optional(),
   })
   .strict();
 export type ReceiveRequest = z.infer<typeof receiveRequestSchema>;

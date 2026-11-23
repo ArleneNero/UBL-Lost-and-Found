@@ -8,6 +8,8 @@ export interface UseOfficerReportDetailReturn {
   createdItem: FoundItem | null;
   isLoading: boolean;
   error: string | null;
+  actionError: string | null;
+  clearActionError: () => void;
   isActionLoading: boolean;
   receive: (input: ReceiveSubmissionInput) => Promise<FoundItem | null>;
   reject: (reason: string) => Promise<boolean>;
@@ -19,7 +21,12 @@ export function useOfficerReportDetail(id: string | undefined): UseOfficerReport
   const [createdItem, setCreatedItem] = useState<FoundItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+
+  const clearActionError = useCallback(() => {
+    setActionError(null);
+  }, []);
 
   const fetchDetail = useCallback(async () => {
     if (!id) {
@@ -50,13 +57,14 @@ export function useOfficerReportDetail(id: string | undefined): UseOfficerReport
   const receive = async (input: ReceiveSubmissionInput): Promise<FoundItem | null> => {
     if (!submission) return null;
     setIsActionLoading(true);
+    setActionError(null);
     try {
       const item = await services.submissions.receiveSubmission(submission.id, input);
       setCreatedItem(item);
       setSubmission((prev) => (prev ? { ...prev, status: 'RECEIVED' } : null));
       return item;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menerima barang fisik');
+      setActionError(err instanceof Error ? err.message : 'Gagal menerima barang fisik');
       return null;
     } finally {
       setIsActionLoading(false);
@@ -66,12 +74,13 @@ export function useOfficerReportDetail(id: string | undefined): UseOfficerReport
   const reject = async (reason: string): Promise<boolean> => {
     if (!submission) return false;
     setIsActionLoading(true);
+    setActionError(null);
     try {
       const updated = await services.submissions.rejectSubmission(submission.id, reason);
       setSubmission(updated);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menolak laporan');
+      setActionError(err instanceof Error ? err.message : 'Gagal menolak laporan');
       return false;
     } finally {
       setIsActionLoading(false);
@@ -83,6 +92,8 @@ export function useOfficerReportDetail(id: string | undefined): UseOfficerReport
     createdItem,
     isLoading,
     error,
+    actionError,
+    clearActionError,
     isActionLoading,
     receive,
     reject,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 
@@ -10,6 +10,7 @@ export interface RejectReportModalProps {
   isSubmitting: boolean;
   itemName: string;
   reportCode: string;
+  errorMessage?: string | null;
 }
 
 export const RejectReportModal: React.FC<RejectReportModalProps> = ({
@@ -19,6 +20,7 @@ export const RejectReportModal: React.FC<RejectReportModalProps> = ({
   isSubmitting,
   itemName,
   reportCode,
+  errorMessage,
 }) => {
   const [reason, setReason] = useState('');
 
@@ -30,6 +32,15 @@ export const RejectReportModal: React.FC<RejectReportModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Tolak Laporan">
       <div className="flex flex-col gap-4 text-xs">
+        {errorMessage && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-3 bg-[var(--lf-error-soft)] border border-[rgba(217,45,32,0.2)] rounded-[var(--lf-radius-md)] text-[var(--lf-error)]"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
         <p className="text-[var(--lf-muted)]">
           Petugas wajib mengisi alasan penolakan secara jelas. Mahasiswa akan menerima pemberitahuan dan status berubah menjadi Ditolak.
         </p>

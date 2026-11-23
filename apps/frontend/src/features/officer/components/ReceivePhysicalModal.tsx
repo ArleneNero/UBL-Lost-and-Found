@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckSquare } from 'lucide-react';
+import { AlertCircle, CheckSquare } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 
@@ -10,6 +10,7 @@ export interface ReceivePhysicalModalProps {
   isSubmitting: boolean;
   itemName: string;
   reportCode: string;
+  errorMessage?: string | null;
 }
 
 export const ReceivePhysicalModal: React.FC<ReceivePhysicalModalProps> = ({
@@ -19,6 +20,7 @@ export const ReceivePhysicalModal: React.FC<ReceivePhysicalModalProps> = ({
   isSubmitting,
   itemName,
   reportCode,
+  errorMessage,
 }) => {
   const [confirmed, setConfirmed] = useState(false);
   const [notes, setNotes] = useState('');
@@ -31,6 +33,15 @@ export const ReceivePhysicalModal: React.FC<ReceivePhysicalModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Konfirmasi Terima Fisik">
       <div className="flex flex-col gap-4 text-xs">
+        {errorMessage && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 p-3 bg-[var(--lf-error-soft)] border border-[rgba(217,45,32,0.2)] rounded-[var(--lf-radius-md)] text-[var(--lf-error)]"
+          >
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
         <p className="text-[var(--lf-muted)]">
           Pastikan mahasiswa sudah menyerahkan barang fisik sebelum konfirmasi. Barang akan otomatis tercatat ke inventaris pos.
         </p>

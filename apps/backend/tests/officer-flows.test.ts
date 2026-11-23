@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { buildApp } from "../src/app.js";
 import { authService } from "../src/modules/auth/auth.service.js";
 import { uploadsService } from "../src/modules/uploads/uploads.service.js";
@@ -22,8 +22,10 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
   let studentUserId: string;
 
   let submissionToReceiveId: string;
+  let submissionWithoutTokenId: string;
   let submissionToRejectId: string;
   let receivedItemId: string;
+  let receivedWithoutTokenItemId: string;
   let directItemId: string;
 
   beforeAll(async () => {
@@ -66,6 +68,11 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       await db.delete(itemPhotos).where(eq(itemPhotos.itemId, receivedItemId));
       await db.delete(foundItems).where(eq(foundItems.itemId, receivedItemId));
     }
+    if (receivedWithoutTokenItemId) {
+      await db.delete(itemReturns).where(eq(itemReturns.itemId, receivedWithoutTokenItemId));
+      await db.delete(itemPhotos).where(eq(itemPhotos.itemId, receivedWithoutTokenItemId));
+      await db.delete(foundItems).where(eq(foundItems.itemId, receivedWithoutTokenItemId));
+    }
     if (directItemId) {
       await db.delete(itemReturns).where(eq(itemReturns.itemId, directItemId));
       await db.delete(itemPhotos).where(eq(itemPhotos.itemId, directItemId));
@@ -74,6 +81,10 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
     if (submissionToReceiveId) {
       await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, submissionToReceiveId));
       await db.delete(foundSubmissions).where(eq(foundSubmissions.submissionId, submissionToReceiveId));
+    }
+    if (submissionWithoutTokenId) {
+      await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, submissionWithoutTokenId));
+      await db.delete(foundSubmissions).where(eq(foundSubmissions.submissionId, submissionWithoutTokenId));
     }
     if (submissionToRejectId) {
       await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, submissionToRejectId));
@@ -199,6 +210,54 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       expect(subBody.data.status).toBe("RECEIVED");
       expect(subBody.data.history.length).toBe(2);
       expect(subBody.data.history[1].to_status).toBe("RECEIVED");
+    });
+
+    it("POST /officer/submissions/:id/receive: succeeds WITHOUT item_photo_upload_tokens and reuses submission.reportPhotoPath", async () => {
+      const reportPhotoToken = await createUploadToken(studentToken, "REPORT_PHOTO");
+      const createRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/submissions",
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: {
+          target_post_id: 1,
+          item_name: "Payung Lipat Hitam",
+          category: "Aksesori",
+          public_description: "Payung lipat hitam tertinggal di selasar gedung",
+          found_location: "Selasar Gedung Unit 3",
+          found_on: "2026-11-10",
+          report_photo_upload_token: reportPhotoToken,
+        },
+      });
+      expect(createRes.statusCode).toBe(201);
+      submissionWithoutTokenId = JSON.parse(createRes.body).data.submission_id;
+
+      const receiveRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/officer/submissions/${submissionWithoutTokenId}/receive`,
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          public_description: "Payung lipat hitam kondisi baik",
+          private_verification_notes: "Ada label nama pudar di gagang",
+        },
+      });
+
+      expect(receiveRes.statusCode).toBe(201);
+      const body = JSON.parse(receiveRes.body);
+      expect(body.data.item_id).toBeDefined();
+      expect(body.data.status).toBe("STORED");
+      expect(body.data.is_visible).toBe(true);
+      expect(body.data.source_submission_id).toBe(submissionWithoutTokenId);
+      expect(body.data.photos).toHaveLength(1);
+      receivedWithoutTokenItemId = body.data.item_id;
+
+      const submissionRow = await db.query.foundSubmissions.findFirst({
+        where: eq(foundSubmissions.submissionId, submissionWithoutTokenId),
+      });
+      const itemPhotoRow = await db.query.itemPhotos.findFirst({
+        where: eq(itemPhotos.itemId, receivedWithoutTokenItemId),
+      });
+      expect(submissionRow?.reportPhotoPath).toBeTruthy();
+      expect(itemPhotoRow?.storagePath).toBe(submissionRow?.reportPhotoPath);
     });
 
     it("POST /officer/submissions/:id/reject: officer rejects report with reason", async () => {

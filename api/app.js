@@ -97388,7 +97388,7 @@ var inventoryListResponseSchema = external_exports.object({
 var receiveRequestSchema = external_exports.object({
   public_description: external_exports.string().trim().min(1, "Deskripsi publik tidak boleh kosong"),
   private_verification_notes: external_exports.string().trim().nullable().optional(),
-  item_photo_upload_tokens: external_exports.array(external_exports.string().min(1)).length(1, "Penerimaan barang mewajibkan tepat 1 token foto")
+  item_photo_upload_tokens: external_exports.array(external_exports.string().min(1)).max(1, "Maksimal 1 token foto yang diperbolehkan").optional()
 }).strict();
 var reasonRequestSchema = external_exports.object({
   reason: external_exports.string().trim().min(1, "Alasan wajib diisi").max(2e3)
@@ -97946,6 +97946,10 @@ var OfficerSubmissionsRepository = class {
           currentStatus: submission.status
         };
       }
+      const resolvedPhotoPath = storagePath && storagePath.trim() || submission.reportPhotoPath;
+      if (!resolvedPhotoPath || !resolvedPhotoPath.trim()) {
+        return { success: false, error: "MISSING_PHOTO" };
+      }
       await tx.update(foundSubmissions).set({ status: "RECEIVED" }).where(eq(foundSubmissions.submissionId, submissionId));
       await tx.insert(submissionStatusHistory).values({
         submissionId,
@@ -97971,7 +97975,7 @@ var OfficerSubmissionsRepository = class {
       }).returning();
       const [photo] = await tx.insert(itemPhotos).values({
         itemId: item.itemId,
-        storagePath,
+        storagePath: resolvedPhotoPath,
         isPrimary: true
       }).returning();
       return { success: true, item, photo };
@@ -98272,12 +98276,16 @@ var OfficerSubmissionsService = class {
    * B/I.1.1 & B/I.1.2: Officer physically receives item at post and registers into inventory
    */
   async receiveSubmission(context, submissionId, request) {
-    const [token] = request.item_photo_upload_tokens;
-    const { storagePath } = uploadsService.verifyAndConsumeUploadToken(
-      token,
-      "ITEM_PHOTO",
-      context.user.userId
-    );
+    const token = request.item_photo_upload_tokens?.[0];
+    let storagePath;
+    if (token) {
+      const consumed = uploadsService.verifyAndConsumeUploadToken(
+        token,
+        "ITEM_PHOTO",
+        context.user.userId
+      );
+      storagePath = consumed.storagePath;
+    }
     const result = await officerSubmissionsRepository.receiveSubmission({
       submissionId,
       officerUserId: context.user.userId,
@@ -98298,6 +98306,13 @@ var OfficerSubmissionsService = class {
           "INVALID_STATUS_TRANSITION",
           `Hanya laporan berstatus PENDING_RECEIPT yang dapat diterima fisik (status saat ini: ${result.currentStatus})`,
           409
+        );
+      }
+      if (result.error === "MISSING_PHOTO") {
+        throw new AppError(
+          "MISSING_PHOTO",
+          "Foto barang tidak tersedia pada laporan maupun payload penerimaan",
+          422
         );
       }
     }

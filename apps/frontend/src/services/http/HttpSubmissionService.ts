@@ -89,11 +89,14 @@ export class HttpSubmissionService implements ISubmissionService {
     id: string,
     input: ReceiveSubmissionInput
   ): Promise<FoundItem> {
-    const payload = {
+    const trimmedToken = input.photoToken?.trim();
+    const payload: Record<string, unknown> = {
       public_description: input.publicDescription,
       private_verification_notes: input.privateNotes || null,
-      item_photo_upload_tokens: [input.photoToken],
     };
+    if (trimmedToken) {
+      payload.item_photo_upload_tokens = [trimmedToken];
+    }
 
     const res = await apiClient<ApiDataResponse<InventoryOfficerDto>>(
       `/officer/submissions/${id}/receive`,

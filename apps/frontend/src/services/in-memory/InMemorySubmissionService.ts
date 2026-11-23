@@ -71,9 +71,6 @@ export class InMemorySubmissionService implements ISubmissionService {
     if (sub.status !== 'PENDING_RECEIPT') {
       throw new Error(`Laporan tidak dapat diterima karena berstatus ${sub.status}`);
     }
-    if (!input.photoToken) {
-      throw new Error('Foto inventaris wajib disertakan');
-    }
 
     sub.status = 'RECEIVED';
 

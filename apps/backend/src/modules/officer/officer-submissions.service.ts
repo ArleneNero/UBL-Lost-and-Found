@@ -1,4 +1,4 @@
-﻿import { officerSubmissionsRepository } from "./officer-submissions.repository.js";
+import { officerSubmissionsRepository } from "./officer-submissions.repository.js";
 import { uploadsService } from "../uploads/uploads.service.js";
 import { submissionsService } from "../submissions/submissions.service.js";
 import { mapToOfficerDto } from "./officer.mapper.js";
@@ -36,13 +36,17 @@ export class OfficerSubmissionsService {
     submissionId: string,
     request: ReceiveRequest
   ): Promise<InventoryOfficerDto> {
-    const [token] = request.item_photo_upload_tokens;
+    const token = request.item_photo_upload_tokens?.[0];
+    let storagePath: string | undefined;
 
-    const { storagePath } = uploadsService.verifyAndConsumeUploadToken(
-      token,
-      "ITEM_PHOTO",
-      context.user.userId
-    );
+    if (token) {
+      const consumed = uploadsService.verifyAndConsumeUploadToken(
+        token,
+        "ITEM_PHOTO",
+        context.user.userId
+      );
+      storagePath = consumed.storagePath;
+    }
 
     const result = await officerSubmissionsRepository.receiveSubmission({
       submissionId,
@@ -65,6 +69,13 @@ export class OfficerSubmissionsService {
           "INVALID_STATUS_TRANSITION",
           `Hanya laporan berstatus PENDING_RECEIPT yang dapat diterima fisik (status saat ini: ${result.currentStatus})`,
           409
+        );
+      }
+      if (result.error === "MISSING_PHOTO") {
+        throw new AppError(
+          "MISSING_PHOTO",
+          "Foto barang tidak tersedia pada laporan maupun payload penerimaan",
+          422
         );
       }
     }

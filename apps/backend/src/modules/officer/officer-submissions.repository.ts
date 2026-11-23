@@ -15,7 +15,7 @@ export interface ReceiveSubmissionParams {
   storagePostId: number;
   publicDescription: string;
   privateVerificationNotes?: string | null;
-  storagePath: string;
+  storagePath?: string;
 }
 
 export class OfficerSubmissionsRepository {
@@ -88,6 +88,11 @@ export class OfficerSubmissionsRepository {
         };
       }
 
+      const resolvedPhotoPath = (storagePath && storagePath.trim()) || submission.reportPhotoPath;
+      if (!resolvedPhotoPath || !resolvedPhotoPath.trim()) {
+        return { success: false as const, error: "MISSING_PHOTO" as const };
+      }
+
       // 1. Update submission status to RECEIVED
       await tx
         .update(foundSubmissions)
@@ -128,7 +133,7 @@ export class OfficerSubmissionsRepository {
         .insert(itemPhotos)
         .values({
           itemId: item.itemId,
-          storagePath,
+          storagePath: resolvedPhotoPath,
           isPrimary: true,
         })
         .returning();

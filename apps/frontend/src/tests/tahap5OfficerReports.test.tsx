@@ -17,6 +17,7 @@ vi.mock('react-router-dom', async () => {
 
 describe('Officer Reports & Physical Receipt Submilestone (F/B.4)', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     mockStore.reset();
   });
@@ -170,6 +171,67 @@ describe('Officer Reports & Physical Receipt Submilestone (F/B.4)', () => {
       await expect(
         services.submissions.rejectSubmission('sub-uuid-001', 'Reason')
       ).rejects.toThrow(/tidak dapat ditolak/i);
+    });
+  });
+
+  describe('Hotfix v1.1.1 Regressions: Photo Token & Modal Error Isolation', () => {
+    it('confirms physical receipt without sending mock-verified-receipt-token', async () => {
+      const receiveSpy = vi.spyOn(services.submissions, 'receiveSubmission');
+
+      render(
+        <MemoryRouter initialEntries={['/petugas/laporan/sub-uuid-001']}>
+          <Routes>
+            <Route path="/petugas/laporan/:id" element={<OfficerReportDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Lanjut Konfirmasi Fisik/i })).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Lanjut Konfirmasi Fisik/i }));
+      fireEvent.click(document.getElementById('receiveCheck') as HTMLInputElement);
+      fireEvent.click(screen.getByRole('button', { name: /Konfirmasi Penerimaan/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Barang Fisik Telah Diterima')).toBeDefined();
+      });
+
+      expect(receiveSpy).toHaveBeenCalledTimes(1);
+      const [, payload] = receiveSpy.mock.calls[0];
+      expect(payload.photoToken).toBeUndefined();
+      expect(JSON.stringify(payload)).not.toContain('mock-verified-receipt-token');
+    });
+
+    it('displays receive error inside modal without replacing page with Laporan Tidak Ditemukan', async () => {
+      vi.spyOn(services.submissions, 'receiveSubmission').mockRejectedValueOnce(
+        new Error('Payload penerimaan tidak valid (422)')
+      );
+
+      render(
+        <MemoryRouter initialEntries={['/petugas/laporan/sub-uuid-001']}>
+          <Routes>
+            <Route path="/petugas/laporan/:id" element={<OfficerReportDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Jaket Hoodie Hitam Uniqlo')).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Lanjut Konfirmasi Fisik/i }));
+      fireEvent.click(document.getElementById('receiveCheck') as HTMLInputElement);
+      fireEvent.click(screen.getByRole('button', { name: /Konfirmasi Penerimaan/i }));
+
+      await waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert.textContent).toContain('Payload penerimaan tidak valid (422)');
+      });
+
+      expect(screen.queryByText('Laporan Tidak Ditemukan')).toBeNull();
+      expect(screen.getByRole('heading', { level: 1, name: 'Jaket Hoodie Hitam Uniqlo' })).toBeDefined();
     });
   });
 });

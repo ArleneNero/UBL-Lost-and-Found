@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   itemCreateRequestSchema,
   inventoryOfficerDtoSchema,
+  receiveRequestSchema,
 } from "../src/modules/officer/officer.dto.js";
 
 describe("Officer DTO Contract (OpenAPI v1.0 parity)", () => {
@@ -143,6 +144,49 @@ describe("Officer DTO Contract (OpenAPI v1.0 parity)", () => {
 
       const result = inventoryOfficerDtoSchema.safeParse(validDto);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("ReceiveRequest Schema", () => {
+    it("accepts valid ReceiveRequest when item_photo_upload_tokens is omitted", () => {
+      const valid = {
+        public_description: "Dompet hitam diterima di pos",
+        private_verification_notes: "Berisi kartu pelajar",
+      };
+
+      const result = receiveRequestSchema.safeParse(valid);
+      expect(result.success).toBe(true);
+    });
+
+    it("accepts valid ReceiveRequest with 1 item_photo_upload_tokens entry", () => {
+      const valid = {
+        public_description: "Dompet hitam diterima di pos",
+        private_verification_notes: null,
+        item_photo_upload_tokens: ["token-1"],
+      };
+
+      const result = receiveRequestSchema.safeParse(valid);
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects ReceiveRequest when item_photo_upload_tokens contains more than 1 token", () => {
+      const invalid = {
+        public_description: "Dompet hitam diterima di pos",
+        item_photo_upload_tokens: ["token-1", "token-2"],
+      };
+
+      const result = receiveRequestSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
+    });
+
+    it("rejects unknown properties in ReceiveRequest strict mode", () => {
+      const invalid = {
+        public_description: "Dompet hitam diterima di pos",
+        unexpected_field: "bad",
+      };
+
+      const result = receiveRequestSchema.safeParse(invalid);
+      expect(result.success).toBe(false);
     });
   });
 });
