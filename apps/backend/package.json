@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && node scripts/build.mjs",
     "start": "node index.js",
     "db:push": "tsx ./node_modules/drizzle-kit/bin.cjs push",
+    "db:migrate": "tsx src/db/migrate-columns.ts",
     "db:generate": "tsx ./node_modules/drizzle-kit/bin.cjs generate",
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "tsx ./node_modules/drizzle-kit/bin.cjs studio --port 4983",

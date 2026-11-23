@@ -15,3 +15,4 @@ export * from './ReceivePhysicalModal';
 export * from './RejectReportModal';
 export * from './ReturnItemModal';
 export * from './DistributeItemModal';
+export * from './StoragePolicyCard';

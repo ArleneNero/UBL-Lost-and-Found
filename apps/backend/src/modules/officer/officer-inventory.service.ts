@@ -1,4 +1,4 @@
-﻿import { officerInventoryRepository } from "./officer-inventory.repository.js";
+import { officerInventoryRepository } from "./officer-inventory.repository.js";
 import { uploadsService } from "../uploads/uploads.service.js";
 import { mapToOfficerDto } from "./officer.mapper.js";
 import { AppError } from "../../utils/errors.js";
@@ -119,6 +119,31 @@ export class OfficerInventoryService {
    */
   async getOverdue(context: OfficerContext) {
     return await officerInventoryRepository.getOverdueItems(context.postId);
+  }
+
+  /**
+   * Read officer post storage policy settings
+   */
+  async getPostSettings(context: OfficerContext) {
+    const settings = await officerInventoryRepository.getPostSettings(context.postId);
+    if (!settings) {
+      throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
+    }
+    return settings;
+  }
+
+  /**
+   * Update officer post storage policy settings (applies to new items only)
+   */
+  async updatePostSettings(context: OfficerContext, storageLimitDays: number) {
+    const updated = await officerInventoryRepository.updatePostStorageLimit(
+      context.postId,
+      storageLimitDays
+    );
+    if (!updated) {
+      throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
+    }
+    return updated;
   }
 }
 

@@ -1,4 +1,4 @@
-﻿import { resolvePhotoUrl } from "../../utils/photoResolver.js";
+import { resolvePhotoUrl } from "../../utils/photoResolver.js";
 import type { InventoryOfficerDto } from "./officer.dto.js";
 import type { OfficerContext } from "../auth/auth.types.js";
 import type { foundItems, itemPhotos } from "../../db/schema.js";
@@ -26,6 +26,7 @@ export function mapToOfficerDto(
       item.receivedAt instanceof Date
         ? item.receivedAt.toISOString()
         : new Date(item.receivedAt).toISOString(),
+    storage_limit_days: item.storageLimitDays ?? null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,

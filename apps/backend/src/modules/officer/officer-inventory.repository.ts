@@ -29,6 +29,12 @@ export class OfficerInventoryRepository {
     const { request, officerUserId, storagePostId, storagePath } = params;
 
     return await db.transaction(async (tx) => {
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true },
+      });
+      const snapshotLimitDays =
+        post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
       const inventoryCode = await generateInventoryCode(tx);
 
       const [item] = await tx
@@ -43,6 +49,7 @@ export class OfficerInventoryRepository {
           privateVerificationNotes: request.private_verification_notes ?? null,
           foundLocation: request.found_location ?? null,
           foundOn: request.found_on ?? null,
+          storageLimitDays: snapshotLimitDays,
           status: "STORED",
           isVisible: true,
         })
@@ -179,11 +186,14 @@ export class OfficerInventoryRepository {
       where: eq(servicePosts.postId, storagePostId),
     });
 
-    if (!post || post.storageLimitDays === null || post.storageLimitDays <= 0) {
+    if (!post) {
       return [];
     }
 
-    const limitDays = post.storageLimitDays;
+    const postFallbackLimit =
+      post.storageLimitDays !== null && post.storageLimitDays > 0
+        ? post.storageLimitDays
+        : 365;
     const now = new Date();
 
     const storedItems = await db.query.foundItems.findMany({
@@ -195,11 +205,15 @@ export class OfficerInventoryRepository {
 
     const overdueList = [];
     for (const item of storedItems) {
+      const effectiveLimit =
+        item.storageLimitDays !== null && item.storageLimitDays > 0
+          ? item.storageLimitDays
+          : postFallbackLimit;
       const receivedDate = new Date(item.receivedAt);
       const ageMs = now.getTime() - receivedDate.getTime();
       const storageAgeDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
 
-      if (storageAgeDays > limitDays) {
+      if (storageAgeDays > effectiveLimit) {
         overdueList.push({
           item_id: item.itemId,
           inventory_code: item.inventoryCode,
@@ -209,14 +223,57 @@ export class OfficerInventoryRepository {
             item.receivedAt instanceof Date
               ? item.receivedAt.toISOString()
               : new Date(item.receivedAt).toISOString(),
-          storage_limit_days: limitDays,
+          storage_limit_days: effectiveLimit,
           storage_age_days: storageAgeDays,
-          overdue_days: storageAgeDays - limitDays,
+          overdue_days: storageAgeDays - effectiveLimit,
         });
       }
     }
 
     return overdueList;
+  }
+
+  /**
+   * Read officer service post policy settings
+   */
+  async getPostSettings(storagePostId: number) {
+    const post = await db.query.servicePosts.findFirst({
+      where: eq(servicePosts.postId, storagePostId),
+      columns: {
+        postId: true,
+        name: true,
+        storageLimitDays: true,
+      },
+    });
+    if (!post) return null;
+    return {
+      post_id: post.postId,
+      name: post.name,
+      storage_limit_days:
+        post.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365,
+    };
+  }
+
+  /**
+   * Update officer service post storage limit (non-retroactive for existing items)
+   */
+  async updatePostStorageLimit(storagePostId: number, storageLimitDays: number) {
+    const [updated] = await db
+      .update(servicePosts)
+      .set({ storageLimitDays })
+      .where(eq(servicePosts.postId, storagePostId))
+      .returning({
+        postId: servicePosts.postId,
+        name: servicePosts.name,
+        storageLimitDays: servicePosts.storageLimitDays,
+      });
+
+    if (!updated) return null;
+    return {
+      post_id: updated.postId,
+      name: updated.name,
+      storage_limit_days: updated.storageLimitDays ?? storageLimitDays,
+    };
   }
 }
 

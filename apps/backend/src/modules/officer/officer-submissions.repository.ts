@@ -4,6 +4,7 @@ import {
   itemPhotos,
   foundSubmissions,
   submissionStatusHistory,
+  servicePosts,
 } from "../../db/schema.js";
 import { generateInventoryCode } from "./inventory-code.util.js";
 import type { ReportStatus } from "../submissions/submissions.dto.js";
@@ -108,7 +109,14 @@ export class OfficerSubmissionsRepository {
         reason: "Fisik barang telah diverifikasi dan diterima di pos pelayanan",
       });
 
-      // 3. Create found_items
+      // 3. Snapshot post storage limit and create found_items
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true },
+      });
+      const snapshotLimitDays =
+        post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
+
       const inventoryCode = await generateInventoryCode(tx);
       const [item] = await tx
         .insert(foundItems)
@@ -123,6 +131,7 @@ export class OfficerSubmissionsRepository {
           privateVerificationNotes: privateVerificationNotes ?? null,
           foundLocation: submission.foundLocation,
           foundOn: submission.foundOn,
+          storageLimitDays: snapshotLimitDays,
           status: "STORED",
           isVisible: true,
         })

@@ -12,6 +12,7 @@ import {
  */
 export interface MockState {
   posts: ServicePostPublicDto[];
+  postStorageLimitDays: number;
   items: InventoryOfficerDto[];
   submissions: FoundSubmissionDto[];
   returns: ItemReturnDto[];
@@ -44,6 +45,7 @@ export const INITIAL_MOCK_STATE: MockState = {
       ],
     },
   ],
+  postStorageLimitDays: 365,
   items: [
     {
       item_id: 'item-uuid-001',

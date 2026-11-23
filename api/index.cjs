@@ -93685,6 +93685,7 @@ var foundItems = pgTable(
     foundLocation: text("found_location"),
     foundOn: date("found_on"),
     receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
+    storageLimitDays: integer("storage_limit_days"),
     status: itemStatusEnum("status").notNull().default("STORED"),
     isVisible: boolean("is_visible").notNull().default(true)
   },
@@ -97379,6 +97380,7 @@ var inventoryOfficerDtoSchema = external_exports.object({
   found_location: external_exports.string().nullable(),
   found_on: external_exports.string().nullable(),
   received_at: external_exports.string().datetime(),
+  storage_limit_days: external_exports.number().int().positive().nullable().optional(),
   status: external_exports.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]),
   is_visible: external_exports.boolean(),
   storage_post_id: external_exports.number().int(),
@@ -97447,6 +97449,17 @@ var overdueInventoryDtoSchema = external_exports.object({
 var overdueResponseSchema = external_exports.object({
   data: external_exports.array(overdueInventoryDtoSchema)
 }).strict();
+var postSettingsDtoSchema = external_exports.object({
+  post_id: external_exports.number().int(),
+  name: external_exports.string(),
+  storage_limit_days: external_exports.number().int().min(1).max(730)
+}).strict();
+var postSettingsResponseSchema = external_exports.object({
+  data: postSettingsDtoSchema
+}).strict();
+var postSettingsUpdateSchema = external_exports.object({
+  storage_limit_days: external_exports.number({ invalid_type_error: "Batas hari penyimpanan harus berupa angka" }).int("Batas hari penyimpanan harus berupa bilangan bulat").min(1, "Minimal batas simpan adalah 1 hari").max(730, "Maksimal batas simpan adalah 730 hari (2 tahun)")
+}).strict();
 
 // src/modules/officer/inventory-code.util.ts
 async function generateInventoryCode(tx, year2) {
@@ -97478,6 +97491,11 @@ var OfficerInventoryRepository = class {
   async insertItemWithPhoto(params) {
     const { request, officerUserId, storagePostId, storagePath } = params;
     return await db.transaction(async (tx) => {
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true }
+      });
+      const snapshotLimitDays = post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
       const inventoryCode = await generateInventoryCode(tx);
       const [item] = await tx.insert(foundItems).values({
         inventoryCode,
@@ -97489,6 +97507,7 @@ var OfficerInventoryRepository = class {
         privateVerificationNotes: request.private_verification_notes ?? null,
         foundLocation: request.found_location ?? null,
         foundOn: request.found_on ?? null,
+        storageLimitDays: snapshotLimitDays,
         status: "STORED",
         isVisible: true
       }).returning();
@@ -97589,10 +97608,10 @@ var OfficerInventoryRepository = class {
     const post = await db.query.servicePosts.findFirst({
       where: eq(servicePosts.postId, storagePostId)
     });
-    if (!post || post.storageLimitDays === null || post.storageLimitDays <= 0) {
+    if (!post) {
       return [];
     }
-    const limitDays = post.storageLimitDays;
+    const postFallbackLimit = post.storageLimitDays !== null && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
     const now = /* @__PURE__ */ new Date();
     const storedItems = await db.query.foundItems.findMany({
       where: and(
@@ -97602,23 +97621,61 @@ var OfficerInventoryRepository = class {
     });
     const overdueList = [];
     for (const item of storedItems) {
+      const effectiveLimit = item.storageLimitDays !== null && item.storageLimitDays > 0 ? item.storageLimitDays : postFallbackLimit;
       const receivedDate = new Date(item.receivedAt);
       const ageMs = now.getTime() - receivedDate.getTime();
       const storageAgeDays = Math.floor(ageMs / (1e3 * 60 * 60 * 24));
-      if (storageAgeDays > limitDays) {
+      if (storageAgeDays > effectiveLimit) {
         overdueList.push({
           item_id: item.itemId,
           inventory_code: item.inventoryCode,
           item_name: item.itemName,
           category: item.category,
           received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
-          storage_limit_days: limitDays,
+          storage_limit_days: effectiveLimit,
           storage_age_days: storageAgeDays,
-          overdue_days: storageAgeDays - limitDays
+          overdue_days: storageAgeDays - effectiveLimit
         });
       }
     }
     return overdueList;
+  }
+  /**
+   * Read officer service post policy settings
+   */
+  async getPostSettings(storagePostId) {
+    const post = await db.query.servicePosts.findFirst({
+      where: eq(servicePosts.postId, storagePostId),
+      columns: {
+        postId: true,
+        name: true,
+        storageLimitDays: true
+      }
+    });
+    if (!post)
+      return null;
+    return {
+      post_id: post.postId,
+      name: post.name,
+      storage_limit_days: post.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365
+    };
+  }
+  /**
+   * Update officer service post storage limit (non-retroactive for existing items)
+   */
+  async updatePostStorageLimit(storagePostId, storageLimitDays) {
+    const [updated] = await db.update(servicePosts).set({ storageLimitDays }).where(eq(servicePosts.postId, storagePostId)).returning({
+      postId: servicePosts.postId,
+      name: servicePosts.name,
+      storageLimitDays: servicePosts.storageLimitDays
+    });
+    if (!updated)
+      return null;
+    return {
+      post_id: updated.postId,
+      name: updated.name,
+      storage_limit_days: updated.storageLimitDays ?? storageLimitDays
+    };
   }
 };
 var officerInventoryRepository = new OfficerInventoryRepository();
@@ -97636,6 +97693,7 @@ function mapToOfficerDto(item, photo, context) {
     found_location: item.foundLocation ?? null,
     found_on: item.foundOn ? String(item.foundOn).split("T")[0] : null,
     received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
+    storage_limit_days: item.storageLimitDays ?? null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,
@@ -97740,6 +97798,29 @@ var OfficerInventoryService = class {
    */
   async getOverdue(context) {
     return await officerInventoryRepository.getOverdueItems(context.postId);
+  }
+  /**
+   * Read officer post storage policy settings
+   */
+  async getPostSettings(context) {
+    const settings = await officerInventoryRepository.getPostSettings(context.postId);
+    if (!settings) {
+      throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
+    }
+    return settings;
+  }
+  /**
+   * Update officer post storage policy settings (applies to new items only)
+   */
+  async updatePostSettings(context, storageLimitDays) {
+    const updated = await officerInventoryRepository.updatePostStorageLimit(
+      context.postId,
+      storageLimitDays
+    );
+    if (!updated) {
+      throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
+    }
+    return updated;
   }
 };
 var officerInventoryService = new OfficerInventoryService();
@@ -97852,6 +97933,36 @@ var officerInventoryRoutes = async (app2) => {
         bodyParse.data.is_visible
       );
       return reply.status(200).send({ data: item });
+    }
+  );
+  app2.get(
+    "/officer/post-settings",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const settings = await officerInventoryService.getPostSettings(request.officerContext);
+      return reply.status(200).send({ data: settings });
+    }
+  );
+  app2.patch(
+    "/officer/post-settings",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const parsed2 = postSettingsUpdateSchema.safeParse(request.body);
+      if (!parsed2.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parsed2.error.issues[0]?.message || "Nilai batas simpan tidak valid (1\u2013730 hari)",
+            request_id: request.id,
+            details: parsed2.error.issues
+          }
+        });
+      }
+      const updated = await officerInventoryService.updatePostSettings(
+        request.officerContext,
+        parsed2.data.storage_limit_days
+      );
+      return reply.status(200).send({ data: updated });
     }
   );
 };
@@ -97981,6 +98092,11 @@ var OfficerSubmissionsRepository = class {
         toStatus: "RECEIVED",
         reason: "Fisik barang telah diverifikasi dan diterima di pos pelayanan"
       });
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true }
+      });
+      const snapshotLimitDays = post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
       const inventoryCode = await generateInventoryCode(tx);
       const [item] = await tx.insert(foundItems).values({
         inventoryCode,
@@ -97993,6 +98109,7 @@ var OfficerSubmissionsRepository = class {
         privateVerificationNotes: privateVerificationNotes ?? null,
         foundLocation: submission.foundLocation,
         foundOn: submission.foundOn,
+        storageLimitDays: snapshotLimitDays,
         status: "STORED",
         isVisible: true
       }).returning();

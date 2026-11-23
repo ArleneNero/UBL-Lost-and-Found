@@ -416,4 +416,107 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       expect(itemInDb?.isVisible).toBe(false);
     });
   });
+
+  describe("Post Overdue Policy (365d Default & Non-Retroactive Snapshot)", () => {
+    let oldSnapshotItemId: string;
+    let newSnapshotItemId: string;
+
+    afterAll(async () => {
+      if (oldSnapshotItemId) {
+        await db.delete(itemPhotos).where(eq(itemPhotos.itemId, oldSnapshotItemId));
+        await db.delete(foundItems).where(eq(foundItems.itemId, oldSnapshotItemId));
+      }
+      if (newSnapshotItemId) {
+        await db.delete(itemPhotos).where(eq(itemPhotos.itemId, newSnapshotItemId));
+        await db.delete(foundItems).where(eq(foundItems.itemId, newSnapshotItemId));
+      }
+      await app.inject({
+        method: "PATCH",
+        url: "/api/v1/officer/post-settings",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { storage_limit_days: 365 },
+      });
+    });
+
+    it("rejects invalid storage_limit_days (0 or >730) with 422", async () => {
+      const invalidRes = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/officer/post-settings",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { storage_limit_days: 0 },
+      });
+      expect(invalidRes.statusCode).toBe(422);
+
+      const overMaxRes = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/officer/post-settings",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { storage_limit_days: 731 },
+      });
+      expect(overMaxRes.statusCode).toBe(422);
+    });
+
+    it("snapshots storage_limit_days per item so updating post policy is non-retroactive", async () => {
+      // Ensure post starts at 365 days
+      const initGet = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/post-settings",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(initGet.statusCode).toBe(200);
+      expect(JSON.parse(initGet.body).data.storage_limit_days).toBe(365);
+
+      // Create item A under 365-day policy
+      const tokenA = await createUploadToken(officerToken, "ITEM_PHOTO");
+      const resA = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/items",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          item_name: "Kacamata Snapshot Lama",
+          category: "Aksesori",
+          public_description: "Kacamata hitam frame tebal",
+          item_photo_upload_tokens: [tokenA],
+        },
+      });
+      expect(resA.statusCode).toBe(201);
+      const bodyA = JSON.parse(resA.body).data;
+      oldSnapshotItemId = bodyA.item_id;
+      expect(bodyA.storage_limit_days).toBe(365);
+
+      // Change post policy to 90 days
+      const patchRes = await app.inject({
+        method: "PATCH",
+        url: "/api/v1/officer/post-settings",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { storage_limit_days: 90 },
+      });
+      expect(patchRes.statusCode).toBe(200);
+      expect(JSON.parse(patchRes.body).data.storage_limit_days).toBe(90);
+
+      // Create item B under 90-day policy
+      const tokenB = await createUploadToken(officerToken, "ITEM_PHOTO");
+      const resB = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/items",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          item_name: "Kacamata Snapshot Baru",
+          category: "Aksesori",
+          public_description: "Kacamata baca bening",
+          item_photo_upload_tokens: [tokenB],
+        },
+      });
+      expect(resB.statusCode).toBe(201);
+      const bodyB = JSON.parse(resB.body).data;
+      newSnapshotItemId = bodyB.item_id;
+      expect(bodyB.storage_limit_days).toBe(90);
+
+      // Verify item A remains locked at 365 in DB (non-retroactive)
+      const itemAInDb = await db.query.foundItems.findFirst({
+        where: eq(foundItems.itemId, oldSnapshotItemId),
+      });
+      expect(itemAInDb?.storageLimitDays).toBe(365);
+    });
+  });
 });

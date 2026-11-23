@@ -45,7 +45,7 @@ export const InventoryTable: React.FC<InventoryTableProps> = ({ items, isLoading
         <tbody className="divide-y divide-[var(--lf-border)]">
           {items.map((item) => {
             const cfg = statusMap[item.status] || statusMap.STORED;
-            const overdue = item.status === 'STORED' && isItemOverdue(item.receivedAt);
+            const overdue = item.status === 'STORED' && isItemOverdue(item);
             const dateStr = new Date(item.receivedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
             return (
               <tr key={item.id} className="hover:bg-[var(--lf-surface)] transition-colors">

@@ -79,6 +79,13 @@ export interface InventoryOfficerDto extends FoundItemPublicDto {
   storage_post_id: number;
   source_submission_id: string | null;
   private_verification_notes: string | null;
+  storage_limit_days?: number | null;
+}
+
+export interface PostSettingsDto {
+  post_id: number;
+  name: string;
+  storage_limit_days: number;
 }
 
 export interface FoundSubmissionDto {

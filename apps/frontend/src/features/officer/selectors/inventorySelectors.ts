@@ -1,20 +1,27 @@
 import { FoundItem } from '@/types/domain';
 import { ItemStatus } from '@/types/api';
 
-export const DEFAULT_STORAGE_LIMIT_DAYS = 30;
+export const DEFAULT_STORAGE_LIMIT_DAYS = 365;
 
 export function getDaysStored(receivedAt: string): number {
   const received = new Date(receivedAt).getTime();
-  const now = Date.now();
-  const diff = now - received;
+  const diff = Date.now() - received;
   return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
 }
 
+export type OverdueCheckTarget =
+  | string
+  | (Pick<FoundItem, 'receivedAt'> & { storageLimitDays?: number | null });
+
 export function isItemOverdue(
-  receivedAt: string,
+  itemOrReceivedAt: OverdueCheckTarget,
   storageLimitDays = DEFAULT_STORAGE_LIMIT_DAYS
 ): boolean {
-  return getDaysStored(receivedAt) > storageLimitDays;
+  if (typeof itemOrReceivedAt === 'string') {
+    return getDaysStored(itemOrReceivedAt) > storageLimitDays;
+  }
+  const effectiveLimit = itemOrReceivedAt.storageLimitDays ?? storageLimitDays;
+  return getDaysStored(itemOrReceivedAt.receivedAt) > effectiveLimit;
 }
 
 export interface InventoryFilterOptions {

@@ -40,6 +40,9 @@ export function mapItemDtoToDomain(
     privateNotes: isOfficer
       ? (dto as InventoryOfficerDto).private_verification_notes
       : null,
+    storageLimitDays: isOfficer
+      ? (dto as InventoryOfficerDto).storage_limit_days ?? null
+      : null,
   };
 }
 

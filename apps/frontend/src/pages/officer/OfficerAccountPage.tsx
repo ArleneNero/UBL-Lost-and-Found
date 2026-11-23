@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { RoutePaths } from '@/constants/routes';
 import { ACTIVE_SERVICE_POST } from '@/constants/locations';
 import { registry } from '@/services/registry';
+import { StoragePolicyCard } from '@/features/officer/components';
 
 export const OfficerAccountPage: React.FC = () => {
   const navigate = useNavigate();
@@ -53,6 +54,8 @@ export const OfficerAccountPage: React.FC = () => {
           </Button>
         </div>
       </Card>
+
+      <StoragePolicyCard />
     </div>
   );
 };

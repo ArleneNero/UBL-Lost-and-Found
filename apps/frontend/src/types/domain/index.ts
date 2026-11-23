@@ -15,6 +15,13 @@ export interface FoundItem {
   status: ItemStatus;
   isVisible: boolean;
   privateNotes?: string | null;
+  storageLimitDays?: number | null;
+}
+
+export interface PostSettings {
+  postId: number;
+  name: string;
+  storageLimitDays: number;
 }
 
 export interface Submission {

@@ -31,6 +31,7 @@ export const inventoryOfficerDtoSchema = z
     found_location: z.string().nullable(),
     found_on: z.string().nullable(),
     received_at: z.string().datetime(),
+    storage_limit_days: z.number().int().positive().nullable().optional(),
     status: z.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]),
     is_visible: z.boolean(),
     storage_post_id: z.number().int(),
@@ -152,3 +153,29 @@ export const overdueResponseSchema = z
     data: z.array(overdueInventoryDtoSchema),
   })
   .strict();
+
+export const postSettingsDtoSchema = z
+  .object({
+    post_id: z.number().int(),
+    name: z.string(),
+    storage_limit_days: z.number().int().min(1).max(730),
+  })
+  .strict();
+export type PostSettingsDto = z.infer<typeof postSettingsDtoSchema>;
+
+export const postSettingsResponseSchema = z
+  .object({
+    data: postSettingsDtoSchema,
+  })
+  .strict();
+
+export const postSettingsUpdateSchema = z
+  .object({
+    storage_limit_days: z
+      .number({ invalid_type_error: "Batas hari penyimpanan harus berupa angka" })
+      .int("Batas hari penyimpanan harus berupa bilangan bulat")
+      .min(1, "Minimal batas simpan adalah 1 hari")
+      .max(730, "Maksimal batas simpan adalah 730 hari (2 tahun)"),
+  })
+  .strict();
+export type PostSettingsUpdateRequest = z.infer<typeof postSettingsUpdateSchema>;

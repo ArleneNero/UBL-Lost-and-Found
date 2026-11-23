@@ -4,7 +4,7 @@ import {
   GetOfficerItemsParams,
   CreateItemInput,
 } from '../contracts/IItemService';
-import { FoundItem, PaginatedResult } from '@/types/domain';
+import { FoundItem, PaginatedResult, PostSettings } from '@/types/domain';
 import { mapItemDtoToDomain } from '@/types/domain/mappers';
 import {
   ApiListResponse,
@@ -12,6 +12,7 @@ import {
   FoundItemPublicDto,
   InventoryOfficerDto,
   ItemCreateRequestDto,
+  PostSettingsDto,
 } from '@/types/api';
 import { apiClient, ApiError } from './apiClient';
 import { mockStore } from '@/data/mockStore';
@@ -185,5 +186,26 @@ export class HttpItemService implements IItemService {
     );
 
     return mapItemDtoToDomain(res.data);
+  }
+
+  async getPostSettings(): Promise<PostSettings> {
+    const res = await apiClient<ApiDataResponse<PostSettingsDto>>('/officer/post-settings');
+    return {
+      postId: res.data.post_id,
+      name: res.data.name,
+      storageLimitDays: res.data.storage_limit_days,
+    };
+  }
+
+  async updatePostSettings(storageLimitDays: number): Promise<PostSettings> {
+    const res = await apiClient<ApiDataResponse<PostSettingsDto>>('/officer/post-settings', {
+      method: 'PATCH',
+      body: JSON.stringify({ storage_limit_days: storageLimitDays }),
+    });
+    return {
+      postId: res.data.post_id,
+      name: res.data.name,
+      storageLimitDays: res.data.storage_limit_days,
+    };
   }
 }

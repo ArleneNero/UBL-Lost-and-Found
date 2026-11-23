@@ -8,7 +8,10 @@ import { Card } from '@/components/ui/Card';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useOfficerItemDetail } from '@/features/officer/hooks/useOfficerItemDetail';
-import { isItemOverdue } from '@/features/officer/selectors/inventorySelectors';
+import {
+  DEFAULT_STORAGE_LIMIT_DAYS,
+  isItemOverdue,
+} from '@/features/officer/selectors/inventorySelectors';
 import { ItemVisibilityToggle, ReturnItemModal, DistributeItemModal } from '@/features/officer/components';
 
 const statusMap: Record<string, { variant: BadgeVariant; label: string }> = {
@@ -57,7 +60,8 @@ export const OfficerItemDetailPage: React.FC = () => {
     );
   }
 
-  const overdue = item.status === 'STORED' && isItemOverdue(item.receivedAt);
+  const effectiveLimitDays = item.storageLimitDays ?? DEFAULT_STORAGE_LIMIT_DAYS;
+  const overdue = item.status === 'STORED' && isItemOverdue(item);
   const cfg = statusMap[item.status] || statusMap.STORED;
   const dateStr = new Date(item.receivedAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const shortPos = item.postName?.replace(/^Pos\s+/i, '') || 'Pengajaran';
@@ -102,7 +106,9 @@ export const OfficerItemDetailPage: React.FC = () => {
           <AlertTriangle className="w-5 h-5 text-[var(--lf-warning)] shrink-0 mt-0.5" />
           <div>
             <span className="font-bold text-[var(--lf-warning)]">Peringatan Penyimpanan Overdue:</span>
-            <p className="mt-0.5 text-[var(--lf-muted)]">Barang telah tersimpan lebih dari batas pos (30 hari). Status tetap Tersedia di pos hingga tindakan petugas berikutnya.</p>
+            <p className="mt-0.5 text-[var(--lf-muted)]">
+              Barang telah tersimpan lebih dari batas pos ({effectiveLimitDays} hari). Status tetap Tersedia di pos hingga tindakan petugas berikutnya.
+            </p>
           </div>
         </div>
       )}

@@ -69,6 +69,14 @@ async function seedServicePost(officerUserId: string) {
     post = created;
     console.log(`✅ Created Service Post: ${post.name} (Post ID: ${post.postId})`);
   } else {
+    if (!post.storageLimitDays || post.storageLimitDays === 30) {
+      const [updated] = await db
+        .update(servicePosts)
+        .set({ storageLimitDays: servicePostSeedData.storageLimitDays })
+        .where(eq(servicePosts.postId, post.postId))
+        .returning();
+      post = updated;
+    }
     console.log(`ℹ️ Service Post already exists: ${post.name} (Post ID: ${post.postId})`);
   }
 
@@ -108,6 +116,7 @@ async function seedFoundItems(officerUserId: string, postId: number) {
         foundLocation: itemData.foundLocation,
         foundOn: itemData.foundOn,
         receivedAt: itemData.receivedAt,
+        storageLimitDays: servicePostSeedData.storageLimitDays,
         status: itemData.status,
         isVisible: itemData.isVisible,
       })

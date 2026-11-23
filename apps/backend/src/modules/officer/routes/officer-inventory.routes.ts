@@ -1,8 +1,9 @@
-﻿import type { FastifyPluginAsync } from "fastify";
+import type { FastifyPluginAsync } from "fastify";
 import { requireOfficer } from "../../../middleware/auth.guard.js";
 import {
   itemCreateRequestSchema,
   visibilityRequestSchema,
+  postSettingsUpdateSchema,
 } from "../officer.dto.js";
 import { officerInventoryService } from "../officer-inventory.service.js";
 import { z } from "zod";
@@ -146,6 +147,46 @@ export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
       );
 
       return reply.status(200).send({ data: item });
+    }
+  );
+
+  /**
+   * GET /officer/post-settings
+   */
+  app.get(
+    "/officer/post-settings",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const settings = await officerInventoryService.getPostSettings(request.officerContext!);
+      return reply.status(200).send({ data: settings });
+    }
+  );
+
+  /**
+   * PATCH /officer/post-settings
+   */
+  app.patch(
+    "/officer/post-settings",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const parsed = postSettingsUpdateSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parsed.error.issues[0]?.message || "Nilai batas simpan tidak valid (1–730 hari)",
+            request_id: request.id,
+            details: parsed.error.issues,
+          },
+        });
+      }
+
+      const updated = await officerInventoryService.updatePostSettings(
+        request.officerContext!,
+        parsed.data.storage_limit_days
+      );
+
+      return reply.status(200).send({ data: updated });
     }
   );
 };

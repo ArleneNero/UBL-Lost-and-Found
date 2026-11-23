@@ -4,7 +4,7 @@ import {
   GetOfficerItemsParams,
   CreateItemInput,
 } from '../contracts/IItemService';
-import { FoundItem, PaginatedResult } from '@/types/domain';
+import { FoundItem, PaginatedResult, PostSettings } from '@/types/domain';
 import { mapItemDtoToDomain } from '@/types/domain/mappers';
 import { mockStore } from '@/data/mockStore';
 import { InventoryOfficerDto } from '@/types/api';
@@ -132,6 +132,7 @@ export class InMemoryItemService implements IItemService {
       received_at: new Date().toISOString(),
       storage_post_id: 1,
       post: { post_id: 1, name: 'Pos Pengajaran' },
+      storage_limit_days: mockStore.getState().postStorageLimitDays,
       status: 'STORED',
       is_visible: true,
       source_submission_id: null,
@@ -218,5 +219,24 @@ export class InMemoryItemService implements IItemService {
     item.is_visible = false;
     item.private_verification_notes = `[DISALURKAN] ${trimmedNotes}`;
     return mapItemDtoToDomain(item);
+  }
+
+  async getPostSettings(): Promise<PostSettings> {
+    const state = mockStore.getState();
+    const post = state.posts[0];
+    return {
+      postId: post?.post_id ?? 1,
+      name: post?.name ?? 'Pos Pengajaran',
+      storageLimitDays: state.postStorageLimitDays,
+    };
+  }
+
+  async updatePostSettings(storageLimitDays: number): Promise<PostSettings> {
+    if (!Number.isInteger(storageLimitDays) || storageLimitDays < 1 || storageLimitDays > 730) {
+      throw new Error('Batas simpan harus antara 1 sampai 730 hari.');
+    }
+    const state = mockStore.getState();
+    state.postStorageLimitDays = storageLimitDays;
+    return this.getPostSettings();
   }
 }

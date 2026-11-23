@@ -33,7 +33,7 @@ export const InventoryCardList: React.FC<InventoryCardListProps> = ({ items, isL
     <div className="flex flex-col gap-3 sm:hidden">
       {items.map((item) => {
         const cfg = statusMap[item.status] || statusMap.STORED;
-        const overdue = item.status === 'STORED' && isItemOverdue(item.receivedAt);
+        const overdue = item.status === 'STORED' && isItemOverdue(item);
         const dateStr = new Date(item.receivedAt).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
         return (
           <div key={item.id} className="p-4 bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] flex flex-col gap-3">

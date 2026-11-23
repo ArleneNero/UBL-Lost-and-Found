@@ -1,10 +1,11 @@
-﻿import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { services } from '@/services/registry';
 import { mockStore } from '@/data/mockStore';
 import { OfficerInventoryPage } from '@/pages/officer/OfficerInventoryPage';
 import { OfficerDashboardPage } from '@/pages/officer/OfficerDashboardPage';
+import { OfficerAccountPage } from '@/pages/officer/OfficerAccountPage';
 
 describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
   beforeEach(() => {
@@ -59,5 +60,38 @@ describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
     expect(screen.getByText('Barang tersedia')).toBeDefined();
     expect(screen.getByText('Sudah diserahkan')).toBeDefined();
     expect(screen.getByText('Laporan menunggu')).toBeDefined();
+  });
+
+  it('renders OfficerAccountPage storage policy defaulting to 365 days and updates with confirmation', async () => {
+    render(
+      <MemoryRouter>
+        <OfficerAccountPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Kebijakan Batas Simpan/i)).toBeDefined();
+      const input = screen.getByLabelText(/Batas Penyimpanan/i) as HTMLInputElement;
+      expect(input.value).toBe('365');
+    });
+
+    const input = screen.getByLabelText(/Batas Penyimpanan/i) as HTMLInputElement;
+    const saveBtn = screen.getByRole('button', { name: /Simpan Kebijakan/i }) as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(true);
+
+    fireEvent.change(input, { target: { value: '180' } });
+    // Still disabled without non-retroactive confirmation checkbox
+    expect(saveBtn.disabled).toBe(true);
+
+    const confirmBox = screen.getByRole('checkbox');
+    fireEvent.click(confirmBox);
+    expect(saveBtn.disabled).toBe(false);
+
+    fireEvent.click(saveBtn);
+    await waitFor(async () => {
+      expect(screen.getByText(/diperbarui menjadi 180 hari/i)).toBeDefined();
+      const settings = await services.items.getPostSettings();
+      expect(settings.storageLimitDays).toBe(180);
+    });
   });
 });

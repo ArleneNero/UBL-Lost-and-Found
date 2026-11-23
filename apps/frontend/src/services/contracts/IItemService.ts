@@ -1,4 +1,4 @@
-import { FoundItem, PaginatedResult } from '@/types/domain';
+import { FoundItem, PaginatedResult, PostSettings } from '@/types/domain';
 import { ItemStatus } from '@/types/api';
 
 export interface GetItemsParams {
@@ -34,4 +34,6 @@ export interface IItemService {
   updateVisibility(id: string, isVisible: boolean): Promise<FoundItem>;
   returnItem(id: string, recipientName: string, verificationSummary: string): Promise<FoundItem>;
   distributeItem(id: string, notes: string): Promise<FoundItem>;
+  getPostSettings(): Promise<PostSettings>;
+  updatePostSettings(storageLimitDays: number): Promise<PostSettings>;
 }
