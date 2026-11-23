@@ -8,7 +8,8 @@
     "apps/frontend"
   ],
   "scripts": {
-    "build": "npm run build --prefix apps/backend && node -e \"const fs = require('fs'); ['index.cjs', 'index.js', 'app.cjs', 'app.js'].forEach(f => fs.copyFileSync('apps/backend/' + f, 'api/' + f));\" && npm run build --prefix apps/frontend"
+    "build": "npm run build --prefix apps/backend && node -e \"const fs = require('fs'); ['index.cjs', 'index.js', 'app.cjs', 'app.js'].forEach(f => fs.copyFileSync('apps/backend/' + f, 'api/' + f));\" && npm run build --prefix apps/frontend",
+    "smoke": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
     "@neon/config": "^1.13.0",
