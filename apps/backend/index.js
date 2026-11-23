@@ -81193,7 +81193,7 @@ function resolveFallbackVersion() {
   }
   return "0.0.0";
 }
-var APP_VERSION = "1.1.1".length > 0 ? "1.1.1" : resolveFallbackVersion();
+var APP_VERSION = "1.2.0".length > 0 ? "1.2.0" : resolveFallbackVersion();
 function getDeployCommit() {
   return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local";
 }

@@ -19,30 +19,34 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+---
+
+## [1.2.0] - 2026-11-23
+
 ### Added
-- Ubah default `storage_limit_days` pada seed Pos Pengajaran (`servicePost.fixture.ts`) dan `DEFAULT_STORAGE_LIMIT_DAYS` frontend dari `30` menjadi **`365 hari` (1 tahun)** sesuai SOP mitra ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3)).
-- Tambah kolom snapshot `found_items.storage_limit_days` yang otomatis diisi saat item baru dicatat/diterima (`insertItemWithPhoto` & `receiveSubmission`) sehingga perubahan setting tidak mengubah batas simpan barang lama secara retroaktif ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3)).
-- Tambah endpoint `GET /api/v1/officer/post-settings` dan `PATCH /api/v1/officer/post-settings` (validasi `1..730` hari) dengan scoping ketat `context.postId` ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3)).
-- Tambah kartu **Kebijakan Batas Simpan (Overdue)** pada halaman Akun Petugas (`/petugas/akun`) lengkap dengan tombol reset `365 Hari` dan konfirmasi dampak non-retroaktif ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3)).
-- Tambah kolom nullable `found_items.archived_at` pada skema Drizzle untuk menandai arsip item selesai tanpa menghapus jejak audit (`item_returns`, `found_submissions`) ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4)).
-- Tambah endpoint `POST /api/v1/officer/inventory/clean` (opsional filter `month`) yang hanya mengarsipkan item berstatus `RETURNED_TO_OWNER` dan `DISTRIBUTED` — barang `STORED` tetap aman ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4)).
-- Tambah modal konfirmasi `CleanInventoryModal`, tombol **Bersihkan Arsip**, pintasan ke cetak rekap sebelum clean, dan toggle filter **Tampilkan Arsip** pada `/petugas/inventaris` ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4)).
-- Tambah selector periode fleksibel (`day`, `week` Senin–Minggu, `month`, `year`, `custom`) berbasis tanggal lokal WIB (`Asia/Jakarta`) pada `inventorySelectors.ts` dan `InventoryReportPrintModal` ([`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5)).
-- Sajikan ringkasan angka (**Total Masuk**, **Tersedia**, **Sudah Diserahkan**, **Disalurkan**, dan breakdown **per Kategori**) serta tabel rincian barang tanpa catatan rahasia `privateNotes` ([`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5)).
-- Tambah kop resmi Pos Pengajaran, blok tanda tangan petugas, dan layout `@media print` A4/PDF multi-halaman di luar container scroll modal (`hidden print:block`) ([`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5)).
-- Tambah script `scripts/smoke-test.mjs` (`npm run smoke`) yang memverifikasi status HTTP dan latensi (`ms`) untuk `/api/v1/health`, `/api/v1/posts`, isolasi PII `/api/v1/items`, guard `401` `/api/v1/officer/inventory`, `/openapi.yaml`, dan halaman frontend `/`.
-- Tambah `docs/reports/LAPORAN_PENGUJIAN_DAN_UAT.md` sesuai standar P11: strategi integrasi, daftar stub/driver, matriks test case + kasus gagal, skenario UAT *Given–When–Then*, log bug + metrik `%` penyelesaian, serta checklist deploy & rollback.
+- Ubah default `storage_limit_days` pada seed Pos Pengajaran (`servicePost.fixture.ts`) dan `DEFAULT_STORAGE_LIMIT_DAYS` frontend dari `30` menjadi **`365 hari` (1 tahun)** sesuai SOP mitra ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3), [`676d084`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/676d084)).
+- Tambah kolom snapshot `found_items.storage_limit_days` yang otomatis diisi saat item baru dicatat/diterima (`insertItemWithPhoto` & `receiveSubmission`) sehingga perubahan setting tidak mengubah batas simpan barang lama secara retroaktif ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3), [`676d084`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/676d084)).
+- Tambah endpoint `GET /api/v1/officer/post-settings` dan `PATCH /api/v1/officer/post-settings` (validasi `1..730` hari) dengan scoping ketat `context.postId` ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3), [`676d084`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/676d084)).
+- Tambah kartu **Kebijakan Batas Simpan (Overdue)** (`StoragePolicyCard` + `useStoragePolicy`) pada halaman Akun Petugas (`/petugas/akun`) lengkap dengan tombol reset `365 Hari` dan konfirmasi dampak non-retroaktif ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3), [`676d084`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/676d084)).
+- Tambah kolom nullable `found_items.archived_at` pada skema Drizzle untuk menandai arsip item selesai tanpa menghapus jejak audit (`item_returns`, `found_submissions`) ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4), [`444ca6b`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/444ca6b)).
+- Tambah endpoint `POST /api/v1/officer/inventory/clean` (opsional filter `month`) yang hanya mengarsipkan item berstatus `RETURNED_TO_OWNER` dan `DISTRIBUTED` — barang `STORED` tetap aman ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4), [`444ca6b`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/444ca6b)).
+- Tambah modal konfirmasi `CleanInventoryModal`, tombol **Bersihkan Arsip**, pintasan ke cetak rekap sebelum clean, dan toggle filter **Tampilkan Arsip** pada `/petugas/inventaris` ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4), [`444ca6b`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/444ca6b)).
+- Tambah selector periode fleksibel (`day`, `week` Senin–Minggu, `month`, `year`, `custom`) berbasis tanggal lokal WIB (`Asia/Jakarta`) pada `reportDateSelectors.ts`, `reportSummarySelectors.ts`, `InventoryReportPeriodBar`, dan `InventoryReportPrintModal` ([`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5), [`b8b51f0`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/b8b51f0)).
+- Sajikan ringkasan angka (**Total Masuk**, **Tersedia**, **Sudah Diserahkan**, **Disalurkan**, dan breakdown **per Kategori**) serta tabel rincian barang tanpa catatan rahasia `privateNotes` ([`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5), [`b8b51f0`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/b8b51f0)).
+- Tambah kop resmi Pos Pengajaran, blok tanda tangan petugas, dan layout `@media print` A4/PDF multi-halaman di luar container scroll modal (`hidden print:block`) ([`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5), [`b8b51f0`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/b8b51f0)).
+- Tambah script `scripts/smoke-test.mjs` (`npm run smoke`) yang memverifikasi status HTTP dan latensi (`ms`) untuk `/api/v1/health`, `/api/v1/posts`, isolasi PII `/api/v1/items`, guard `401` `/api/v1/officer/inventory`, `/openapi.yaml`, dan halaman frontend `/` ([`7aba54c`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/7aba54c)).
+- Tambah `docs/reports/LAPORAN_PENGUJIAN_DAN_UAT.md` sesuai standar P11: strategi integrasi, daftar stub/driver, matriks test case + kasus gagal, skenario UAT *Given–When–Then*, log bug + metrik `%` penyelesaian, serta checklist deploy & rollback ([`ee323ac`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/ee323ac)).
 
 ### Changed
-- Naikkan batas maksimum query `limit` pada `GET /api/v1/officer/inventory` (`officer-inventory.routes.ts` & `officer-inventory.repository.ts`) dari `10` menjadi `100` dengan query `include_archived` ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4)).
-- Perbarui `getOverdueItems()` untuk mengevaluasi `item.storageLimitDays ?? post.storageLimitDays ?? 365` dan mengabaikan item yang sudah diarsipkan (`archived_at IS NOT NULL`) ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3)).
+- Naikkan batas maksimum query `limit` pada `GET /api/v1/officer/inventory` (`officer-inventory.routes.ts`, `officer-inventory.repository.ts`, dan `HttpItemService.ts`) dari `10` menjadi `100` dengan query `include_archived` ([`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4), [`444ca6b`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/444ca6b)).
+- Perbarui `getOverdueItems()` untuk mengevaluasi `item.storageLimitDays ?? post.storageLimitDays ?? 365` dan mengabaikan item yang sudah diarsipkan (`archived_at IS NOT NULL`) ([`#3`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/3), [`676d084`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/676d084), [`444ca6b`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/444ca6b)).
 
 ---
 
 ## [1.1.1] - 2026-11-23
 
 ### Added
-- Jadikan root `package.json` sebagai *Single Source of Truth* versi rilis, disuntikkan ke build frontend Vite (`__APP_VERSION__` & `<meta name="app-version">`), badge halaman Akun Petugas, serta diekspos bersama `VERCEL_GIT_COMMIT_SHA` di `/health` dan `/api/v1/health`.
+- Jadikan root `package.json` sebagai *Single Source of Truth* versi rilis, disuntikkan ke build frontend Vite (`__APP_VERSION__` & `<meta name="app-version">`), badge halaman Akun Petugas, serta diekspos bersama `VERCEL_GIT_COMMIT_SHA` di `/health` dan `/api/v1/health` ([`a92f64f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/a92f64f)).
 
 ### Fixed
 - Perbaiki kegagalan konfirmasi terima fisik laporan masuk di produksi (`422 INVALID_TOKEN`) akibat string mock `'mock-verified-receipt-token'` di `OfficerReportDetailPage.tsx`; jadikan `item_photo_upload_tokens` opsional di `receiveRequestSchema` agar server otomatis memakai `submission.reportPhotoPath`, dan pisahkan `actionError` dari state `error` halaman di `useOfficerReportDetail.ts` ([`#1`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/1), [`104201d`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/104201d)).
@@ -215,7 +219,8 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ---
 
-[Unreleased]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.0.0...v1.0.1
@@ -227,3 +232,4 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 [0.3.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/releases/tag/v0.1.0
+
