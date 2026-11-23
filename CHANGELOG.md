@@ -21,6 +21,20 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ---
 
+## [1.3.0] - 2026-11-24
+
+### Added
+- Tambah kolom opsional `item_returns.recipient_identifier` (`VARCHAR(50)`) pada skema Drizzle (`apps/backend/src/db/schema/items.ts`) dan migrasi idempoten (`apps/backend/src/db/migrate-columns.ts`), serta perluas `returnRecordDtoSchema` dan `inventoryOfficerDtoSchema` untuk menyertakan `recipient_identifier` dan `returned_by_name` ([`#30`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/30), [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)).
+- Tambah input **NIM / ID Kampus (Opsional)** pada `ReturnItemModal` (mendukung tamu non-mahasiswa bila dikosongkan), panel **Ringkasan Serah Terima**, serta lembar cetak A4 resmi **Berita Acara Serah Terima Barang Temuan (`HandoverReceiptSheet`, `BAST/<inventoryCode>`)** di `OfficerItemDetailPage` tanpa membocorkan `privateNotes` ([`#30`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/30), [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)).
+- Tambah opsi **Sertakan Detail Penerima (Serah Terima)** di `InventoryReportPeriodBar` dan `InventoryReportPrintModal` (otomatis aktif saat filter status `RETURNED_TO_OWNER`) untuk menampilkan kolom **Detail Serah Terima** pada `InventoryReportSheet` dengan format tanggal/waktu WIB (`wibDateFormatters.ts`) tanpa menyertakan `privateNotes` ([`#30`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/30), [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)).
+- Tambah suite pengujian baru `apps/frontend/src/tests/officerHandoverAndReportPrint.test.tsx` serta perluasan cakupan pengujian DTO, arsip, dan serah terima pada `apps/backend/tests/officer.dto.test.ts`, `apps/backend/tests/officer-flows.test.ts`, dan `apps/frontend/src/tests/tahap3MockDataAndInventory.test.tsx` ([`#28`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/28), [`#29`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/29), [`#30`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/30), [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)).
+
+### Fixed
+- Tolak eksekusi arsip kosong di `OfficerInventoryService.cleanCompletedInventory` (`POST /api/v1/officer/inventory/clean`) dengan HTTP `409` (`NO_ARCHIVABLE_ITEMS`) serta guard error di `InMemoryItemService.cleanCompletedInventory`, dan nonaktifkan checkbox konfirmasi serta tombol **Bersihkan (Arsipkan)** di `CleanInventoryModal` disertai pesan status informatif ketika `0` barang selesai siap diarsipkan ([`#28`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/28), [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)).
+- Tambah parameter query `archived_only=true` pada `GET /api/v1/officer/inventory` (`officer-inventory.routes.ts`, `officer-inventory.repository.ts`, `HttpItemService.ts`, `InMemoryItemService.ts`) dan perbarui filter arsip di `/petugas/inventaris` menjadi checkbox eksklusif **Hanya Arsip** dengan banner mode arsip, badge **Diarsipkan**, serta komponen `InventoryEmptyState` yang menampilkan jumlah barang aktif dan tombol **Kembali ke Inventaris Aktif** saat belum ada arsip ([`#29`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/29), [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)).
+
+---
+
 ## [1.2.1] - 2026-11-23
 
 ### Fixed
@@ -226,7 +240,8 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ---
 
-[Unreleased]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/ArleneNero/UBL-Lost-and-Found/compare/v1.1.0...v1.1.1

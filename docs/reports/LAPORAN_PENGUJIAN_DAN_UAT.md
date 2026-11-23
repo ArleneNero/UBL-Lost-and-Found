@@ -4,11 +4,11 @@
 | Atribut Dokumen | Detail |
 | :--- | :--- |
 | **Nama Proyek** | UBL Lost and Found (*CampusFind*) |
-| **Versi Evaluasi** | `v1.1.1` (Hotfix Produksi) → `v1.2.0` (Rilis Revisi UAT) |
+| **Versi Evaluasi** | `v1.1.1` (Hotfix Produksi) → `v1.2.0` / `v1.2.1` → `v1.3.0` (Perbaikan Bug Arsip & Detail Serah Terima BAST) |
 | **Target Produksi** | `https://lostandfound-budiluhur.web.id` |
 | **Mitra Operasional** | Pos Pengajaran — Gedung Unit 4 Lantai 1, Universitas Budi Luhur |
 | **Standar Acuan** | Capstone P11 — Pengujian Integrasi, UAT, Bug Tracking & Deployment Gate |
-| **Tanggal Dokumen** | 23 November 2026 |
+| **Tanggal Dokumen** | 24 November 2026 |
 
 ---
 
@@ -17,13 +17,17 @@
 ### 1.1 Ringkasan Eksekutif
 **UBL Lost and Found** merupakan sistem informasi berbasis web untuk pengelolaan barang temuan (*found-item only*) di lingkungan Universitas Budi Luhur, mencakup alur pelaporan mandiri oleh mahasiswa (`STUDENT`), penelusuran katalog publik oleh tamu/sivitas (`Guest`), serta inventarisasi, verifikasi tatap muka, serah terima, dan penyaluran barang oleh petugas posko (`OFFICER`) di **Pos Pengajaran — Gedung Unit 4 Lt. 1**.
 
-Pasca rilis produksi `v1.0.0`–`v1.1.0` pada domain `https://lostandfound-budiluhur.web.id`, dilakukan siklus evaluasi operasional bersama mitra Pos Pengajaran yang menghasilkan **2 temuan bug produksi** (diselesaikan pada patch `v1.1.1`: Issue `#1` dan `#2`) serta **3 kebutuhan revisi UAT** (diimplementasikan menuju rilis `v1.2.0`: Issue `#3`, `#4`, dan `#5`). Dokumen ini merangkum strategi pengujian integrasi inkremental, artefak *stub/driver*, matriks pengujian positif dan negatif, skenario *User Acceptance Testing* (UAT), metrik penyelesaian bug (`100%`), verifikasi *smoke test* otomatis (`scripts/smoke-test.mjs`), serta prosedur *deployment* dan *rollback*.
+Pasca rilis produksi `v1.0.0`–`v1.1.0` pada domain `https://lostandfound-budiluhur.web.id`, dilakukan dua siklus evaluasi operasional bersama mitra Pos Pengajaran:
+- **Siklus 1 (`v1.1.1` – `v1.2.1`):** Menghasilkan **2 temuan bug produksi** (patch `v1.1.1`: Issue `#1` dan `#2`), **3 kebutuhan revisi UAT** (minor `v1.2.0`: Issue `#3`, `#4`, dan `#5`), serta **1 perbaikan observabilitas rilis** (patch `v1.2.1`: Issue `#6`).
+- **Siklus 2 (`v1.3.0`, Milestone `#22`):** Menuntaskan **2 temuan bug arsip** (`BUG-004`: Issue `#28`, `BUG-005`: Issue `#29`) dan **1 peningkatan UAT serah terima & BAST** (`UAT-006`: Issue `#30`).
+
+Dokumen ini merangkum strategi pengujian integrasi inkremental, artefak *stub/driver*, matriks pengujian positif dan negatif (termasuk hasil suite terbaru **14/14 test files / 145 tests Backend** dan **16/16 test files / 95 tests Frontend**), skenario *User Acceptance Testing* (UAT), metrik penyelesaian bug (`19/19 CLOSED`, `100%`), verifikasi *smoke test* otomatis (`scripts/smoke-test.mjs`), serta prosedur *deployment* dan *rollback*.
 
 ### 1.2 Tujuan Pengujian
 1. **Validasi Integrasi Lintas-Lapisan:** Memastikan komunikasi Frontend React 19 SPA, Backend REST API Fastify v5, database Neon Serverless PostgreSQL (Drizzle ORM), penyimpanan objek Cloudflare R2, dan layanan email Resend berjalan konsisten sesuai kontrak `openapi.yaml`.
-2. **Verifikasi Perbaikan Bug & Revisi UAT:** Membuktikan seluruh temuan pasca-rilis (`#1`–`#5`) telah teratasi tanpa regresi pada fitur inti.
-3. **Jaminan Keamanan & Privasi (*Privacy-by-Design*):** Memastikan tidak ada kebocoran kolom sensitif `private_verification_notes` pada endpoint publik, penegakan *Role-Based Access Control* (RBAC) sisi server (`401`/`403`), pencegahan IDOR, dan token upload anti-replay HMAC-SHA256.
-4. **Kesiapan Operasional Rilis `v1.2.0`:** Menyediakan gerbang verifikasi otomatis (*automated smoke test*) dan rencana *rollback* terstruktur sebelum promosi ke lingkungan produksi.
+2. **Verifikasi Perbaikan Bug & Revisi UAT:** Membuktikan seluruh temuan pasca-rilis (`#1`–`#6` dan `#28`–`#30`) telah teratasi tanpa regresi pada fitur inti.
+3. **Jaminan Keamanan & Privasi (*Privacy-by-Design*):** Memastikan tidak ada kebocoran kolom sensitif `private_verification_notes` pada endpoint publik, rekap laporan A4, maupun lembar BAST satuan; serta penegakan *Role-Based Access Control* (RBAC) sisi server (`401`/`403`), pencegahan IDOR, dan token upload anti-replay HMAC-SHA256.
+4. **Kesiapan Operasional Rilis `v1.3.0`:** Memastikan seluruh suite unit/integrasi lintas workspace (`145` test Backend & `95` test Frontend), build produksi monorepo, dan migrasi skema aditif (`item_returns.recipient_identifier VARCHAR(50)`) lulus sebelum commit, deployment, dan eksekusi *smoke test* pasca-rilis.
 
 > [!IMPORTANT]
 > **Batasan Ruang Lingkup Sistem:** Sistem hanya mengelola barang yang telah ditemukan (*found items*). Seluruh verifikasi kecocokan ciri rahasia (`private_verification_notes`) dan serah terima fisik dilakukan secara tatap muka di **Pos Pengajaran (Gedung Unit 4 Lt. 1)**.
@@ -36,7 +40,7 @@ Pasca rilis produksi `v1.0.0`–`v1.1.0` pada domain `https://lostandfound-budil
 Pengujian mencakup empat area utama:
 - **Modul Publik / Tamu (`Guest`):** Landing pemilihan peran (`/`), beranda publik, katalog barang `STORED` (`is_visible = true`), pencarian/filter kategori, detail publik tanpa ciri rahasia, info Pos Pengajaran, dan panduan pengambilan.
 - **Modul Mahasiswa (`STUDENT`):** Registrasi wajib domain `@student.budiluhur.ac.id`, login JWT (HS256), *token-gated password reset*, pelaporan temuan mandiri (`REP-YYYY-XXXX`) dengan kamera WebRTC / galeri, serta pembatalan laporan `PENDING_RECEIPT`.
-- **Modul Petugas Posko (`OFFICER`):** Login khusus petugas, dashboard KPI, pencatatan barang langsung (`INV-YYYY-XXXX`), konfirmasi terima fisik / tolak laporan mahasiswa, toggle visibilitas katalog, kebijakan batas simpan (`storage_limit_days`), pembersihan arsip (*clean soft-archive*), serah terima pemilik (`RETURNED_TO_OWNER`), penyaluran (`DISTRIBUTED`), serta rekap & cetak A4/PDF multi-periode.
+- **Modul Petugas Posko (`OFFICER`):** Login khusus petugas, dashboard KPI, pencatatan barang langsung (`INV-YYYY-XXXX`), konfirmasi terima fisik / tolak laporan mahasiswa, toggle visibilitas katalog, kebijakan batas simpan (`storage_limit_days`), pembersihan arsip (*clean soft-archive* dengan guard `409`/disabled saat `0` item) & filter eksklusif **Hanya Arsip** (`archived_only=true`), serah terima pemilik (`RETURNED_TO_OWNER`) dengan pencatatan opsional NIM/ID Kampus (`recipient_identifier`), penyaluran (`DISTRIBUTED`), cetak Berita Acara Serah Terima (`BAST`) satuan, serta rekap & cetak A4/PDF multi-periode lengkap dengan opsi detail serah terima.
 - **Keamanan, Kontrak API & Infrastruktur:** Validasi Zod DTO, *error envelope* seragam (`{ error: { code, message, request_id } }`), sensor log PII (`authorization`, `email`, `student_number`, `token`), dan *routing single-origin* Vercel Services.
 
 ### 2.2 Perbandingan Lingkungan Staging Lokal vs Produksi
@@ -79,7 +83,7 @@ Mengacu pada pedoman **Capstone P11 (Pengujian Integrasi)**, pengujian tidak dil
 
 | Nama Stub | Lokasi Berkas | Komponen Asli yang Digantikan | Peran dalam Pengujian |
 | :--- | :--- | :--- | :--- |
-| `InMemoryItemService` | `apps/frontend/src/services/in-memory/InMemoryItemService.ts` | `HttpItemService` + API `/items` & `/officer/items` | Menyediakan katalog publik, filter inventaris, simulasi *overdue*, *clean archive*, serta isolasi `privateNotes: null` pada mode publik di `mockStore`. |
+| `InMemoryItemService` | `apps/frontend/src/services/in-memory/InMemoryItemService.ts` | `HttpItemService` + API `/items` & `/officer/items` | Menyediakan katalog publik, filter inventaris termasuk `archivedOnly` (*Hanya Arsip*), simulasi *overdue*, *clean archive* (dengan guard error `0` item), pencatatan `recipientIdentifier` & `returnRecord` pada `returnItem()`, serta isolasi `privateNotes: null` pada mode publik di `mockStore`. |
 | `InMemorySubmissionService` | `apps/frontend/src/services/in-memory/InMemorySubmissionService.ts` | `HttpSubmissionService` + API `/submissions` | Mensimulasikan pembuatan laporan mahasiswa (`REP-YYYY-XXXX`), pembatalan, penerimaan fisik menjadi item inventaris, dan penolakan oleh petugas. |
 | `InMemoryAuthService` | `apps/frontend/src/services/in-memory/InMemoryAuthService.ts` | `HttpAuthService` + API `/auth/*` & `/me` | Mensimulasikan login mahasiswa/petugas, registrasi `@student.budiluhur.ac.id`, sesi aktif, dan alur *forgot/reset password*. |
 | `InMemoryPostService` | `apps/frontend/src/services/in-memory/InMemoryPostService.ts` | `HttpPostService` + API `/posts` & `/officer/post-settings` | Mensimulasikan data Pos Pengajaran dan pembaruan kebijakan `storageLimitDays`. |
@@ -90,8 +94,8 @@ Mengacu pada pedoman **Capstone P11 (Pengujian Integrasi)**, pengujian tidak dil
 
 | Nama Driver | Teknologi / Lokasi | Target yang Diuji | Deskripsi Mekanisme |
 | :--- | :--- | :--- | :--- |
-| **Backend Integration Driver** | Vitest v3 + Fastify `app.inject()` (`apps/backend/tests/*.test.ts` — 14 berkas, 140 tests) | Seluruh modul route, middleware RBAC, service, repository, & DB | Mengirimkan request HTTP sintetis langsung ke instance `buildApp()` tanpa overhead socket jaringan dan memverifikasi status, header, JSON envelope, serta state database. |
-| **Frontend Component & Flow Driver** | Vitest v5 + React Testing Library + `jsdom` (`apps/frontend/src/**/*.test.ts(x)` — 15 berkas, 89 tests) | Halaman Publik, Mahasiswa, Panel Petugas, Modal, Selectors & `ServiceRegistry` | `setup.ts` memanggil `registry.setMode('in-memory')` dan `mockStore.reset()` pada setiap `beforeEach`, lalu mensimulasikan interaksi pengguna (klik, input, submit form). |
+| **Backend Integration Driver** | Vitest v3 + Fastify `app.inject()` (`apps/backend/tests/*.test.ts` — 14 berkas, 145 tests PASS via `npx vitest run --fileParallelism=false`) | Seluruh modul route, middleware RBAC, service, repository, DTO & DB | Mengirimkan request HTTP sintetis langsung ke instance `buildApp()` tanpa overhead socket jaringan dan memverifikasi status, header, JSON envelope, serta state database. |
+| **Frontend Component & Flow Driver** | Vitest v5 + React Testing Library + `jsdom` (`apps/frontend/src/**/*.test.ts(x)` — 16 berkas, 95 tests PASS via `npx vitest run`) | Halaman Publik, Mahasiswa, Panel Petugas, Modal, Lembar Cetak (Rekap A4 & BAST), Selectors & `ServiceRegistry` | `setup.ts` memanggil `registry.setMode('in-memory')` dan `mockStore.reset()` pada setiap `beforeEach`, lalu mensimulasikan interaksi pengguna (klik, input, submit form, cetak). |
 | **Smoke Test Driver** | Node.js ESM (`scripts/smoke-test.mjs`) | Deployment Staging Lokal & Produksi (`https://lostandfound-budiluhur.web.id`) | Driver black-box tanpa dependensi eksternal yang menembak 6 endpoint kritis via `fetch` native, mengukur latensi (`ms`), dan memvalidasi kontrak respons. |
 | **Manual API Driver** | REST Client `api-requests.http` & Koleksi Postman | Endpoint `/api/v1/*` lokal & staging | Digunakan QA/Developer untuk eksplorasi manual skenario multipart/upload dan inspeksi header otentikasi. |
 
@@ -119,6 +123,11 @@ Mengacu pada pedoman **Capstone P11 (Pengujian Integrasi)**, pengujian tidak dil
 | **TC-14** | Kebijakan Batas Simpan (`PATCH /api/v1/officer/post-settings`) | Ubah `storage_limit_days` valid & di luar batas (`0` / `999`) | Happy & Negative (`422`) | Nilai valid `180` vs invalid `0` atau `731` | Nilai `180` → `200 OK` (item lama tidak berubah retroaktif); nilai di luar `1..730` → `422` | Issue `#3` |
 | **TC-15** | Clean Soft-Archive (`POST /api/v1/officer/inventory/clean`) | Arsipkan item selesai tanpa menyentuh item `STORED` | Happy | Eksekusi `POST /officer/inventory/clean` dengan atau tanpa filter `month` | Hanya item `RETURNED_TO_OWNER` & `DISTRIBUTED` yang diisi `archived_at`; item `STORED` & log audit `item_returns` tetap utuh | Issue `#4` |
 | **TC-16** | Rekap & Cetak A4 Multi-Periode (`InventoryReportPrintModal`) | Filter periode WIB & verifikasi keamanan isi cetakan | Happy / Security | Pilih mode `day`/`week`/`month`/`year`/`custom`, buka pratinjau cetak | Total Masuk, Tersedia, Diserahkan, Disalurkan & per Kategori akurat sesuai zona `Asia/Jakarta`; `privateNotes` **tidak tercetak** | Issue `#5` |
+| **TC-17** | Guard Arsip Kosong (`POST /api/v1/officer/inventory/clean` & `CleanInventoryModal`) | Tolak arsip saat `0` barang selesai tersedia (keseluruhan / bulan kosong) | Negative (`409` / Guard UI) | Request `month: "1999-01"` atau clean kedua saat `0` item selesai; buka `CleanInventoryModal` dengan `0` item eligible | Backend balas HTTP `409` (`NO_ARCHIVABLE_ITEMS`); checkbox konfirmasi & tombol **Bersihkan (Arsipkan)** disabled disertai pesan status; item `STORED` tetap aman | `officer-flows.test.ts`, `tahap3MockDataAndInventory.test.tsx`, `officerHandoverAndReportPrint.test.tsx`, Issue `#28` |
+| **TC-18** | Filter Eksklusif `Hanya Arsip` (`GET /api/v1/officer/inventory?archived_only=true`) | Tampilkan hanya barang terarsip & *empty state* saat `0` arsip | Happy & Empty State | Request `archived_only=true` setelah arsip maupun saat belum ada item terarsip | API hanya mengembalikan item `archived_at != null` (tanpa item `STORED`); saat `0` arsip, `InventoryEmptyState` menampilkan *"Belum ada barang yang diarsipkan"*, jumlah barang aktif, & tombol **Kembali ke Inventaris Aktif** | `officer-flows.test.ts`, `tahap3MockDataAndInventory.test.tsx`, `officerHandoverAndReportPrint.test.tsx`, Issue `#29` |
+| **TC-19** | Serah Terima NIM/ID Kampus (`POST /api/v1/officer/items/:id/return`) | Catat `recipient_identifier` mahasiswa, mode tamu (`null`), & validasi DTO `> 50` char | Happy & Negative (`422`) | Payload dengan `recipient_identifier: "2111500999"`, tanpa `recipient_identifier` (tamu), & string `51` karakter | HTTP `201` menyimpan `item_returns.recipient_identifier` (`VARCHAR(50)`) atau `null`, `return_record` memuat `returned_by_name`; input `> 50` char ditolak `returnRequestSchema` (`422`) | `officer.dto.test.ts`, `officer-flows.test.ts`, `officerHandoverAndReportPrint.test.tsx`, Issue `#30` |
+| **TC-20** | Cetak BAST Satuan (`HandoverReceiptSheet` & `OfficerItemDetailPage`) | Pratinjau & cetak Berita Acara Serah Terima item `RETURNED_TO_OWNER` | Happy / Security | Buka detail item `RETURNED_TO_OWNER` dan klik **Cetak Berita Acara (BAST)** | Lembar BAST (`BAST/<inventoryCode>`) tampil via `window.print()` memuat identitas barang, penerima (`NIM / ID` atau `-`), waktu WIB, & blok tanda tangan tanpa **0 kemunculan** `privateNotes` | `officerHandoverAndReportPrint.test.tsx`, Issue `#30` |
+| **TC-21** | Detail Penerima pada Rekap A4 (`InventoryReportPrintModal` & `InventoryReportSheet`) | Toggle kolom *Detail Serah Terima* (auto-aktif saat filter `RETURNED_TO_OWNER`) | Happy / Security | Centang *Sertakan Detail Penerima (Serah Terima)* atau pilih status `RETURNED_TO_OWNER` | Kolom **Detail Serah Terima** menampilkan nama penerima, NIM/ID, waktu WIB, verifikasi, & petugas; `privateNotes` **tidak tercetak** | `officerHandoverAndReportPrint.test.tsx`, Issue `#30` |
 
 ### 4.2 Skenario UAT Mitra (*Given–When–Then*)
 
@@ -140,12 +149,22 @@ Mengacu pada pedoman **Capstone P11 (Pengujian Integrasi)**, pengujian tidak dil
 #### Skenario UAT-04: Pembersihan Arsip Inventaris Selesai (Clean Soft-Archive) (Issue `#4`)
 - **Given:** Tabel `/petugas/inventaris` menampilkan campuran barang berstatus `STORED`, `RETURNED_TO_OWNER`, dan `DISTRIBUTED` (maks. `100` baris per halaman).
 - **When:** Petugas menekan tombol **Bersihkan Arsip**, meninjau peringatan di `CleanInventoryModal` (tersedia pintasan cetak rekap sebelum arsip), lalu mengonfirmasi pembersihan.
-- **Then:** Sistem menandai `archived_at` hanya pada barang `RETURNED_TO_OWNER` dan `DISTRIBUTED`, menyembunyikannya dari daftar aktif default serta pengecekan `OVERDUE`, membiarkan seluruh barang `STORED` tetap aktif, dan tetap memungkinkan petugas meninjau riwayat melalui toggle filter **Tampilkan Arsip**.
+- **Then:** Sistem menandai `archived_at` hanya pada barang `RETURNED_TO_OWNER` dan `DISTRIBUTED`, menyembunyikannya dari daftar aktif default serta pengecekan `OVERDUE`, membiarkan seluruh barang `STORED` tetap aktif, dan tetap memungkinkan petugas meninjau riwayat arsip secara terpisah.
 
 #### Skenario UAT-05: Rekapitulasi & Cetak Laporan A4 Multi-Periode (Issue `#5`)
 - **Given:** Petugas berada di halaman `/petugas/inventaris` dan membutuhkan laporan pertanggungjawaban periodik untuk kepala pos/kampus.
 - **When:** Petugas membuka modal **Rekap & Cetak Laporan**, memilih periode (`Harian`, `Mingguan` Senin–Minggu, `Bulanan`, `Tahunan`, atau `Rentang Kustom` dalam zona waktu WIB), lalu menekan **Cetak / Simpan PDF**.
 - **Then:** Dokumen cetak `@media print` A4/PDF multi-halaman di luar *scroll container* modal menampilkan kop resmi **Pos Pengajaran — Gedung Unit 4 Lt. 1**, kartu ringkasan angka (**Total Masuk**, **Tersedia**, **Sudah Diserahkan**, **Disalurkan**), rincian per kategori, tabel daftar barang **tanpa** kolom rahasia `privateNotes`, serta blok tanda tangan petugas pos.
+
+#### Skenario UAT-06: Guard Arsip Kosong & Filter Eksklusif `Hanya Arsip` (Issue `#28`, Issue `#29`)
+- **Given:** Petugas berada di halaman `/petugas/inventaris` yang memiliki barang aktif (`STORED`), baik saat belum ada barang selesai/arsip maupun setelah sebagian barang selesai diarsipkan.
+- **When:** Petugas membuka **Bersihkan Arsip** ketika `0` barang selesai tersedia (keseluruhan atau pada bulan penerimaan tertentu), lalu mencentang filter **Hanya Arsip** pada `InventoryFilters`.
+- **Then:** Pada modal **Bersihkan Arsip**, sistem menampilkan status peringatan bahwa `0` barang selesai siap diarsipkan (serta barang `STORED` tetap aman) dan menonaktifkan checkbox konfirmasi serta tombol **Bersihkan (Arsipkan)** (dan API mengembalikan `409 NO_ARCHIVABLE_ITEMS` bila dipanggil langsung). Saat **Hanya Arsip** dicentang ketika belum ada arsip, `InventoryEmptyState` menampilkan pesan *"Belum ada barang yang diarsipkan"*, jumlah barang aktif di inventaris utama, dan tombol **Kembali ke Inventaris Aktif**; sedangkan bila arsip tersedia, sistem hanya menampilkan barang dengan `archived_at` terisi beserta badge **Diarsipkan** dan banner pintasan **Lihat Inventaris Aktif**.
+
+#### Skenario UAT-07: Pencatatan NIM/ID Kampus Serah Terima, Detail Penerima di Rekap A4 & Cetak BAST Satuan (Issue `#30`)
+- **Given:** Petugas memproses serah terima barang `STORED` di `/petugas/inventaris/:id` untuk mahasiswa pemilik atau tamu non-mahasiswa, serta ingin mencetak bukti BAST satuan maupun rekap A4 lengkap dengan detail penerima.
+- **When:** Petugas mengisi **Nama Lengkap Penerima**, mengisi atau mengosongkan **NIM / ID Kampus (Opsional)**, dan melengkapi **Ringkasan Verifikasi Kepemilikan** pada `ReturnItemModal`; kemudian menekan **Cetak Berita Acara (BAST)** di halaman detail barang, atau mengaktifkan opsi **Sertakan Detail Penerima (Serah Terima)** di `InventoryReportPrintModal`.
+- **Then:** Sistem menyimpan `recipient_identifier` (atau `null` dengan tampilan `-` untuk tamu) beserta `returned_by_name`, menampilkan kartu **Ringkasan Serah Terima** di `OfficerItemDetailPage`, mencetak lembar A4 resmi `HandoverReceiptSheet` (`BAST/<inventoryCode>`) lengkap dengan blok tanda tangan Pihak Penerima & Petugas Pos Pengajaran, serta menampilkan kolom **Detail Serah Terima** pada laporan Rekap A4 (otomatis aktif saat filter status `RETURNED_TO_OWNER`) **tanpa** pernah menyertakan `privateNotes`.
 
 ---
 
@@ -153,7 +172,7 @@ Mengacu pada pedoman **Capstone P11 (Pengujian Integrasi)**, pengujian tidak dil
 
 Format pelaporan defect di bawah ini mengikuti standar **Capstone P11 (Slide 15–16)** yang mencakup identifikasi modul, langkah reproduksi, *expected vs actual*, lingkungan/versi, *severity*, *priority*, bukti komitmen perbaikan, serta status penutupan (`CLOSED`).
 
-### 5.1 Log Bug & Revisi Siklus Evaluasi Pasca-Rilis (`v1.1.1` – `v1.2.1`, Issue `#1`–`#6`)
+### 5.1 Log Bug & Revisi Siklus Evaluasi Pasca-Rilis (`v1.1.1` – `v1.3.0`, Issue `#1`–`#6`, `#28`–`#30`)
 
 | ID | Judul & Modul Terdampak | Langkah Reproduksi Singkat | Expected vs Actual | Lingkungan / Versi | Severity | Priority | Bukti / Issue / Commit | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -163,6 +182,9 @@ Format pelaporan defect di bawah ini mengikuti standar **Capstone P11 (Slide 15�
 | **UAT-004** | **Inventaris Penuh Item Selesai Tanpa Fitur Arsip Aman & Limit Halaman 10**<br>*Modul:* `officer-inventory.routes`, `HttpItemService`, `found_items.archived_at`, `CleanInventoryModal` | 1. Akumulasi puluhan barang `RETURNED_TO_OWNER`/`DISTRIBUTED`.<br>2. Buka `/petugas/inventaris` (`limit=100`). | **Expected:** Tersedia aksi *Bersihkan Arsip* (soft-archive `archived_at`) khusus item selesai tanpa menghapus jejak audit & limit query hingga `100`.<br>**Actual:** Semua item menumpuk di daftar aktif dan query di-clamp `max(10)` di backend & frontend. | UAT Mitra v1.1.1 (Pos Pengajaran) | **Medium** *(Efisiensi operasional harian)* | **P2** | Issue [`#4`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/4)<br>Commit [`444ca6b`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/444ca6b)<br>Rilis `v1.2.0` | **CLOSED** *(v1.2.0)* |
 | **UAT-005** | **Belum Tersedia Rekap Statistik & Cetak Laporan A4 Multi-Periode**<br>*Modul:* `reportDateSelectors.ts`, `reportSummarySelectors.ts`, `InventoryReportPrintModal` | 1. Petugas ingin mencetak rekap harian/mingguan/bulanan/tahunan dari `/petugas/inventaris`. | **Expected:** Modal rekap fleksibel (WIB) + preview cetak A4/PDF multi-halaman dengan kop Pos Pengajaran, tanda tangan, & tanpa `privateNotes`.<br>**Actual:** Fitur rekap & layout cetak resmi belum tersedia. | UAT Mitra v1.1.1 (Pos Pengajaran) | **Medium** *(Kebutuhan pelaporan resmi)* | **P2** | Issue [`#5`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/5)<br>Commit [`b8b51f0`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/b8b51f0)<br>Rilis `v1.2.0` | **CLOSED** *(v1.2.0)* |
 | **BUG-003** | **Serverless Health Probe `/api/v1/health` Tidak Mengembalikan `version` & `commit`**<br>*Modul:* `apps/backend/src/index.ts` (Vercel Runtime Entrypoint) | 1. Jalankan `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id`.<br>2. Periksa respons `/api/v1/health`. | **Expected:** HTTP `200` mengembalikan `{ status: "ok", version: "1.2.x", commit: "<sha>" }`.<br>**Actual:** Direct handler probe di `index.ts` memotong request sebelum `app.ts` dan tidak menyertakan `version` (`undefined`). | Produksi `v1.2.0` (`lostandfound-budiluhur.web.id`) | **Medium** *(Observabilitas rilis & smoke gate)* | **P2** | Issue [`#6`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/6)<br>Commit [`685f4c6`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/685f4c6)<br>Verified: `6/6 smoke PASS` | **CLOSED** *(v1.2.1)* |
+| **BUG-004** | **Tombol Bersihkan Arsip Tetap Dapat Dijalankan Saat `0` Barang Selesai Tersedia**<br>*Modul:* `CleanInventoryModal`, `useOfficerInventory`, `officer-inventory.service`, `InMemoryItemService` | 1. Buka `/petugas/inventaris` saat `0` barang selesai (atau pilih bulan kosong).<br>2. Buka *Bersihkan Arsip* → centang & submit, atau panggil `POST /officer/inventory/clean`. | **Expected:** Backend menolak dengan `409 NO_ARCHIVABLE_ITEMS`; modal menonaktifkan checkbox & tombol submit serta menampilkan peringatan informatif (`STORED` tetap aman).<br>**Actual:** Checkbox & tombol tetap aktif dan API/stub tidak menjaga kondisi `0` item selesai. | Evaluasi `v1.2.1` (Pos Pengajaran) | **Medium** *(Error UX & guard arsip kosong)* | **P2** | Issue [`#28`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/28)<br>Commit [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)<br>Milestone [`#22`](https://github.com/ArleneNero/UBL-Lost-and-Found/milestone/22)<br>Regresi: `officer-flows.test.ts`, `tahap3MockDataAndInventory.test.tsx`, `officerHandoverAndReportPrint.test.tsx` | **CLOSED** *(v1.3.0)* |
+| **BUG-005** | **Filter Arsip Menampilkan Barang Biasa Saat Belum Ada Arsip Tanpa Informasi Status**<br>*Modul:* `officer-inventory.routes`, `officer-inventory.repository`, `InventoryFilters`, `InventoryEmptyState`, `useOfficerInventory` | 1. Buka `/petugas/inventaris` saat hanya ada barang `STORED` (`0` arsip).<br>2. Aktifkan checkbox filter arsip. | **Expected:** Filter eksklusif **Hanya Arsip** (`archived_only=true`) menampilkan *empty state* *"Belum ada barang yang diarsipkan"*, jumlah barang aktif, & tombol **Kembali ke Inventaris Aktif** (atau hanya item ber-badge **Diarsipkan**).<br>**Actual:** Barang biasa tetap tampil saat arsip kosong tanpa informasi status. | Evaluasi `v1.2.1` (Pos Pengajaran) | **Medium** *(Kejelasan filter arsip & empty state)* | **P2** | Issue [`#29`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/29)<br>Commit [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)<br>Milestone [`#22`](https://github.com/ArleneNero/UBL-Lost-and-Found/milestone/22)<br>Regresi: `officer-flows.test.ts`, `tahap3MockDataAndInventory.test.tsx`, `officerHandoverAndReportPrint.test.tsx` | **CLOSED** *(v1.3.0)* |
+| **UAT-006** | **Tambah NIM/ID Kampus Penerima Serah Terima, Detail Penerima di Rekap A4 & Cetak BAST Satuan**<br>*Modul:* `item_returns.recipient_identifier`, `officer.dto`, `ReturnItemModal`, `HandoverReceiptSheet`, `OfficerItemDetailPage`, `InventoryReportPrintModal` | 1. Proses serah terima dengan/tanpa NIM di `ReturnItemModal`.<br>2. Cetak BAST satuan di detail item & aktifkan Detail Serah Terima di Rekap A4. | **Expected:** Opsional `recipient_identifier` (`VARCHAR(50)`) tersimpan (tamu `null`), tampil *Ringkasan Serah Terima* + cetak BAST (`BAST/<kode>`) & kolom *Detail Serah Terima* di Rekap A4 tanpa membocorkan `privateNotes`.<br>**Actual:** Belum ada kolom NIM/ID, ringkasan/cetak BAST satuan, maupun opsi detail penerima di Rekap A4. | UAT Mitra `v1.2.1` (Pos Pengajaran) | **Medium** *(Kelengkapan administrasi serah terima & BAST)* | **P2** | Issue [`#30`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/30)<br>Commit [`57cdc3f`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/57cdc3f)<br>Milestone [`#22`](https://github.com/ArleneNero/UBL-Lost-and-Found/milestone/22)<br>Regresi: `officer.dto.test.ts`, `officer-flows.test.ts`, `officerHandoverAndReportPrint.test.tsx` | **CLOSED** *(v1.3.0)* |
 
 ### 5.2 Audit Jejak Defect Historis Fase Pengembangan & Launch (`v0.2.0` – `v1.1.0`, Issue `#7`–`#16`)
 
@@ -188,9 +210,9 @@ $$\text{Persentase Resolusi} = \frac{\text{Jumlah Item Berstatus CLOSED}}{\text{
 
 | Kategori Temuan | Total Dilaporkan | Status `CLOSED` | Status `OPEN` | Persentase Resolusi (`%`) | Keterangan |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| **Siklus Evaluasi Pasca-Rilis (`#1`–`#6`)** | 6 | 6 | 0 | **100%** | Patch `v1.1.1` (`#1`–`#2`), Minor `v1.2.0` (`#3`–`#5`), Patch `v1.2.1` (`#6`) |
+| **Siklus Evaluasi Pasca-Rilis (`#1`–`#6`, `#28`–`#30`)** | 9 | 9 | 0 | **100%** | Patch `v1.1.1` (`#1`–`#2`), Minor `v1.2.0` (`#3`–`#5`), Patch `v1.2.1` (`#6`), Minor `v1.3.0` (`#28`–`#30`) |
 | **Jejak Defect Historis (`#7`–`#16`)** | 10 | 10 | 0 | **100%** | Meliputi 1 *Critical*, 4 *High*, 1 *Medium*, 4 *Low* sepanjang `v0.2.0`–`v1.1.0` |
-| **Total Keseluruhan (`#1`–`#16`)** | **16** | **16** | **0** | **100%** | Seluruh bug mayor, minor & revisi UAT tuntas 100% |
+| **Total Keseluruhan (`#1`–`#16`, `#28`–`#30`)** | **19** | **19** | **0** | **100%** | Seluruh bug mayor, minor & revisi UAT tuntas (`19/19 CLOSED`) |
 
 ---
 
@@ -211,7 +233,7 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 ### 6.2 Rekaman Hasil Eksekusi Smoke Test (Lokal Staging vs Produksi)
 
 > [!NOTE]
-> Tabel di bawah ini merupakan **section rekaman eksekusi final** yang diisi oleh Release Engineer / Orchestrator setelah seluruh paket `v1.2.0` selesai di-build di lokal (`:3000` / `:4173`) dan dipromosikan ke produksi (`https://lostandfound-budiluhur.web.id`). Validasi sintaksis script telah diverifikasi lulus (`node --check scripts/smoke-test.mjs`, exit code `0`).
+> Rekaman hasil di bawah merupakan eksekusi terverifikasi untuk rilis sebelumnya (`v1.2.0` lokal & `v1.2.1` produksi pada commit `685f4c6`). Untuk rilis **`v1.3.0`**, gerbang pra-rilis di lokal telah diverifikasi melalui suite Vitest Backend/Frontend, `npm run build`, dan `npm run db:migrate`; eksekusi `npm run smoke` untuk `v1.3.0` dijalankan setelah proses commit, tagging, dan deployment selesai.
 
 #### A. Eksekusi Staging Lokal (`npm run smoke -- --base-url=http://localhost:3000 --frontend-url=http://localhost:4173`)
 | Probe | Endpoint | Status HTTP | Latensi (ms) | Hasil |
@@ -223,7 +245,7 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 | 5. OpenAPI YAML Contract | `http://localhost:3000/openapi.yaml` | `200` | `4.1 ms` | **PASS** |
 | 6. Frontend SPA Entrypoint | `http://localhost:4173/` | `200` | `15.6 ms` | **PASS** |
 
-*Ringkasan Lokal:* **6/6 probes PASSED** (exit code `0`).
+*Ringkasan Lokal (`v1.2.0`):* **6/6 probes PASSED** (exit code `0`).
 
 #### B. Eksekusi Produksi (`npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` — Rilis `v1.2.1` commit `685f4c6`)
 | Probe | Endpoint | Status HTTP | Latensi (ms) | Hasil |
@@ -235,15 +257,15 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 | 5. OpenAPI YAML Contract | `https://lostandfound-budiluhur.web.id/openapi.yaml` | `200` | `567.3 ms` | **PASS** |
 | 6. Frontend SPA Entrypoint | `https://lostandfound-budiluhur.web.id/` | `200` | `782.4 ms` | **PASS** |
 
-*Ringkasan Produksi:* **6/6 probes PASSED** (`version: "1.2.1"`, `commit: "685f4c6"`, `<meta name="app-version" content="1.2.1" />`).
+*Ringkasan Produksi (`v1.2.1`):* **6/6 probes PASSED** (`version: "1.2.1"`, `commit: "685f4c6"`, `<meta name="app-version" content="1.2.1" />`).
 
-### 6.3 Checklist Deployment Rilis `v1.2.0` / `v1.2.1`
+### 6.3 Checklist Deployment Rilis `v1.3.0` (dan Rekam Rilis `v1.2.0` / `v1.2.1`)
 
-- [x] **Sinkronisasi Versi & Build Monorepo:** Root `package.json`, `apps/backend/package.json`, dan `apps/frontend/package.json` disinkronkan; `npm run build` di root memproduksi bundle backend `api/*.cjs` dan frontend `apps/frontend/dist`.
-- [x] **Migrasi Skema Database Neon PostgreSQL:** `npm run db:migrate --prefix apps/backend` menerapkan kolom aditif `found_items.storage_limit_days` dan `found_items.archived_at`, serta `servicePost.fixture.ts` & `db:seed` menetapkan default `365 hari`.
-- [x] **Verifikasi Test Suite Lintas Workspace:** Backend (`14 test files / 140 tests PASS`) dan Frontend (`15 test files / 89 tests PASS`) lulus 100%.
-- [x] **Verifikasi Smoke Test Staging Lokal:** `npm run smoke -- --base-url=http://localhost:3000 --frontend-url=http://localhost:4173` lulus `6/6 probes PASSED`.
-- [x] **Verifikasi Environment Variables & Smoke Test Produksi:** `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` lulus `6/6 probes PASSED` dengan `version: "1.2.1"` & `commit: "685f4c6"`.
+- [x] **Sinkronisasi Versi `1.3.0` & Build Monorepo:** Root `package.json`, `apps/backend/package.json`, dan `apps/frontend/package.json` diperbarui ke `1.3.0`; `npm run build` Backend & Frontend selesai dengan exit code `0`.
+- [x] **Migrasi Skema Database Neon PostgreSQL (`v1.3.0`):** `npm run db:migrate --prefix apps/backend` menambahkan kolom aditif `item_returns.recipient_identifier VARCHAR(50)` (melengkapi migrasi `v1.2.0`: `found_items.storage_limit_days` & `found_items.archived_at`).
+- [x] **Verifikasi Test Suite Lintas Workspace (`v1.3.0`):** Backend (`npx vitest run --fileParallelism=false`: **14 test files, 145 tests PASS**) dan Frontend (`npx vitest run`: **16 test files, 95 tests PASS**) lulus 100%.
+- [x] **Verifikasi Smoke Test Rilis Sebelumnya (`v1.2.0` / `v1.2.1`):** Lokal (`:3000` / `:4173`) `6/6 probes PASSED` dan Produksi (`v1.2.1`, `685f4c6`) `6/6 probes PASSED`.
+- [ ] **Verifikasi Commit, Tag & Smoke Test Produksi `v1.3.0`:** Jalankan `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` setelah commit, git tag `v1.3.0`, dan promosi deployment ke produksi.
 
 ### 6.4 Prosedur Rollback (Mitigasi Kegagalan Produksi)
 
@@ -251,28 +273,28 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 > Jika pasca-deployment ke produksi ditemukan error `5xx` berulang, kegagalan otentikasi, atau *smoke test* gagal pada salah satu dari 6 probe kritis, segera jalankan langkah *rollback* berikut dalam < 5 menit.
 
 1. **Rollback Instan Aplikasi di Vercel (Zero-Rebuild):**
-   - Buka **Vercel Dashboard → Deployments** pada proyek UBL Lost and Found, pilih deployment stabil terakhir bertanda rilis **`v1.1.1`** (commit `a92f64f`), lalu klik **Promote to Production** (atau via CLI `vercel rollback <deployment-url>`).
-2. **Rollback Source Code Git ke Tag Stabil `v1.1.1`:**
+   - Buka **Vercel Dashboard → Deployments** pada proyek UBL Lost and Found, pilih deployment stabil terakhir bertanda rilis **`v1.2.1`** (commit `685f4c6`) — atau `v1.1.1` (`a92f64f`) bila dibutuhkan — lalu klik **Promote to Production** (atau via CLI `vercel rollback <deployment-url>`).
+2. **Rollback Source Code Git ke Tag Stabil `v1.2.1`:**
    ```bash
    # Periksa tag rilis stabil sebelumnya
    git tag -l
-   # Buat hotfix/revert dari state stabil v1.1.1 bila diperlukan perbaikan kode
+   # Buat hotfix/revert dari state stabil v1.2.1 bila diperlukan perbaikan kode
    git revert --no-commit <commit-bermasalah>..HEAD
    ```
 3. **Kompatibilitas & Rollback Skema Database (`drizzle-kit` / Neon):**
-   - Perubahan skema `v1.2.0` (`found_items.storage_limit_days` dan `found_items.archived_at`) dirancang **aditif (*backward-compatible*)**, sehingga kode `v1.1.1` tetap dapat berjalan normal tanpa error kolom bila dilakukan *rollback* aplikasi secara instan.
+   - Perubahan skema `v1.3.0` (`item_returns.recipient_identifier VARCHAR(50)`) maupun `v1.2.0` (`found_items.storage_limit_days`, `found_items.archived_at`) dirancang **aditif (*backward-compatible*)**, sehingga kode `v1.2.1` tetap berjalan normal tanpa error kolom bila dilakukan *rollback* aplikasi secara instan.
    - Jika mutlak perlu mengembalikan struktur tabel secara penuh, gunakan fitur **Neon Branching / Point-in-Time Restore** sebelum waktu migrasi atau jalankan `ALTER TABLE` terukur setelah *backup snapshot* Neon dipastikan tersedia.
 4. **Verifikasi Pasca-Rollback:**
-   - Jalankan ulang `node scripts/smoke-test.mjs --base-url=https://lostandfound-budiluhur.web.id` untuk memastikan seluruh 6 probe kembali berstatus `PASS` dengan versi `1.1.1` pada `/api/v1/health`.
+   - Jalankan ulang `node scripts/smoke-test.mjs --base-url=https://lostandfound-budiluhur.web.id` untuk memastikan seluruh 6 probe kembali berstatus `PASS` dengan versi rilis stabil pada `/api/v1/health`.
 
 ---
 
 ## Bab 7: Analisis Akhir, Rekomendasi & Form Sign-Off UAT
 
 ### 7.1 Analisis Akhir Kesiapan Rilis
-Berdasarkan hasil implementasi perbaikan pasca-rilis (`v1.1.1`) dan penyempurnaan fitur UAT (`v1.2.0`):
-1. **Keandalan Fungsional:** Seluruh celah operasional yang ditemukan di lapangan (`#1` terima fisik laporan tanpa re-upload foto, `#2` guard visibilitas non-`STORED`, `#3` aturan overdue 365 hari non-retroaktif, `#4` clean soft-archive tanpa menghapus audit, dan `#5` rekap & cetak A4 WIB) telah tertangani dengan persentase resolusi **100% (5/5)**.
-2. **Keamanan & Privasi:** Pemisahan DTO publik (`FoundItemPublic`) dan DTO petugas (`InventoryOfficerDto`) menjamin zero-leakage atas `private_verification_notes`, diperkuat oleh validasi RBAC server-side dan upload token anti-replay.
+Berdasarkan hasil implementasi perbaikan pasca-rilis (`v1.1.1`–`v1.2.1`) serta penyempurnaan arsip dan administrasi serah terima BAST (`v1.3.0`):
+1. **Keandalan Fungsional:** Seluruh temuan operasional lintas dua siklus evaluasi (`#1`–`#6` dan `#28`–`#30`, termasuk guard arsip kosong `409`/disabled, filter eksklusif *Hanya Arsip*, NIM/ID Kampus opsional penerima, detail penerima di Rekap A4, dan cetak BAST satuan) telah tertangani dengan persentase resolusi **100% (9/9 pasca-rilis; 19/19 total keseluruhan)**.
+2. **Keamanan & Privasi:** Pemisahan DTO publik (`FoundItemPublic`) dan DTO petugas (`InventoryOfficerDto`) menjamin zero-leakage atas `private_verification_notes` baik di API publik, lembar cetak `InventoryReportSheet`, maupun lembar `HandoverReceiptSheet` (BAST), diperkuat oleh validasi RBAC server-side dan upload token anti-replay.
 3. **Observabilitas Rilis:** Keberadaan `version` + `commit` di `/api/v1/health` serta script `scripts/smoke-test.mjs` mempermudah verifikasi otomatis setiap kali deployment dilakukan.
 
 ### 7.2 Rekomendasi Lanjutan
@@ -280,12 +302,12 @@ Berdasarkan hasil implementasi perbaikan pasca-rilis (`v1.1.1`) dan penyempurnaa
 2. **Backup & Pemeliharaan Neon PostgreSQL:** Manfaatkan jadwal *snapshot* / *branch backup* Neon sebelum menjalankan skrip migrasi `db:push` dan sebelum petugas melakukan pembersihan arsip masal di akhir tahun ajaran.
 3. **Monitoring Latensi & Error Rate:** Pantau log Vercel Functions secara berkala untuk mendeteksi anomali latensi pada endpoint `/api/v1/items` dan `/storage/*`.
 
-### 7.3 Form Sign-Off UAT & Persetujuan Rilis `v1.2.0`
+### 7.3 Form Sign-Off UAT & Persetujuan Rilis `v1.3.0`
 
 Dengan menandatangani tabel persetujuan di bawah ini, para pemangku kepentingan menyatakan bahwa seluruh skenario pengujian integrasi, UAT mitra, dan kriteria kelayakan rilis telah ditinjau dan disetujui untuk dioperasikan di **Pos Pengajaran — Gedung Unit 4 Lantai 1, Universitas Budi Luhur**.
 
 | Peran / Jabatan | Nama / Perwakilan | Keputusan | Tanggal | Tanda Tangan / Paraf |
 | :--- | :--- | :---: | :---: | :---: |
-| **Tim Pengembang & QA Lead** | *ArleneNero / Tim Capstone UBL Lost and Found* | `APPROVED` / `HOLD` | 23/11/2026 | `___________________` |
+| **Tim Pengembang & QA Lead** | *ArleneNero / Tim Capstone UBL Lost and Found* | `APPROVED` / `HOLD` | 24/11/2026 | `___________________` |
 | **Mitra Operasional (Petugas Posko)** | *Perwakilan Pos Pengajaran — Gedung Unit 4 Lt. 1* | `APPROVED` / `HOLD` | `___/___/2026` | `___________________` |
 | **Dosen Pengampu / Pembimbing** | *Dosen Pengampu Mata Kuliah Capstone* | `APPROVED` / `HOLD` | `___/___/2026` | `___________________` |
