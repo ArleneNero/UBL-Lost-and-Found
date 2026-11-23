@@ -81193,7 +81193,7 @@ function resolveFallbackVersion() {
   }
   return "0.0.0";
 }
-var APP_VERSION = "1.2.0".length > 0 ? "1.2.0" : resolveFallbackVersion();
+var APP_VERSION = "1.2.1".length > 0 ? "1.2.1" : resolveFallbackVersion();
 function getDeployCommit() {
   return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local";
 }
@@ -99133,6 +99133,8 @@ async function handler(req, res) {
       res.end(
         JSON.stringify({
           status: "ok",
+          version: APP_VERSION,
+          commit: getDeployCommit(),
           probe: "handler_reached",
           url: req.url,
           timestamp: (/* @__PURE__ */ new Date()).toISOString()

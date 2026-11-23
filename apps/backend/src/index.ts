@@ -1,4 +1,5 @@
 import { buildApp } from "./app.js";
+import { APP_VERSION, getDeployCommit } from "./config/version.js";
 
 const app = buildApp();
 
@@ -15,6 +16,8 @@ export default async function handler(req: any, res: any) {
       res.end(
         JSON.stringify({
           status: "ok",
+          version: APP_VERSION,
+          commit: getDeployCommit(),
           probe: "handler_reached",
           url: req.url,
           timestamp: new Date().toISOString(),
