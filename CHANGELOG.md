@@ -24,7 +24,7 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 ## [1.2.1] - 2026-11-23
 
 ### Fixed
-- Sertakan field `version` dan `commit` pada direct diagnostic health probe handler di `apps/backend/src/index.ts` agar `/api/v1/health` dan `/health` di serverless Vercel melaporkan versi rilis secara akurat ([`92f2448`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/92f2448)).
+- Sertakan field `version` dan `commit` pada direct diagnostic health probe handler di `apps/backend/src/index.ts` agar `/api/v1/health` dan `/health` di serverless Vercel melaporkan versi rilis secara akurat ([`#6`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/6), [`685f4c6`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/685f4c6)).
 
 ---
 
