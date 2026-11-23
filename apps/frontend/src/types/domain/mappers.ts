@@ -43,6 +43,9 @@ export function mapItemDtoToDomain(
     storageLimitDays: isOfficer
       ? (dto as InventoryOfficerDto).storage_limit_days ?? null
       : null,
+    archivedAt: isOfficer
+      ? (dto as InventoryOfficerDto).archived_at ?? null
+      : null,
   };
 }
 

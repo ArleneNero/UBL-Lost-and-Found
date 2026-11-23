@@ -94,4 +94,35 @@ describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
       expect(settings.storageLimitDays).toBe(180);
     });
   });
+
+  it('archives completed items via CleanInventoryModal while keeping STORED items and reveals them via Tampilkan Arsip', async () => {
+    render(
+      <MemoryRouter>
+        <OfficerInventoryPage />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Kunci Motor Honda Vario').length).toBeGreaterThan(0);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Bersihkan Arsip/i }));
+    expect(screen.getByRole('heading', { name: /Bersihkan Arsip Inventaris/i })).toBeDefined();
+
+    const confirmBtn = screen.getByRole('button', { name: /Bersihkan \(Arsipkan\)/i }) as HTMLButtonElement;
+    expect(confirmBtn.disabled).toBe(true);
+
+    const dialog = screen.getByRole('dialog');
+    const confirmCheckbox = dialog.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    fireEvent.click(confirmCheckbox);
+    expect(confirmBtn.disabled).toBe(false);
+
+    fireEvent.click(confirmBtn);
+    await waitFor(() => {
+      expect(screen.getByText(/barang selesai berhasil diarsipkan/i)).toBeDefined();
+    });
+
+    // STORED item must remain visible
+    expect(screen.getAllByText('Kunci Motor Honda Vario').length).toBeGreaterThan(0);
+  });
 });

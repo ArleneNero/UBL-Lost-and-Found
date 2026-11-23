@@ -93686,6 +93686,7 @@ var foundItems = pgTable(
     foundOn: date("found_on"),
     receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
     storageLimitDays: integer("storage_limit_days"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     status: itemStatusEnum("status").notNull().default("STORED"),
     isVisible: boolean("is_visible").notNull().default(true)
   },
@@ -97381,6 +97382,7 @@ var inventoryOfficerDtoSchema = external_exports.object({
   found_on: external_exports.string().nullable(),
   received_at: external_exports.string().datetime(),
   storage_limit_days: external_exports.number().int().positive().nullable().optional(),
+  archived_at: external_exports.string().datetime().nullable().optional(),
   status: external_exports.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]),
   is_visible: external_exports.boolean(),
   storage_post_id: external_exports.number().int(),
@@ -97460,6 +97462,14 @@ var postSettingsResponseSchema = external_exports.object({
 var postSettingsUpdateSchema = external_exports.object({
   storage_limit_days: external_exports.number({ invalid_type_error: "Batas hari penyimpanan harus berupa angka" }).int("Batas hari penyimpanan harus berupa bilangan bulat").min(1, "Minimal batas simpan adalah 1 hari").max(730, "Maksimal batas simpan adalah 730 hari (2 tahun)")
 }).strict();
+var cleanInventoryRequestSchema = external_exports.object({
+  month: external_exports.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Format bulan harus YYYY-MM").optional()
+}).strict();
+var cleanInventoryResponseSchema = external_exports.object({
+  data: external_exports.object({
+    archived_count: external_exports.number().int().nonnegative()
+  })
+}).strict();
 
 // src/modules/officer/inventory-code.util.ts
 async function generateInventoryCode(tx, year2) {
@@ -97523,11 +97533,14 @@ var OfficerInventoryRepository = class {
    * B/G.1.0: Lists inventory items stored at this post with filters and pagination
    */
   async getInventoryByPost(params) {
-    const { storagePostId, status, category, q: q3 } = params;
+    const { storagePostId, status, category, q: q3, includeArchived = false } = params;
     const page = Math.max(1, params.page || 1);
-    const limit = Math.min(10, Math.max(1, params.limit || 10));
+    const limit = Math.min(100, Math.max(1, params.limit || 10));
     const offset = (page - 1) * limit;
     const conditions = [eq(foundItems.storagePostId, storagePostId)];
+    if (!includeArchived) {
+      conditions.push(isNull(foundItems.archivedAt));
+    }
     if (status) {
       conditions.push(eq(foundItems.status, status));
     }
@@ -97616,7 +97629,8 @@ var OfficerInventoryRepository = class {
     const storedItems = await db.query.foundItems.findMany({
       where: and(
         eq(foundItems.storagePostId, storagePostId),
-        eq(foundItems.status, "STORED")
+        eq(foundItems.status, "STORED"),
+        isNull(foundItems.archivedAt)
       )
     });
     const overdueList = [];
@@ -97677,6 +97691,28 @@ var OfficerInventoryRepository = class {
       storage_limit_days: updated.storageLimitDays ?? storageLimitDays
     };
   }
+  /**
+   * Soft-archives completed items (RETURNED_TO_OWNER & DISTRIBUTED), preserving audit rows & STORED items
+   */
+  async cleanCompletedInventory(storagePostId, month) {
+    const conditions = [
+      eq(foundItems.storagePostId, storagePostId),
+      isNull(foundItems.archivedAt),
+      inArray(foundItems.status, ["RETURNED_TO_OWNER", "DISTRIBUTED"])
+    ];
+    if (month) {
+      const [yearStr, monthStr] = month.split("-");
+      const year2 = Number(yearStr);
+      const monthNum = Number(monthStr);
+      const nextYear = monthNum === 12 ? year2 + 1 : year2;
+      const nextMonth = monthNum === 12 ? 1 : monthNum + 1;
+      const startWib = /* @__PURE__ */ new Date(`${yearStr}-${monthStr}-01T00:00:00+07:00`);
+      const endWib = /* @__PURE__ */ new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+07:00`);
+      conditions.push(gte(foundItems.receivedAt, startWib), lt(foundItems.receivedAt, endWib));
+    }
+    const updated = await db.update(foundItems).set({ archivedAt: /* @__PURE__ */ new Date() }).where(and(...conditions)).returning({ itemId: foundItems.itemId });
+    return { archived_count: updated.length };
+  }
 };
 var officerInventoryRepository = new OfficerInventoryRepository();
 
@@ -97694,6 +97730,7 @@ function mapToOfficerDto(item, photo, context) {
     found_on: item.foundOn ? String(item.foundOn).split("T")[0] : null,
     received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
     storage_limit_days: item.storageLimitDays ?? null,
+    archived_at: item.archivedAt ? item.archivedAt instanceof Date ? item.archivedAt.toISOString() : new Date(item.archivedAt).toISOString() : null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,
@@ -97822,6 +97859,12 @@ var OfficerInventoryService = class {
     }
     return updated;
   }
+  /**
+   * Soft-archive completed items (RETURNED_TO_OWNER / DISTRIBUTED)
+   */
+  async cleanCompletedInventory(context, month) {
+    return await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
+  }
 };
 var officerInventoryService = new OfficerInventoryService();
 
@@ -97835,7 +97878,8 @@ var inventoryQuerySchema = external_exports.object({
   q: external_exports.string().optional(),
   sort: external_exports.enum(["received_at_asc", "received_at_desc"]).default("received_at_desc"),
   page: external_exports.coerce.number().int().min(1).default(1),
-  limit: external_exports.coerce.number().int().min(1).max(10).default(10)
+  limit: external_exports.coerce.number().int().min(1).max(100).default(10),
+  include_archived: external_exports.enum(["true", "false"]).optional().transform((v2) => v2 === "true")
 });
 var officerInventoryRoutes = async (app2) => {
   app2.post(
@@ -97865,10 +97909,18 @@ var officerInventoryRoutes = async (app2) => {
     { preHandler: [requireOfficer] },
     async (request, reply) => {
       const parsedQuery = inventoryQuerySchema.safeParse(request.query);
-      const query = parsedQuery.success ? parsedQuery.data : { sort: "received_at_desc", page: 1, limit: 10 };
+      const query = parsedQuery.success ? parsedQuery.data : { sort: "received_at_desc", page: 1, limit: 10, include_archived: false };
       const result = await officerInventoryService.getInventory(
         request.officerContext,
-        query
+        {
+          status: query.status,
+          category: query.category,
+          q: query.q,
+          sort: query.sort,
+          page: query.page,
+          limit: query.limit,
+          includeArchived: query.include_archived
+        }
       );
       return reply.status(200).send(result);
     }
@@ -97963,6 +98015,28 @@ var officerInventoryRoutes = async (app2) => {
         parsed2.data.storage_limit_days
       );
       return reply.status(200).send({ data: updated });
+    }
+  );
+  app2.post(
+    "/officer/inventory/clean",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const parsed2 = cleanInventoryRequestSchema.safeParse(request.body ?? {});
+      if (!parsed2.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parsed2.error.issues[0]?.message || "Format filter arsip tidak valid",
+            request_id: request.id,
+            details: parsed2.error.issues
+          }
+        });
+      }
+      const result = await officerInventoryService.cleanCompletedInventory(
+        request.officerContext,
+        parsed2.data.month
+      );
+      return reply.status(200).send({ data: result });
     }
   );
 };

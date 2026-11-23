@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PlusCircle, Info } from 'lucide-react';
+import { PlusCircle, Info, Archive, CheckCircle2 } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -9,11 +9,15 @@ import {
   InventoryFilters,
   InventoryTable,
   InventoryCardList,
+  CleanInventoryModal,
 } from '@/features/officer/components';
 
 export const OfficerInventoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const [isCleanOpen, setIsCleanOpen] = useState(false);
+  const [cleanMessage, setCleanMessage] = useState<string | null>(null);
   const {
+    items,
     filteredItems,
     isLoading,
     error,
@@ -23,8 +27,15 @@ export const OfficerInventoryPage: React.FC = () => {
     setStatusFilter,
     sortBy,
     setSortBy,
+    includeArchived,
+    setIncludeArchived,
+    cleanArchive,
     refetch,
   } = useOfficerInventory();
+
+  const completedCount = items.filter(
+    (i) => !i.archivedAt && (i.status === 'RETURNED_TO_OWNER' || i.status === 'DISTRIBUTED')
+  ).length;
 
   if (error) {
     return (
@@ -60,15 +71,35 @@ export const OfficerInventoryPage: React.FC = () => {
           </p>
         </div>
 
-        <Button
-          variant="primary"
-          leftIcon={<PlusCircle className="w-4 h-4" />}
-          onClick={() => navigate(RoutePaths.OFFICER_REGISTER_ITEM)}
-          className="shrink-0"
-        >
-          Catat Barang
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <Button
+            variant="secondary"
+            leftIcon={<Archive className="w-4 h-4" />}
+            onClick={() => setIsCleanOpen(true)}
+            className="shrink-0"
+          >
+            Bersihkan Arsip
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<PlusCircle className="w-4 h-4" />}
+            onClick={() => navigate(RoutePaths.OFFICER_REGISTER_ITEM)}
+            className="shrink-0"
+          >
+            Catat Barang
+          </Button>
+        </div>
       </div>
+
+      {cleanMessage && (
+        <div role="status" className="flex items-center justify-between gap-2 px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-[var(--lf-radius-md)] text-xs text-emerald-900">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{cleanMessage}</span>
+          </div>
+          <button type="button" onClick={() => setCleanMessage(null)} className="text-emerald-700 underline cursor-pointer">Tutup</button>
+        </div>
+      )}
 
       {/* Scope Disclaimer Banner (Item D.11: Soft Blue Callout) */}
       <div className="flex items-center gap-2.5 px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-[var(--lf-radius-md)] text-xs text-blue-900">
@@ -84,6 +115,8 @@ export const OfficerInventoryPage: React.FC = () => {
         onStatusChange={setStatusFilter}
         sortBy={sortBy}
         onSortChange={setSortBy}
+        includeArchived={includeArchived}
+        onIncludeArchivedChange={setIncludeArchived}
       />
 
       {/* Responsive Item Views */}
@@ -96,6 +129,17 @@ export const OfficerInventoryPage: React.FC = () => {
         items={filteredItems}
         isLoading={isLoading}
         onDetailClick={(id) => navigate(`/petugas/inventaris/${id}`)}
+      />
+
+      <CleanInventoryModal
+        isOpen={isCleanOpen}
+        onClose={() => setIsCleanOpen(false)}
+        completedCount={completedCount}
+        onConfirmClean={async (month) => {
+          const count = await cleanArchive(month);
+          setCleanMessage(`${count} barang selesai berhasil diarsipkan.`);
+          return count;
+        }}
       />
     </div>
   );

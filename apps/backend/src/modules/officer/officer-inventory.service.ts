@@ -43,6 +43,7 @@ export class OfficerInventoryService {
       sort?: "received_at_asc" | "received_at_desc";
       page?: number;
       limit?: number;
+      includeArchived?: boolean;
     }
   ) {
     const result = await officerInventoryRepository.getInventoryByPost({
@@ -144,6 +145,13 @@ export class OfficerInventoryService {
       throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
     }
     return updated;
+  }
+
+  /**
+   * Soft-archive completed items (RETURNED_TO_OWNER / DISTRIBUTED)
+   */
+  async cleanCompletedInventory(context: OfficerContext, month?: string) {
+    return await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
   }
 }
 

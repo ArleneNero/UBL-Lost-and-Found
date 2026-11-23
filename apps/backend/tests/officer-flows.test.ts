@@ -519,4 +519,50 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       expect(itemAInDb?.storageLimitDays).toBe(365);
     });
   });
+
+  describe("Soft-Archive Clean Completed Inventory", () => {
+    it("archives only RETURNED_TO_OWNER & DISTRIBUTED items while preserving STORED and include_archived=true query", async () => {
+      const cleanRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/inventory/clean",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {},
+      });
+      expect(cleanRes.statusCode).toBe(200);
+      const { archived_count } = JSON.parse(cleanRes.body).data;
+      expect(archived_count).toBeGreaterThanOrEqual(2);
+
+      // Default listing hides archived items and supports limit=100
+      const listActive = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/inventory?limit=100",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(listActive.statusCode).toBe(200);
+      const activeIds = JSON.parse(listActive.body).data.map((i: { item_id: string }) => i.item_id);
+      expect(activeIds).not.toContain(receivedItemId);
+      expect(activeIds).not.toContain(directItemId);
+
+      // include_archived=true returns archived items
+      const listAll = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/inventory?limit=100&include_archived=true",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(listAll.statusCode).toBe(200);
+      const allIds = JSON.parse(listAll.body).data.map((i: { item_id: string }) => i.item_id);
+      expect(allIds).toContain(receivedItemId);
+      expect(allIds).toContain(directItemId);
+    });
+
+    it("rejects invalid month format on /officer/inventory/clean with 422", async () => {
+      const badRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/inventory/clean",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { month: "2026/11" },
+      });
+      expect(badRes.statusCode).toBe(422);
+    });
+  });
 });

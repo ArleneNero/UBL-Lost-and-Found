@@ -32,6 +32,7 @@ export const inventoryOfficerDtoSchema = z
     found_on: z.string().nullable(),
     received_at: z.string().datetime(),
     storage_limit_days: z.number().int().positive().nullable().optional(),
+    archived_at: z.string().datetime().nullable().optional(),
     status: z.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]),
     is_visible: z.boolean(),
     storage_post_id: z.number().int(),
@@ -179,3 +180,21 @@ export const postSettingsUpdateSchema = z
   })
   .strict();
 export type PostSettingsUpdateRequest = z.infer<typeof postSettingsUpdateSchema>;
+
+export const cleanInventoryRequestSchema = z
+  .object({
+    month: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Format bulan harus YYYY-MM")
+      .optional(),
+  })
+  .strict();
+export type CleanInventoryRequest = z.infer<typeof cleanInventoryRequestSchema>;
+
+export const cleanInventoryResponseSchema = z
+  .object({
+    data: z.object({
+      archived_count: z.number().int().nonnegative(),
+    }),
+  })
+  .strict();

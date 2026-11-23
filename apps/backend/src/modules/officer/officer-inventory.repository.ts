@@ -2,7 +2,7 @@ import { db } from "../../db/index.js";
 import { foundItems, itemPhotos, servicePosts } from "../../db/schema.js";
 import { generateInventoryCode } from "./inventory-code.util.js";
 import type { ItemCreateRequest } from "./officer.dto.js";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { eq, and, sql, desc, asc, isNull, inArray, gte, lt } from "drizzle-orm";
 
 export interface CreateItemParams {
   request: ItemCreateRequest;
@@ -19,6 +19,7 @@ export interface GetOfficerInventoryParams {
   sort?: "received_at_asc" | "received_at_desc";
   page?: number;
   limit?: number;
+  includeArchived?: boolean;
 }
 
 export class OfficerInventoryRepository {
@@ -72,12 +73,15 @@ export class OfficerInventoryRepository {
    * B/G.1.0: Lists inventory items stored at this post with filters and pagination
    */
   async getInventoryByPost(params: GetOfficerInventoryParams) {
-    const { storagePostId, status, category, q } = params;
+    const { storagePostId, status, category, q, includeArchived = false } = params;
     const page = Math.max(1, params.page || 1);
-    const limit = Math.min(10, Math.max(1, params.limit || 10));
+    const limit = Math.min(100, Math.max(1, params.limit || 10));
     const offset = (page - 1) * limit;
 
     const conditions = [eq(foundItems.storagePostId, storagePostId)];
+    if (!includeArchived) {
+      conditions.push(isNull(foundItems.archivedAt));
+    }
     if (status) {
       conditions.push(eq(foundItems.status, status));
     }
@@ -199,7 +203,8 @@ export class OfficerInventoryRepository {
     const storedItems = await db.query.foundItems.findMany({
       where: and(
         eq(foundItems.storagePostId, storagePostId),
-        eq(foundItems.status, "STORED")
+        eq(foundItems.status, "STORED"),
+        isNull(foundItems.archivedAt)
       ),
     });
 
@@ -274,6 +279,36 @@ export class OfficerInventoryRepository {
       name: updated.name,
       storage_limit_days: updated.storageLimitDays ?? storageLimitDays,
     };
+  }
+
+  /**
+   * Soft-archives completed items (RETURNED_TO_OWNER & DISTRIBUTED), preserving audit rows & STORED items
+   */
+  async cleanCompletedInventory(storagePostId: number, month?: string) {
+    const conditions = [
+      eq(foundItems.storagePostId, storagePostId),
+      isNull(foundItems.archivedAt),
+      inArray(foundItems.status, ["RETURNED_TO_OWNER", "DISTRIBUTED"]),
+    ];
+
+    if (month) {
+      const [yearStr, monthStr] = month.split("-");
+      const year = Number(yearStr);
+      const monthNum = Number(monthStr);
+      const nextYear = monthNum === 12 ? year + 1 : year;
+      const nextMonth = monthNum === 12 ? 1 : monthNum + 1;
+      const startWib = new Date(`${yearStr}-${monthStr}-01T00:00:00+07:00`);
+      const endWib = new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+07:00`);
+      conditions.push(gte(foundItems.receivedAt, startWib), lt(foundItems.receivedAt, endWib));
+    }
+
+    const updated = await db
+      .update(foundItems)
+      .set({ archivedAt: new Date() })
+      .where(and(...conditions))
+      .returning({ itemId: foundItems.itemId });
+
+    return { archived_count: updated.length };
   }
 }
 

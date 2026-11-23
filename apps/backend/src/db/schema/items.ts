@@ -36,6 +36,7 @@ export const foundItems = pgTable(
     foundOn: date("found_on"),
     receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
     storageLimitDays: integer("storage_limit_days"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     status: itemStatusEnum("status").notNull().default("STORED"),
     isVisible: boolean("is_visible").notNull().default(true),
   },

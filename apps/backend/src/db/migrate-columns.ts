@@ -4,7 +4,8 @@ async function migrateColumns() {
   console.log("🔧 Running idempotent column migrations on found_items...");
   await pool.query(`
     ALTER TABLE found_items
-    ADD COLUMN IF NOT EXISTS storage_limit_days INTEGER;
+    ADD COLUMN IF NOT EXISTS storage_limit_days INTEGER,
+    ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
   `);
   const res = await pool.query<{ column_name: string }>(`
     SELECT column_name

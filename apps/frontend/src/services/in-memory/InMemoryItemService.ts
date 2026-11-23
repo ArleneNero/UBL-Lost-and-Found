@@ -4,7 +4,7 @@ import {
   GetOfficerItemsParams,
   CreateItemInput,
 } from '../contracts/IItemService';
-import { FoundItem, PaginatedResult, PostSettings } from '@/types/domain';
+import { FoundItem, PaginatedResult, PostSettings, CleanInventoryResult } from '@/types/domain';
 import { mapItemDtoToDomain } from '@/types/domain/mappers';
 import { mockStore } from '@/data/mockStore';
 import { InventoryOfficerDto } from '@/types/api';
@@ -74,6 +74,9 @@ export class InMemoryItemService implements IItemService {
     const status = params?.status;
 
     let filtered = [...mockStore.getState().items];
+    if (!params?.includeArchived) {
+      filtered = filtered.filter((i) => !i.archived_at);
+    }
 
     if (status) filtered = filtered.filter((i) => i.status === status);
     if (params?.isVisible !== undefined) {
@@ -238,5 +241,29 @@ export class InMemoryItemService implements IItemService {
     const state = mockStore.getState();
     state.postStorageLimitDays = storageLimitDays;
     return this.getPostSettings();
+  }
+
+  async cleanCompletedInventory(month?: string): Promise<CleanInventoryResult> {
+    const nowIso = new Date().toISOString();
+    let count = 0;
+
+    for (const item of mockStore.getState().items) {
+      const isCompleted = item.status === 'RETURNED_TO_OWNER' || item.status === 'DISTRIBUTED';
+      if (!isCompleted || item.archived_at) continue;
+      if (month) {
+        const wibMonth = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Jakarta',
+          year: 'numeric',
+          month: '2-digit',
+        })
+          .format(new Date(item.received_at))
+          .slice(0, 7);
+        if (wibMonth !== month) continue;
+      }
+      item.archived_at = nowIso;
+      count += 1;
+    }
+
+    return { archivedCount: count };
   }
 }

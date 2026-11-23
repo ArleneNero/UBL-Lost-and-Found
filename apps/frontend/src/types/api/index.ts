@@ -80,6 +80,11 @@ export interface InventoryOfficerDto extends FoundItemPublicDto {
   source_submission_id: string | null;
   private_verification_notes: string | null;
   storage_limit_days?: number | null;
+  archived_at?: string | null;
+}
+
+export interface CleanInventoryResponseDto {
+  archived_count: number;
 }
 
 export interface PostSettingsDto {

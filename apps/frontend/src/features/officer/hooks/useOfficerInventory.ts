@@ -19,6 +19,9 @@ export interface UseOfficerInventoryReturn {
   setStatusFilter: (status: ItemStatus | 'ALL') => void;
   sortBy: 'newest' | 'oldest';
   setSortBy: (sort: 'newest' | 'oldest') => void;
+  includeArchived: boolean;
+  setIncludeArchived: (include: boolean) => void;
+  cleanArchive: (month?: string) => Promise<number>;
   refetch: () => Promise<void>;
 }
 
@@ -41,6 +44,7 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     resolveInitialItemStatus(searchParams.get('status'))
   );
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [includeArchived, setIncludeArchived] = useState(false);
 
   useEffect(() => {
     setStatusFilterState(resolveInitialItemStatus(searchParams.get('status')));
@@ -64,14 +68,23 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await services.items.getOfficerItems({ limit: 100 });
+      const res = await services.items.getOfficerItems({ limit: 100, includeArchived });
       setItems(res.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat inventaris');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [includeArchived]);
+
+  const cleanArchive = useCallback(
+    async (month?: string): Promise<number> => {
+      const res = await services.items.cleanCompletedInventory(month);
+      await fetchInventory();
+      return res.archivedCount;
+    },
+    [fetchInventory]
+  );
 
   useEffect(() => {
     fetchInventory();
@@ -97,6 +110,9 @@ export function useOfficerInventory(): UseOfficerInventoryReturn {
     setStatusFilter,
     sortBy,
     setSortBy,
+    includeArchived,
+    setIncludeArchived,
+    cleanArchive,
     refetch: fetchInventory,
   };
 }

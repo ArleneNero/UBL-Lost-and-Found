@@ -27,6 +27,11 @@ export function mapToOfficerDto(
         ? item.receivedAt.toISOString()
         : new Date(item.receivedAt).toISOString(),
     storage_limit_days: item.storageLimitDays ?? null,
+    archived_at: item.archivedAt
+      ? item.archivedAt instanceof Date
+        ? item.archivedAt.toISOString()
+        : new Date(item.archivedAt).toISOString()
+      : null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,

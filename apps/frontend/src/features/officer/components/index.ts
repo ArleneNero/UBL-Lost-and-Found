@@ -16,3 +16,4 @@ export * from './RejectReportModal';
 export * from './ReturnItemModal';
 export * from './DistributeItemModal';
 export * from './StoragePolicyCard';
+export * from './CleanInventoryModal';

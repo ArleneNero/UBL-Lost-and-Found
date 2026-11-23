@@ -4,7 +4,7 @@ import {
   GetOfficerItemsParams,
   CreateItemInput,
 } from '../contracts/IItemService';
-import { FoundItem, PaginatedResult, PostSettings } from '@/types/domain';
+import { FoundItem, PaginatedResult, PostSettings, CleanInventoryResult } from '@/types/domain';
 import { mapItemDtoToDomain } from '@/types/domain/mappers';
 import {
   ApiListResponse,
@@ -13,6 +13,7 @@ import {
   InventoryOfficerDto,
   ItemCreateRequestDto,
   PostSettingsDto,
+  CleanInventoryResponseDto,
 } from '@/types/api';
 import { apiClient, ApiError } from './apiClient';
 import { mockStore } from '@/data/mockStore';
@@ -50,10 +51,11 @@ export class HttpItemService implements IItemService {
   async getOfficerItems(params?: GetOfficerItemsParams): Promise<PaginatedResult<FoundItem>> {
     const qp = new URLSearchParams();
     if (params?.page) qp.set('page', String(params.page));
-    qp.set('limit', String(params?.limit ? Math.min(params.limit, 10) : 10));
+    qp.set('limit', String(params?.limit ? Math.min(params.limit, 100) : 10));
     if (params?.search) qp.set('q', params.search);
     if (params?.category && params.category !== 'ALL') qp.set('category', params.category);
     if (params?.status) qp.set('status', params.status);
+    if (params?.includeArchived) qp.set('include_archived', 'true');
     const sortVal = params?.sort === 'oldest' ? 'received_at_asc' : 'received_at_desc';
     qp.set('sort', sortVal);
 
@@ -207,5 +209,16 @@ export class HttpItemService implements IItemService {
       name: res.data.name,
       storageLimitDays: res.data.storage_limit_days,
     };
+  }
+
+  async cleanCompletedInventory(month?: string): Promise<CleanInventoryResult> {
+    const res = await apiClient<ApiDataResponse<CleanInventoryResponseDto>>(
+      '/officer/inventory/clean',
+      {
+        method: 'POST',
+        body: JSON.stringify(month ? { month } : {}),
+      }
+    );
+    return { archivedCount: res.data.archived_count };
   }
 }

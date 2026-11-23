@@ -16,6 +16,11 @@ export interface FoundItem {
   isVisible: boolean;
   privateNotes?: string | null;
   storageLimitDays?: number | null;
+  archivedAt?: string | null;
+}
+
+export interface CleanInventoryResult {
+  archivedCount: number;
 }
 
 export interface PostSettings {

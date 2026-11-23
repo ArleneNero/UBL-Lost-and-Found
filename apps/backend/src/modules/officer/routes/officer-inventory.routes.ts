@@ -4,6 +4,7 @@ import {
   itemCreateRequestSchema,
   visibilityRequestSchema,
   postSettingsUpdateSchema,
+  cleanInventoryRequestSchema,
 } from "../officer.dto.js";
 import { officerInventoryService } from "../officer-inventory.service.js";
 import { z } from "zod";
@@ -18,7 +19,11 @@ const inventoryQuerySchema = z.object({
   q: z.string().optional(),
   sort: z.enum(["received_at_asc", "received_at_desc"]).default("received_at_desc"),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(10).default(10),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  include_archived: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true"),
 });
 
 export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
@@ -60,11 +65,19 @@ export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
       const parsedQuery = inventoryQuerySchema.safeParse(request.query);
       const query = parsedQuery.success
         ? parsedQuery.data
-        : { sort: "received_at_desc" as const, page: 1, limit: 10 };
+        : { sort: "received_at_desc" as const, page: 1, limit: 10, include_archived: false };
 
       const result = await officerInventoryService.getInventory(
         request.officerContext!,
-        query
+        {
+          status: query.status,
+          category: query.category,
+          q: query.q,
+          sort: query.sort,
+          page: query.page,
+          limit: query.limit,
+          includeArchived: query.include_archived,
+        }
       );
 
       return reply.status(200).send(result);
@@ -187,6 +200,34 @@ export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
       );
 
       return reply.status(200).send({ data: updated });
+    }
+  );
+
+  /**
+   * POST /officer/inventory/clean
+   */
+  app.post(
+    "/officer/inventory/clean",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const parsed = cleanInventoryRequestSchema.safeParse(request.body ?? {});
+      if (!parsed.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parsed.error.issues[0]?.message || "Format filter arsip tidak valid",
+            request_id: request.id,
+            details: parsed.error.issues,
+          },
+        });
+      }
+
+      const result = await officerInventoryService.cleanCompletedInventory(
+        request.officerContext!,
+        parsed.data.month
+      );
+
+      return reply.status(200).send({ data: result });
     }
   );
 };

@@ -1,4 +1,4 @@
-import { FoundItem, PaginatedResult, PostSettings } from '@/types/domain';
+import { FoundItem, PaginatedResult, PostSettings, CleanInventoryResult } from '@/types/domain';
 import { ItemStatus } from '@/types/api';
 
 export interface GetItemsParams {
@@ -13,6 +13,7 @@ export interface GetItemsParams {
 export interface GetOfficerItemsParams extends GetItemsParams {
   status?: ItemStatus;
   isVisible?: boolean;
+  includeArchived?: boolean;
 }
 
 export interface CreateItemInput {
@@ -36,4 +37,5 @@ export interface IItemService {
   distributeItem(id: string, notes: string): Promise<FoundItem>;
   getPostSettings(): Promise<PostSettings>;
   updatePostSettings(storageLimitDays: number): Promise<PostSettings>;
+  cleanCompletedInventory(month?: string): Promise<CleanInventoryResult>;
 }

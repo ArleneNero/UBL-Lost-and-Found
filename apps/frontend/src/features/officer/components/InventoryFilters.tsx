@@ -9,6 +9,8 @@ export interface InventoryFiltersProps {
   onStatusChange: (status: ItemStatus | 'ALL') => void;
   sortBy: 'newest' | 'oldest';
   onSortChange: (sort: 'newest' | 'oldest') => void;
+  includeArchived?: boolean;
+  onIncludeArchivedChange?: (include: boolean) => void;
 }
 
 export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
@@ -18,6 +20,8 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
   onStatusChange,
   sortBy,
   onSortChange,
+  includeArchived = false,
+  onIncludeArchivedChange,
 }) => {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -52,6 +56,18 @@ export const InventoryFilters: React.FC<InventoryFiltersProps> = ({
           <option value="newest">Terbaru</option>
           <option value="oldest">Terlama</option>
         </select>
+
+        {onIncludeArchivedChange && (
+          <label className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium bg-[var(--lf-canvas)] border border-[var(--lf-border)] rounded-[var(--lf-radius-md)] text-[var(--lf-ink)] cursor-pointer whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={includeArchived}
+              onChange={(e) => onIncludeArchivedChange(e.target.checked)}
+              className="rounded"
+            />
+            <span>Tampilkan Arsip</span>
+          </label>
+        )}
       </div>
     </div>
   );
