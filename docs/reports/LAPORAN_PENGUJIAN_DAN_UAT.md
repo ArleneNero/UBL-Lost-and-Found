@@ -259,13 +259,25 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 
 *Ringkasan Produksi (`v1.2.1`):* **6/6 probes PASSED** (`version: "1.2.1"`, `commit: "685f4c6"`, `<meta name="app-version" content="1.2.1" />`).
 
+#### C. Eksekusi Produksi (`npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` — Rilis `v1.3.0` commit `9056d58`)
+| Probe | Endpoint | Status HTTP | Latensi (ms) | Hasil |
+| :--- | :--- | :---: | :---: | :---: |
+| 1. Health Check & Version | `https://lostandfound-budiluhur.web.id/api/v1/health` | `200` | `660.7 ms` | **PASS** |
+| 2. Public Service Posts | `https://lostandfound-budiluhur.web.id/api/v1/posts` | `200` | `1415.3 ms` | **PASS** |
+| 3. Public Items (Zero PII Leak) | `https://lostandfound-budiluhur.web.id/api/v1/items?page=1&limit=5` | `200` | `2145.6 ms` | **PASS** |
+| 4. Officer RBAC Guard (Unauth) | `https://lostandfound-budiluhur.web.id/api/v1/officer/inventory` | `401` | `321.1 ms` | **PASS** |
+| 5. OpenAPI YAML Contract | `https://lostandfound-budiluhur.web.id/openapi.yaml` | `200` | `305.3 ms` | **PASS** |
+| 6. Frontend SPA Entrypoint | `https://lostandfound-budiluhur.web.id/` | `200` | `64.7 ms` | **PASS** |
+
+*Ringkasan Produksi (`v1.3.0`):* **6/6 probes PASSED** (`version: "1.3.0"`, `commit: "9056d58"`, `<meta name="app-version" content="1.3.0" />`).
+
 ### 6.3 Checklist Deployment Rilis `v1.3.0` (dan Rekam Rilis `v1.2.0` / `v1.2.1`)
 
 - [x] **Sinkronisasi Versi `1.3.0` & Build Monorepo:** Root `package.json`, `apps/backend/package.json`, dan `apps/frontend/package.json` diperbarui ke `1.3.0`; `npm run build` Backend & Frontend selesai dengan exit code `0`.
 - [x] **Migrasi Skema Database Neon PostgreSQL (`v1.3.0`):** `npm run db:migrate --prefix apps/backend` menambahkan kolom aditif `item_returns.recipient_identifier VARCHAR(50)` (melengkapi migrasi `v1.2.0`: `found_items.storage_limit_days` & `found_items.archived_at`).
 - [x] **Verifikasi Test Suite Lintas Workspace (`v1.3.0`):** Backend (`npx vitest run --fileParallelism=false`: **14 test files, 145 tests PASS**) dan Frontend (`npx vitest run`: **16 test files, 95 tests PASS**) lulus 100%.
 - [x] **Verifikasi Smoke Test Rilis Sebelumnya (`v1.2.0` / `v1.2.1`):** Lokal (`:3000` / `:4173`) `6/6 probes PASSED` dan Produksi (`v1.2.1`, `685f4c6`) `6/6 probes PASSED`.
-- [ ] **Verifikasi Commit, Tag & Smoke Test Produksi `v1.3.0`:** Jalankan `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` setelah commit, git tag `v1.3.0`, dan promosi deployment ke produksi.
+- [x] **Verifikasi Commit, Tag & Smoke Test Produksi `v1.3.0`:** Commit `57cdc3f` & `9056d58`, tag `v1.3.0` ter-push ke `origin main`, serta `npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` lulus **`6/6 probes PASSED`** (`version: "1.3.0"`).
 
 ### 6.4 Prosedur Rollback (Mitigasi Kegagalan Produksi)
 
