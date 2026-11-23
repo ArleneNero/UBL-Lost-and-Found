@@ -16,6 +16,7 @@ vi.mock('react-router-dom', async () => {
 
 describe('Officer Handover, Distribution & Gate Submilestone (F/B.5)', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     vi.clearAllMocks();
     mockStore.reset();
   });
@@ -195,6 +196,101 @@ describe('Officer Handover, Distribution & Gate Submilestone (F/B.5)', () => {
       );
       expect(distributed.status).toBe('DISTRIBUTED');
       expect(distributed.isVisible).toBe(false);
+    });
+  });
+
+  describe('Hotfix v1.1.1 Regressions: Visibility Toggle Guard & Action Error Isolation', () => {
+    it('renders ItemVisibilityToggle only for STORED items and hides it for RETURNED_TO_OWNER and DISTRIBUTED items', async () => {
+      // 1. STORED item shows ItemVisibilityToggle
+      const { unmount } = render(
+        <MemoryRouter initialEntries={['/petugas/inventaris/item-uuid-001']}>
+          <Routes>
+            <Route path="/petugas/inventaris/:id" element={<OfficerItemDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Kunci Motor Honda Vario')).toBeDefined();
+        expect(screen.getByText('Visibilitas Katalog Publik')).toBeDefined();
+      });
+      unmount();
+
+      // 2. RETURNED_TO_OWNER item hides ItemVisibilityToggle
+      const returnedTarget = mockStore.getState().items.find((i) => i.item_id === 'item-uuid-001');
+      if (returnedTarget) {
+        returnedTarget.status = 'RETURNED_TO_OWNER';
+        returnedTarget.is_visible = false;
+      }
+
+      const returnedView = render(
+        <MemoryRouter initialEntries={['/petugas/inventaris/item-uuid-001']}>
+          <Routes>
+            <Route path="/petugas/inventaris/:id" element={<OfficerItemDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Kunci Motor Honda Vario')).toBeDefined();
+        expect(screen.getByText(/Barang telah diserahkan kepada pemilik sah/i)).toBeDefined();
+      });
+      expect(screen.queryByText('Visibilitas Katalog Publik')).toBeNull();
+      returnedView.unmount();
+
+      // 3. DISTRIBUTED item hides ItemVisibilityToggle
+      const distributedTarget = mockStore.getState().items.find((i) => i.item_id === 'item-uuid-002');
+      if (distributedTarget) {
+        distributedTarget.status = 'DISTRIBUTED';
+        distributedTarget.is_visible = false;
+      }
+
+      render(
+        <MemoryRouter initialEntries={['/petugas/inventaris/item-uuid-002']}>
+          <Routes>
+            <Route path="/petugas/inventaris/:id" element={<OfficerItemDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Dompet Cokelat')).toBeDefined();
+        expect(screen.getByText(/Barang telah disalurkan dan ditarik dari katalog/i)).toBeDefined();
+      });
+      expect(screen.queryByText('Visibilitas Katalog Publik')).toBeNull();
+    });
+
+    it('displays non-destructive inline alert when toggleVisibility fails without replacing page with Barang Tidak Ditemukan', async () => {
+      vi.spyOn(services.items, 'updateVisibility').mockRejectedValueOnce(
+        new Error('Gagal mengubah visibilitas barang')
+      );
+
+      render(
+        <MemoryRouter initialEntries={['/petugas/inventaris/item-uuid-001']}>
+          <Routes>
+            <Route path="/petugas/inventaris/:id" element={<OfficerItemDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText('Kunci Motor Honda Vario')).toBeDefined();
+        expect(screen.getByRole('button', { name: /Sembunyikan/i })).toBeDefined();
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /Sembunyikan/i }));
+
+      await waitFor(() => {
+        const alert = screen.getByRole('alert');
+        expect(alert.textContent).toContain('Gagal mengubah visibilitas barang');
+      });
+
+      expect(screen.queryByText('Barang Tidak Ditemukan')).toBeNull();
+      expect(screen.getByText('Kunci Motor Honda Vario')).toBeDefined();
+
+      // Dismiss alert
+      fireEvent.click(screen.getByRole('button', { name: /Tutup pesan error/i }));
+      expect(screen.queryByRole('alert')).toBeNull();
     });
   });
 });

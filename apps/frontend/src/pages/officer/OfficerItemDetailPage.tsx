@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Lock, Calendar, MapPin, Building2, AlertTriangle, CheckCircle2, Share2, UserCheck } from 'lucide-react';
+import { ArrowLeft, Lock, Calendar, MapPin, Building2, AlertCircle, AlertTriangle, CheckCircle2, Share2, UserCheck, X } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
 import { Button } from '@/components/ui/Button';
 import { Badge, BadgeVariant } from '@/components/ui/Badge';
@@ -20,7 +20,19 @@ const statusMap: Record<string, { variant: BadgeVariant; label: string }> = {
 export const OfficerItemDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { item, isLoading, error, isUpdating, isSubmitting, toggleVisibility, returnItem, distributeItem, refetch } = useOfficerItemDetail(id);
+  const {
+    item,
+    isLoading,
+    error,
+    actionError,
+    clearActionError,
+    isUpdating,
+    isSubmitting,
+    toggleVisibility,
+    returnItem,
+    distributeItem,
+    refetch,
+  } = useOfficerItemDetail(id);
   const [isReturnOpen, setIsReturnOpen] = useState(false);
   const [isDistributeOpen, setIsDistributeOpen] = useState(false);
 
@@ -65,6 +77,26 @@ export const OfficerItemDetailPage: React.FC = () => {
         Kembali
       </Button>
 
+      {actionError && (
+        <div
+          role="alert"
+          className="flex items-start justify-between gap-3 p-4 bg-[var(--lf-error-soft)] border border-[rgba(217,45,32,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-error)]"
+        >
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{actionError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={clearActionError}
+            aria-label="Tutup pesan error"
+            className="p-0.5 rounded hover:bg-black/5 shrink-0 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {overdue && (
         <div className="flex items-start gap-3 p-4 bg-[var(--lf-warning-soft)] border border-[rgba(181,71,8,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-ink)]">
           <AlertTriangle className="w-5 h-5 text-[var(--lf-warning)] shrink-0 mt-0.5" />
@@ -108,14 +140,16 @@ export const OfficerItemDetailPage: React.FC = () => {
             <p className="text-[11px] text-amber-800/90">Catatan ciri kepemilikan tersedia di sini. Tidak ditampilkan pada katalog publik.</p>
           </div>
 
-          <ItemVisibilityToggle isVisible={item.isVisible} isUpdating={isUpdating} onToggle={toggleVisibility} />
+          {item.status === 'STORED' && (
+            <ItemVisibilityToggle isVisible={item.isVisible} isUpdating={isUpdating} onToggle={toggleVisibility} />
+          )}
 
           {item.status === 'STORED' ? (
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <Button variant="primary" className="flex-1" leftIcon={<UserCheck className="w-4 h-4" />} onClick={() => setIsReturnOpen(true)}>
+              <Button variant="primary" className="flex-1" leftIcon={<UserCheck className="w-4 h-4" />} onClick={() => { clearActionError(); setIsReturnOpen(true); }}>
                 Serah Terima Pemilik
               </Button>
-              <Button variant="secondary" className="flex-1" leftIcon={<Share2 className="w-4 h-4" />} onClick={() => setIsDistributeOpen(true)}>
+              <Button variant="secondary" className="flex-1" leftIcon={<Share2 className="w-4 h-4" />} onClick={() => { clearActionError(); setIsDistributeOpen(true); }}>
                 Salurkan Barang
               </Button>
             </div>
@@ -128,8 +162,26 @@ export const OfficerItemDetailPage: React.FC = () => {
         </div>
       </Card>
 
-      <ReturnItemModal isOpen={isReturnOpen} onClose={() => setIsReturnOpen(false)} onConfirm={async (rec, sum) => { await returnItem(rec, sum); setIsReturnOpen(false); }} item={item} isSubmitting={isSubmitting} />
-      <DistributeItemModal isOpen={isDistributeOpen} onClose={() => setIsDistributeOpen(false)} onConfirm={async (notes) => { await distributeItem(notes); setIsDistributeOpen(false); }} item={item} isSubmitting={isSubmitting} />
+      <ReturnItemModal
+        isOpen={isReturnOpen}
+        onClose={() => setIsReturnOpen(false)}
+        onConfirm={async (rec, sum) => {
+          await returnItem(rec, sum);
+          setIsReturnOpen(false);
+        }}
+        item={item}
+        isSubmitting={isSubmitting}
+      />
+      <DistributeItemModal
+        isOpen={isDistributeOpen}
+        onClose={() => setIsDistributeOpen(false)}
+        onConfirm={async (notes) => {
+          await distributeItem(notes);
+          setIsDistributeOpen(false);
+        }}
+        item={item}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
