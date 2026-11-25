@@ -21,6 +21,23 @@ Format mengikuti **[Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/
 
 ---
 
+## [1.4.0] - 2026-11-25
+
+### Added
+- Tambah tabel `otp_challenges` pada skema Drizzle (`apps/backend/src/db/schema/auth.ts`, `schema/index.ts`) beserta indeks `idx_otp_challenges_email_created` dan migrasi SQL idempoten (`apps/backend/src/db/migrate-columns.ts`) untuk penyimpanan OTP 6 digit *stateful* (HMAC-SHA256 bergaram, masa berlaku 10 menit, cooldown resend 60 detik, batas 5 percobaan, dan konsumsi atomik *single-use*) ([`#31`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/31), [`#32`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/32), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+- Tambah endpoint `POST /api/v1/auth/student-register/request-otp` (`auth.routes.ts`, `auth.service.ts`, `openapi.contract.ts`) beserta pengiriman kode OTP ke email kampus melalui Resend (`EmailService.sendRegistrationOtpEmail()` dengan *HTML escaping* `escapeHtml()`, pembatalan challenge & respons `502 EMAIL_DELIVERY_FAILED` saat gagal kirim) dan guard cooldown `429 OTP_COOLDOWN_ACTIVE` ([`#31`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/31), [`#32`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/32), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+- Tambah helper frontend `validateAndExtractStudentNim()` (`apps/frontend/src/features/auth/utils/studentEmailNim.ts`), tampilan pratinjau **NIM Terdeteksi Otomatis** pada `RegisterForm.tsx`, integrasi modal `OtpVerificationModal.tsx` (6 digit OTP, `autoComplete="one-time-code"`, paste multi-digit, countdown 60 detik sinkron, dan lock aksi selama request), serta suite pengujian baru `apps/frontend/src/tests/studentRegisterOtp.test.tsx` (14 tests) ([`#32`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/32), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+
+### Changed
+- Hapus kolom input manual **NIM** dari `RegisterForm.tsx`, serta perketat kontrak DTO `studentRegisterRequestOtpSchema`, `studentRegisterSchema`, dan `bootstrapRequestSchema` dengan `.strict()` agar injeksi field `student_number` ditolak (`400 VALIDATION_ERROR`) dan NIM selalu diekstrak dari *local-part* email kampus di UI maupun server ([`#31`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/31), [`#32`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/32), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+- Sinkronkan paritas `HttpAuthService.ts` & `InMemoryAuthService.ts` (dukungan `requestStudentRegisterOtp`, challenge token, guard replay, dan lockout 5 percobaan OTP), validasi nama lengkap `2–120` karakter di `RegisterForm.tsx`, serta perluas build root `package.json` untuk menyalin `api/[...routes].cjs` ([`#31`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/31), [`#32`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/32), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+
+### Fixed
+- Tutup celah registrasi NIM fiktif & email kampus non-NIM dengan memberlakukan `STRICT_STUDENT_NIM_REGEX` (`/^\d{10}$/`) dan `isStrictStudentEmail()` (`@student.budiluhur.ac.id` tepat 10 digit angka, menolak `< 10`, `> 10`, maupun non-angka dengan `400 INVALID_STUDENT_NIM` / `403 INVALID_STUDENT_DOMAIN`) serta mewajibkan verifikasi OTP Resend sebelum pembuatan akun `STUDENT` (`429 OTP_MAX_ATTEMPTS_EXCEEDED` setelah 5x salah) ([`#31`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/31), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+- Perketat keamanan autentikasi melalui `resolveRuntimeAuthSecret()` (`env.ts`: wajib `AUTH_SECRET` >= 32 karakter di produksi / `503 SERVER_MISCONFIGURED` tanpa fallback statis), penolakan token ber-`purpose` di `authenticate()` dan `POST /api/v1/me/bootstrap` (`401 UNAUTHORIZED`), pencegahan penimpaan role `OFFICER` di `bootstrapStudent()`, validasi origin tepercaya `resolveTrustedFrontendOrigin()` pada `/auth/forgot-password`, sanitasi error `500` & mapping unique constraint `23505 -> 409`, serta ubah fallback UI NIM kosong pada `StudentLayout.tsx` dan `StudentWelcomeBanner.tsx` dari `'2411502194'` menjadi `'-'` ([`#31`](https://github.com/ArleneNero/UBL-Lost-and-Found/issues/31), [`f392bf4`](https://github.com/ArleneNero/UBL-Lost-and-Found/commit/f392bf4)).
+
+---
+
 ## [1.3.0] - 2026-11-24
 
 ### Added
