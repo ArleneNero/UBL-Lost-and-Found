@@ -3,4 +3,5 @@ export * from "./users.js";
 export * from "./posts.js";
 export * from "./submissions.js";
 export * from "./items.js";
+export * from "./auth.js";
 export * from "./relations.js";

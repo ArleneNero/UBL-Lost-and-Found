@@ -20,7 +20,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   const token = authHeader.slice(7).trim();
   const payload = authService.verifyToken(token);
 
-  if (!payload) {
+  if (!payload || payload.purpose) {
     return reply.status(401).send({
       error: {
         code: "UNAUTHORIZED",

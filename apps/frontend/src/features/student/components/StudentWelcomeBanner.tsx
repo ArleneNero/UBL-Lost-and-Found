@@ -22,7 +22,7 @@ export const StudentWelcomeBanner: React.FC<StudentWelcomeBannerProps> = ({
           Halo, {name || 'Mahasiswa Budi Luhur'}!
         </h1>
         <p className="text-xs sm:text-sm text-blue-100">
-          NIM: <span className="font-semibold">{studentNumber || '2411502194'}</span> • Terima kasih telah berpartisipasi menjaga kejujuran dan kepedulian di lingkungan kampus.
+          NIM: <span className="font-semibold">{studentNumber || '-'}</span> • Terima kasih telah berpartisipasi menjaga kejujuran dan kepedulian di lingkungan kampus.
         </p>
       </div>
 

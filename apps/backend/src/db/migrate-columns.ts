@@ -28,6 +28,32 @@ async function migrateColumns() {
   `);
   console.log("✅ item_returns columns:", returnCols.rows.map((r) => r.column_name).join(", "));
 
+  console.log("🔧 Running idempotent table migration for otp_challenges...");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS otp_challenges (
+      challenge_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email VARCHAR(180) NOT NULL,
+      otp_salt TEXT NOT NULL,
+      otp_hash TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      max_attempts INTEGER NOT NULL DEFAULT 5,
+      expires_at TIMESTAMPTZ NOT NULL,
+      resend_available_at TIMESTAMPTZ NOT NULL,
+      consumed_at TIMESTAMPTZ,
+      locked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_otp_challenges_email_created
+      ON otp_challenges (email, created_at DESC);
+  `);
+  const otpCols = await pool.query<{ column_name: string }>(`
+    SELECT column_name
+    FROM information_schema.columns
+    WHERE table_name = 'otp_challenges'
+    ORDER BY ordinal_position;
+  `);
+  console.log("✅ otp_challenges columns:", otpCols.rows.map((r) => r.column_name).join(", "));
+
   await pool.end();
 }
 

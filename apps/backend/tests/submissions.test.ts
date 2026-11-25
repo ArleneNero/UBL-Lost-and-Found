@@ -39,7 +39,7 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
         .values({
           authUserId: "test-student-bh-01",
           fullName: "Ahmad Mahasiswa 1",
-          email: "ahmad.mhs1@student.budiluhur.ac.id",
+          email: "2111500111@student.budiluhur.ac.id",
           studentNumber: "2111500111",
           role: "STUDENT",
         })
@@ -59,7 +59,7 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
         .values({
           authUserId: "test-student-bh-02",
           fullName: "Budi Mahasiswa 2",
-          email: "budi.mhs2@student.budiluhur.ac.id",
+          email: "2111500222@student.budiluhur.ac.id",
           studentNumber: "2111500222",
           role: "STUDENT",
         })
@@ -111,15 +111,52 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
       const res = await app.inject({
         method: "POST",
         url: "/api/v1/me/bootstrap",
-        payload: { full_name: "Tes", student_number: "12345" },
+        payload: { full_name: "Tes" },
       });
       expect(res.statusCode).toBe(401);
     });
 
-    it("returns 201 when new student bootstraps profile", async () => {
+    it("returns 401 when token lacks email claim", async () => {
+      const noEmailToken = authService.createToken({
+        sub: "2211500999",
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/v1/me/bootstrap",
+        headers: { authorization: `Bearer ${noEmailToken}` },
+        payload: {
+          full_name: "Tanpa Email",
+        },
+      });
+      expect(res.statusCode).toBe(401);
+      expect(JSON.parse(res.body).error.code).toBe("UNAUTHORIZED");
+    });
+
+    it("returns 400 VALIDATION_ERROR when student_number is injected into bootstrap payload", async () => {
       const newToken = authService.createToken({
         sub: "test-bootstrap-new-user-01",
-        email: "baru.mhs@student.budiluhur.ac.id",
+        email: "2211500999@student.budiluhur.ac.id",
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/v1/me/bootstrap",
+        headers: { authorization: `Bearer ${newToken}` },
+        payload: {
+          full_name: "Mahasiswa Inject",
+          student_number: "9999999999",
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("returns 201 when new student bootstraps profile and strictly extracts 10-digit NIM from email", async () => {
+      const newToken = authService.createToken({
+        sub: "test-bootstrap-new-user-01",
+        email: "2211500999@student.budiluhur.ac.id",
       });
 
       const res = await app.inject({
@@ -128,7 +165,6 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
         headers: { authorization: `Bearer ${newToken}` },
         payload: {
           full_name: "Mahasiswa Baru",
-          student_number: "2211500999",
         },
       });
 
@@ -139,6 +175,26 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
       expect(body.data.role).toBe("STUDENT");
     });
 
+    it("returns 400 INVALID_STUDENT_NIM when bootstrap email local-part is not strict 10 digits", async () => {
+      const invalidNimToken = authService.createToken({
+        sub: "test-bootstrap-invalid-nim-01",
+        email: "baru.mhs@student.budiluhur.ac.id",
+      });
+
+      const res = await app.inject({
+        method: "POST",
+        url: "/api/v1/me/bootstrap",
+        headers: { authorization: `Bearer ${invalidNimToken}` },
+        payload: {
+          full_name: "Mahasiswa Non NIM",
+        },
+      });
+
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.body);
+      expect(body.error.code).toBe("INVALID_STUDENT_NIM");
+    });
+
     it("returns 409 PROFILE_EXISTS when student already exists", async () => {
       const res = await app.inject({
         method: "POST",
@@ -146,7 +202,6 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
         headers: { authorization: `Bearer ${student1Token}` },
         payload: {
           full_name: "Ahmad Mahasiswa 1",
-          student_number: "2111500111",
         },
       });
 
@@ -167,7 +222,6 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
         headers: { authorization: `Bearer ${nonStudentToken}` },
         payload: {
           full_name: "User Gmail",
-          student_number: "2211500888",
         },
       });
 

@@ -1,16 +1,47 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, User, Hash, Lock, ArrowRight, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import {
+  Mail,
+  User,
+  Lock,
+  ArrowRight,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+} from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { RoutePaths } from '@/constants/routes';
 import { registry } from '@/services/registry';
+import { ApiError } from '@/services/http/apiClient';
+import { validateAndExtractStudentNim } from '@/features/auth/utils/studentEmailNim';
+import { OtpVerificationModal } from './OtpVerificationModal';
+
+interface PendingRegistration {
+  fullName: string;
+  email: string;
+  password: string;
+  extractedNim: string;
+}
+
+const OTP_RESEND_COOLDOWN_MS = 60_000;
+
+function resolveOtpErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof ApiError && err.status === 429) {
+    return (
+      err.message ||
+      'Terlalu banyak permintaan kode OTP. Mohon tunggu beberapa saat sebelum mencoba lagi.'
+    );
+  }
+  return err instanceof Error && err.message ? err.message : fallback;
+}
 
 export const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
-  const [nim, setNim] = useState('');
   const [email, setEmail] = useState('');
+  const [emailTouched, setEmailTouched] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,12 +49,36 @@ export const RegisterForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [otpModalOpen, setOtpModalOpen] = useState(false);
+  const [challengeToken, setChallengeToken] = useState('');
+  const [resendAvailableAt, setResendAvailableAt] = useState<number>(0);
+  const [pendingRegistration, setPendingRegistration] = useState<PendingRegistration | null>(null);
+
+  const emailValidation = validateAndExtractStudentNim(email);
+  const showEmailFeedback = email.trim().length > 0 || emailTouched;
+  const inlineEmailError =
+    showEmailFeedback && !emailValidation.valid ? emailValidation.error : null;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setEmailTouched(true);
 
-    if (password !== confirmPassword) {
-      setError('Konfirmasi kata sandi tidak cocok.');
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      setError('Nama lengkap wajib diisi.');
+      return;
+    }
+    if (trimmedName.length < 2) {
+      setError('Nama lengkap minimal 2 karakter.');
+      return;
+    }
+    if (trimmedName.length > 120) {
+      setError('Nama lengkap maksimal 120 karakter.');
+      return;
+    }
+
+    if (!emailValidation.valid) {
       return;
     }
 
@@ -32,31 +87,97 @@ export const RegisterForm: React.FC = () => {
       return;
     }
 
-    const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail.endsWith('@student.budiluhur.ac.id')) {
-      setError('Wajib menggunakan email resmi mahasiswa Budi Luhur (@student.budiluhur.ac.id).');
+    if (password !== confirmPassword) {
+      setError('Konfirmasi kata sandi tidak cocok.');
+      return;
+    }
+
+    const canReuseActiveChallenge =
+      Boolean(challengeToken) &&
+      pendingRegistration !== null &&
+      pendingRegistration.fullName === trimmedName &&
+      pendingRegistration.email === emailValidation.normalizedEmail &&
+      pendingRegistration.password === password &&
+      Date.now() < resendAvailableAt;
+
+    if (canReuseActiveChallenge) {
+      setOtpModalOpen(true);
       return;
     }
 
     setIsSubmitting(true);
     try {
       const authService = registry.getServices().auth;
-      if (authService.registerStudent) {
-        await authService.registerStudent({
-          fullName,
-          email,
-          password,
-          studentNumber: nim,
-        });
-      } else {
-        await authService.loginAsStudent(email, fullName, nim);
-      }
-      navigate(RoutePaths.GUEST_HOME);
+      const otpResult = await authService.requestStudentRegisterOtp({
+        fullName: trimmedName,
+        email: emailValidation.normalizedEmail,
+        password,
+      });
+
+      setChallengeToken(otpResult.challengeToken);
+      setResendAvailableAt(Date.now() + OTP_RESEND_COOLDOWN_MS);
+      setPendingRegistration({
+        fullName: trimmedName,
+        email: emailValidation.normalizedEmail,
+        password,
+        extractedNim: otpResult.extractedNim || emailValidation.nim,
+      });
+      setOtpModalOpen(true);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Registrasi akun mahasiswa gagal.';
-      setError(msg);
+      setError(resolveOtpErrorMessage(err, 'Gagal mengirim kode OTP verifikasi email kampus.'));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleVerifyOtp = async (otp: string) => {
+    if (!pendingRegistration || !challengeToken) {
+      throw new Error('Sesi pendaftaran tidak ditemukan. Silakan kirim ulang kode OTP.');
+    }
+
+    const authService = registry.getServices().auth;
+    await authService.registerStudent({
+      fullName: pendingRegistration.fullName,
+      email: pendingRegistration.email,
+      password: pendingRegistration.password,
+      otp,
+      challengeToken,
+    });
+
+    setOtpModalOpen(false);
+    navigate(RoutePaths.GUEST_HOME);
+  };
+
+  const handleResendOtp = async () => {
+    if (!pendingRegistration) {
+      throw new Error('Data pendaftaran tidak ditemukan. Silakan ulangi pengisian formulir.');
+    }
+
+    if (Date.now() < resendAvailableAt) {
+      const remaining = Math.max(1, Math.ceil((resendAvailableAt - Date.now()) / 1000));
+      throw new Error(`Mohon tunggu ${remaining} detik sebelum mengirim ulang kode OTP.`);
+    }
+
+    try {
+      const authService = registry.getServices().auth;
+      const otpResult = await authService.requestStudentRegisterOtp({
+        fullName: pendingRegistration.fullName,
+        email: pendingRegistration.email,
+        password: pendingRegistration.password,
+      });
+
+      setChallengeToken(otpResult.challengeToken);
+      setResendAvailableAt(Date.now() + OTP_RESEND_COOLDOWN_MS);
+      setPendingRegistration((prev) =>
+        prev
+          ? {
+              ...prev,
+              extractedNim: otpResult.extractedNim || prev.extractedNim,
+            }
+          : prev
+      );
+    } catch (err: unknown) {
+      throw new Error(resolveOtpErrorMessage(err, 'Gagal mengirim ulang kode OTP.'));
     }
   };
 
@@ -66,14 +187,14 @@ export const RegisterForm: React.FC = () => {
         {error && (
           <div
             role="alert"
-            className="mb-5 p-3.5 rounded-xl bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318] text-xs font-medium flex items-start gap-2.5 animate-in fade-in duration-200"
+            className="mb-5 p-3.5 rounded-xl bg-[var(--lf-error-soft)] border border-[#FECDCA] text-[#B42318] text-xs font-medium flex items-start gap-2.5 animate-in fade-in duration-200"
           >
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[#D92D20]" />
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-[var(--lf-error)]" />
             <div className="flex-1 leading-relaxed">{error}</div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5" autoComplete="off">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3.5" autoComplete="off" noValidate>
           {/* Nama Lengkap */}
           <Input
             label="Nama Lengkap"
@@ -81,6 +202,7 @@ export const RegisterForm: React.FC = () => {
             id="register-fullname"
             name="student_fullname"
             autoComplete="off"
+            maxLength={120}
             required
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
@@ -88,34 +210,56 @@ export const RegisterForm: React.FC = () => {
             leftIcon={<User className="w-4 h-4" />}
           />
 
-          {/* NIM */}
-          <Input
-            label="Nomor Induk Mahasiswa (NIM)"
-            type="text"
-            id="register-nim"
-            name="student_nim"
-            autoComplete="off"
-            required
-            value={nim}
-            onChange={(e) => setNim(e.target.value)}
-            placeholder="Contoh: 2411502194"
-            leftIcon={<Hash className="w-4 h-4" />}
-          />
+          {/* Email Kampus + Auto-NIM Extraction Preview */}
+          <div className="flex flex-col gap-2">
+            <Input
+              label="Email Kampus"
+              type="email"
+              id="register-email"
+              name="student_register_email"
+              autoComplete="off"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => setEmailTouched(true)}
+              placeholder="2411502194@student.budiluhur.ac.id"
+              leftIcon={<Mail className="w-4 h-4" />}
+              helperText={
+                !showEmailFeedback
+                  ? 'Wajib menggunakan email resmi mahasiswa berisi tepat 10 angka NIM (@student.budiluhur.ac.id)'
+                  : undefined
+              }
+              aria-invalid={Boolean(inlineEmailError)}
+              aria-describedby={inlineEmailError ? 'register-email-error' : undefined}
+              className={
+                inlineEmailError
+                  ? 'border-[var(--lf-error)] text-[var(--lf-error)]'
+                  : undefined
+              }
+            />
 
-          {/* Email Kampus */}
-          <Input
-            label="Email Kampus"
-            type="email"
-            id="register-email"
-            name="student_register_email"
-            autoComplete="off"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="2411502194@student.budiluhur.ac.id"
-            leftIcon={<Mail className="w-4 h-4" />}
-            helperText="Wajib menggunakan email resmi mahasiswa (@student.budiluhur.ac.id)"
-          />
+            {inlineEmailError && (
+              <div
+                id="register-email-error"
+                role="alert"
+                className="flex items-start gap-2 px-3 py-2 rounded-xl bg-[var(--lf-error-soft)] border border-[#FECDCA] text-xs text-[#B42318] font-medium"
+              >
+                <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-[var(--lf-error)]" />
+                <span className="leading-relaxed">{inlineEmailError}</span>
+              </div>
+            )}
+
+            {emailValidation.valid && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[var(--lf-success-soft)] border border-[var(--lf-success)]/25 text-xs text-[var(--lf-success)] font-medium"
+              >
+                <ShieldCheck className="w-4 h-4 shrink-0" />
+                <span>NIM Terdeteksi Otomatis: {emailValidation.nim}</span>
+              </div>
+            )}
+          </div>
 
           {/* Kata Sandi */}
           <Input
@@ -160,7 +304,11 @@ export const RegisterForm: React.FC = () => {
                 className="cursor-pointer text-[var(--lf-muted)] hover:text-[var(--lf-ink)] transition-colors focus:outline-none"
                 aria-label={showConfirmPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
               >
-                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showConfirmPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             }
           />
@@ -174,10 +322,20 @@ export const RegisterForm: React.FC = () => {
             rightIcon={<ArrowRight className="w-4 h-4" />}
             className="w-full mt-2"
           >
-            {isSubmitting ? 'Mendaftarkan Akun...' : 'Daftar Akun Mahasiswa'}
+            {isSubmitting ? 'Mengirim Kode OTP...' : 'Daftar Akun Mahasiswa'}
           </Button>
         </form>
       </div>
+
+      <OtpVerificationModal
+        isOpen={otpModalOpen}
+        email={pendingRegistration?.email || email.trim().toLowerCase()}
+        extractedNim={pendingRegistration?.extractedNim}
+        resendAvailableAt={resendAvailableAt}
+        onClose={() => setOtpModalOpen(false)}
+        onVerifyOtp={handleVerifyOtp}
+        onResendOtp={handleResendOtp}
+      />
     </>
   );
 };

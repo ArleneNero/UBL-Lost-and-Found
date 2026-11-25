@@ -6342,8 +6342,8 @@ var require_req = __commonJS({
       if (req.originalUrl) {
         _req.url = req.originalUrl;
       } else {
-        const path2 = req.path;
-        _req.url = typeof path2 === "string" ? path2 : req.url ? req.url.path || req.url : void 0;
+        const path3 = req.path;
+        _req.url = typeof path3 === "string" ? path3 : req.url ? req.url.path || req.url : void 0;
       }
       if (req.query) {
         _req.query = req.query;
@@ -6516,14 +6516,14 @@ var require_redact = __commonJS({
       }
       return obj;
     }
-    function parsePath(path2) {
+    function parsePath(path3) {
       const parts = [];
       let current = "";
       let inBrackets = false;
       let inQuotes = false;
       let quoteChar = "";
-      for (let i5 = 0; i5 < path2.length; i5++) {
-        const char2 = path2[i5];
+      for (let i5 = 0; i5 < path3.length; i5++) {
+        const char2 = path3[i5];
         if (!inBrackets && char2 === ".") {
           if (current) {
             parts.push(current);
@@ -6654,10 +6654,10 @@ var require_redact = __commonJS({
       return current;
     }
     function redactPaths(obj, paths, censor, remove = false) {
-      for (const path2 of paths) {
-        const parts = parsePath(path2);
+      for (const path3 of paths) {
+        const parts = parsePath(path3);
         if (parts.includes("*")) {
-          redactWildcardPath(obj, parts, censor, path2, remove);
+          redactWildcardPath(obj, parts, censor, path3, remove);
         } else {
           if (remove) {
             removeKey(obj, parts);
@@ -6744,8 +6744,8 @@ var require_redact = __commonJS({
           }
         } else {
           if (afterWildcard.includes("*")) {
-            const wrappedCensor = typeof censor === "function" ? (value, path2) => {
-              const fullPath = [...pathArray.slice(0, pathLength), ...path2];
+            const wrappedCensor = typeof censor === "function" ? (value, path3) => {
+              const fullPath = [...pathArray.slice(0, pathLength), ...path3];
               return censor(value, fullPath);
             } : censor;
             redactWildcardPath(current, afterWildcard, wrappedCensor, originalPath, remove);
@@ -6782,8 +6782,8 @@ var require_redact = __commonJS({
         return null;
       }
       const pathStructure = /* @__PURE__ */ new Map();
-      for (const path2 of pathsToClone) {
-        const parts = parsePath(path2);
+      for (const path3 of pathsToClone) {
+        const parts = parsePath(path3);
         let current = pathStructure;
         for (let i5 = 0; i5 < parts.length; i5++) {
           const part = parts[i5];
@@ -6835,24 +6835,24 @@ var require_redact = __commonJS({
       }
       return cloneSelectively(obj, pathStructure);
     }
-    function validatePath(path2) {
-      if (typeof path2 !== "string") {
+    function validatePath(path3) {
+      if (typeof path3 !== "string") {
         throw new Error("Paths must be (non-empty) strings");
       }
-      if (path2 === "") {
+      if (path3 === "") {
         throw new Error("Invalid redaction path ()");
       }
-      if (path2.includes("..")) {
-        throw new Error(`Invalid redaction path (${path2})`);
+      if (path3.includes("..")) {
+        throw new Error(`Invalid redaction path (${path3})`);
       }
-      if (path2.includes(",")) {
-        throw new Error(`Invalid redaction path (${path2})`);
+      if (path3.includes(",")) {
+        throw new Error(`Invalid redaction path (${path3})`);
       }
       let bracketCount = 0;
       let inQuotes = false;
       let quoteChar = "";
-      for (let i5 = 0; i5 < path2.length; i5++) {
-        const char2 = path2[i5];
+      for (let i5 = 0; i5 < path3.length; i5++) {
+        const char2 = path3[i5];
         if ((char2 === '"' || char2 === "'") && bracketCount > 0) {
           if (!inQuotes) {
             inQuotes = true;
@@ -6866,20 +6866,20 @@ var require_redact = __commonJS({
         } else if (char2 === "]" && !inQuotes) {
           bracketCount--;
           if (bracketCount < 0) {
-            throw new Error(`Invalid redaction path (${path2})`);
+            throw new Error(`Invalid redaction path (${path3})`);
           }
         }
       }
       if (bracketCount !== 0) {
-        throw new Error(`Invalid redaction path (${path2})`);
+        throw new Error(`Invalid redaction path (${path3})`);
       }
     }
     function validatePaths(paths) {
       if (!Array.isArray(paths)) {
         throw new TypeError("paths must be an array");
       }
-      for (const path2 of paths) {
-        validatePath(path2);
+      for (const path3 of paths) {
+        validatePath(path3);
       }
     }
     function slowRedact(options = {}) {
@@ -7049,8 +7049,8 @@ var require_redaction = __commonJS({
         if (shape[k5] === null) {
           o3[k5] = (value) => topCensor(value, [k5]);
         } else {
-          const wrappedCensor = typeof censor === "function" ? (value, path2) => {
-            return censor(value, [k5, ...path2]);
+          const wrappedCensor = typeof censor === "function" ? (value, path3) => {
+            return censor(value, [k5, ...path3]);
           } : censor;
           o3[k5] = Redact({
             paths: shape[k5],
@@ -7271,10 +7271,10 @@ var require_atomic_sleep = __commonJS({
 var require_sonic_boom = __commonJS({
   "node_modules/sonic-boom/index.js"(exports2, module2) {
     "use strict";
-    var fs2 = require("fs");
+    var fs3 = require("fs");
     var EventEmitter = require("events");
     var inherits = require("util").inherits;
-    var path2 = require("path");
+    var path3 = require("path");
     var sleep2 = require_atomic_sleep();
     var assert = require("assert");
     var BUSY_WRITE_TIMEOUT = 100;
@@ -7329,21 +7329,21 @@ var require_sonic_boom = __commonJS({
       if (sonic.sync) {
         try {
           if (sonic.mkdir)
-            fs2.mkdirSync(path2.dirname(file), { recursive: true });
-          const fd = fs2.openSync(file, flags, mode);
+            fs3.mkdirSync(path3.dirname(file), { recursive: true });
+          const fd = fs3.openSync(file, flags, mode);
           fileOpened(null, fd);
         } catch (err) {
           fileOpened(err);
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs2.mkdir(path2.dirname(file), { recursive: true }, (err) => {
+        fs3.mkdir(path3.dirname(file), { recursive: true }, (err) => {
           if (err)
             return fileOpened(err);
-          fs2.open(file, flags, mode, fileOpened);
+          fs3.open(file, flags, mode, fileOpened);
         });
       } else {
-        fs2.open(file, flags, mode, fileOpened);
+        fs3.open(file, flags, mode, fileOpened);
       }
     }
     function SonicBoom(opts) {
@@ -7384,8 +7384,8 @@ var require_sonic_boom = __commonJS({
         this.flush = flushBuffer;
         this.flushSync = flushBufferSync;
         this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs2.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs2.write(this.fd, this._writingBuf, this.release);
+        fsWriteSync = () => fs3.writeSync(this.fd, this._writingBuf);
+        fsWrite = () => fs3.write(this.fd, this._writingBuf, this.release);
       } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
         this._writingBuf = "";
         this.write = write;
@@ -7394,15 +7394,15 @@ var require_sonic_boom = __commonJS({
         this._actualWrite = actualWrite;
         fsWriteSync = () => {
           if (Buffer.isBuffer(this._writingBuf)) {
-            return fs2.writeSync(this.fd, this._writingBuf);
+            return fs3.writeSync(this.fd, this._writingBuf);
           }
-          return fs2.writeSync(this.fd, this._writingBuf, "utf8");
+          return fs3.writeSync(this.fd, this._writingBuf, "utf8");
         };
         fsWrite = () => {
           if (Buffer.isBuffer(this._writingBuf)) {
-            return fs2.write(this.fd, this._writingBuf, this.release);
+            return fs3.write(this.fd, this._writingBuf, this.release);
           }
-          return fs2.write(this.fd, this._writingBuf, "utf8", this.release);
+          return fs3.write(this.fd, this._writingBuf, "utf8", this.release);
         };
       } else {
         throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
@@ -7459,7 +7459,7 @@ var require_sonic_boom = __commonJS({
           }
         }
         if (this._fsync) {
-          fs2.fsyncSync(this.fd);
+          fs3.fsyncSync(this.fd);
         }
         const len = this._len;
         if (this._reopening) {
@@ -7574,7 +7574,7 @@ var require_sonic_boom = __commonJS({
       const onDrain = () => {
         if (!this._fsync) {
           try {
-            fs2.fsync(this.fd, (err) => {
+            fs3.fsync(this.fd, (err) => {
               this._flushPending = false;
               cb(err);
             });
@@ -7676,7 +7676,7 @@ var require_sonic_boom = __commonJS({
       const fd = this.fd;
       this.once("ready", () => {
         if (fd !== this.fd) {
-          fs2.close(fd, (err) => {
+          fs3.close(fd, (err) => {
             if (err) {
               return this.emit("error", err);
             }
@@ -7725,7 +7725,7 @@ var require_sonic_boom = __commonJS({
           buf = this._bufs[0];
         }
         try {
-          const n3 = Buffer.isBuffer(buf) ? fs2.writeSync(this.fd, buf) : fs2.writeSync(this.fd, buf, "utf8");
+          const n3 = Buffer.isBuffer(buf) ? fs3.writeSync(this.fd, buf) : fs3.writeSync(this.fd, buf, "utf8");
           const releasedBufObj = releaseWritingBuf(buf, this._len, n3);
           buf = releasedBufObj.writingBuf;
           this._len = releasedBufObj.len;
@@ -7741,7 +7741,7 @@ var require_sonic_boom = __commonJS({
         }
       }
       try {
-        fs2.fsyncSync(this.fd);
+        fs3.fsyncSync(this.fd);
       } catch {
       }
     }
@@ -7762,7 +7762,7 @@ var require_sonic_boom = __commonJS({
           buf = mergeBuf(this._bufs[0], this._lens[0]);
         }
         try {
-          const n3 = fs2.writeSync(this.fd, buf);
+          const n3 = fs3.writeSync(this.fd, buf);
           buf = buf.subarray(n3);
           this._len = Math.max(this._len - n3, 0);
           if (buf.length <= 0) {
@@ -7790,13 +7790,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : this._bufs.shift() || "";
       if (this.sync) {
         try {
-          const written = Buffer.isBuffer(this._writingBuf) ? fs2.writeSync(this.fd, this._writingBuf) : fs2.writeSync(this.fd, this._writingBuf, "utf8");
+          const written = Buffer.isBuffer(this._writingBuf) ? fs3.writeSync(this.fd, this._writingBuf) : fs3.writeSync(this.fd, this._writingBuf, "utf8");
           release2(null, written);
         } catch (err) {
           release2(err);
         }
       } else {
-        fs2.write(this.fd, this._writingBuf, release2);
+        fs3.write(this.fd, this._writingBuf, release2);
       }
     }
     function actualWriteBuffer() {
@@ -7805,7 +7805,7 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
       if (this.sync) {
         try {
-          const written = fs2.writeSync(this.fd, this._writingBuf);
+          const written = fs3.writeSync(this.fd, this._writingBuf);
           release2(null, written);
         } catch (err) {
           release2(err);
@@ -7814,7 +7814,7 @@ var require_sonic_boom = __commonJS({
         if (kCopyBuffer) {
           this._writingBuf = Buffer.from(this._writingBuf);
         }
-        fs2.write(this.fd, this._writingBuf, release2);
+        fs3.write(this.fd, this._writingBuf, release2);
       }
     }
     function actualClose(sonic) {
@@ -7830,12 +7830,12 @@ var require_sonic_boom = __commonJS({
       sonic._lens = [];
       assert(typeof sonic.fd === "number", `sonic.fd must be a number, got ${typeof sonic.fd}`);
       try {
-        fs2.fsync(sonic.fd, closeWrapped);
+        fs3.fsync(sonic.fd, closeWrapped);
       } catch {
       }
       function closeWrapped() {
         if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs2.close(sonic.fd, done);
+          fs3.close(sonic.fd, done);
         } else {
           done();
         }
@@ -8672,15 +8672,15 @@ var require_transport = __commonJS({
       if (!unquoted) {
         return false;
       }
-      let path2 = unquoted;
-      if (path2.startsWith("file://")) {
+      let path3 = unquoted;
+      if (path3.startsWith("file://")) {
         try {
-          path2 = fileURLToPath(path2);
+          path3 = fileURLToPath(path3);
         } catch {
           return false;
         }
       }
-      return isAbsolute(path2) && !existsSync(path2);
+      return isAbsolute(path3) && !existsSync(path3);
     }
     function stripQuotes(value) {
       const first = value[0];
@@ -15299,10 +15299,10 @@ var require_codegen = __commonJS({
     }
     exports2.and = and2;
     var orCode = mappend(exports2.operators.OR);
-    function or4(...args) {
+    function or3(...args) {
       return args.reduce(orCode);
     }
-    exports2.or = or4;
+    exports2.or = or3;
     function mappend(op2) {
       return (x2, y2) => x2 === code_1.nil ? y2 : y2 === code_1.nil ? x2 : (0, code_1._)`${par(x2)} ${op2} ${par(y2)}`;
     }
@@ -17550,8 +17550,8 @@ var require_utils = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path2) {
-      let input = path2;
+    function removeDotSegments(path3) {
+      let input = path3;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -17625,11 +17625,11 @@ var require_utils = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path2) {
-      if (path2 === "" || path2[0] === "/") {
-        return removeDotSegments(path2);
+    function removeDotSegmentsRelative(path3) {
+      if (path3 === "" || path3[0] === "/") {
+        return removeDotSegments(path3);
       }
-      const segments = path2.split("/");
+      const segments = path3.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -17992,8 +17992,8 @@ var require_schemes = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path2 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path2 && path2 !== "/" ? path2 : void 0;
+        const path3 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path3 && path3 !== "/" ? path3 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -23091,8 +23091,8 @@ var require_utils2 = __commonJS({
       }
       return ind;
     }
-    function removeDotSegments(path2) {
-      let input = path2;
+    function removeDotSegments(path3) {
+      let input = path3;
       const output = [];
       let nextSlash = -1;
       let len = 0;
@@ -23166,11 +23166,11 @@ var require_utils2 = __commonJS({
       }
       return output.join("");
     }
-    function removeDotSegmentsRelative(path2) {
-      if (path2 === "" || path2[0] === "/") {
-        return removeDotSegments(path2);
+    function removeDotSegmentsRelative(path3) {
+      if (path3 === "" || path3[0] === "/") {
+        return removeDotSegments(path3);
       }
-      const segments = path2.split("/");
+      const segments = path3.split("/");
       const last = segments.length - 1;
       const output = [];
       let trailingDirectory = false;
@@ -23593,8 +23593,8 @@ var require_schemes2 = __commonJS({
       }
       if (wsComponent.resourceName) {
         const queryIndex = wsComponent.resourceName.indexOf("?");
-        const path2 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
-        wsComponent.path = path2 && path2 !== "/" ? path2 : void 0;
+        const path3 = queryIndex === -1 ? wsComponent.resourceName : wsComponent.resourceName.slice(0, queryIndex);
+        wsComponent.path = path3 && path3 !== "/" ? path3 : void 0;
         wsComponent.query = queryIndex === -1 ? void 0 : wsComponent.resourceName.slice(queryIndex + 1);
         wsComponent.resourceName = void 0;
       }
@@ -24788,12 +24788,12 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name}"`);
       return f5;
     };
-    function addFormats(ajv, list2, fs2, exportName) {
+    function addFormats(ajv, list2, fs3, exportName) {
       var _a2;
       var _b;
       (_a2 = (_b = ajv.opts.code).formats) !== null && _a2 !== void 0 ? _a2 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
       for (const f5 of list2)
-        ajv.addFormat(f5, fs2[f5]);
+        ajv.addFormat(f5, fs3[f5]);
     }
     module2.exports = exports2 = formatsPlugin;
     Object.defineProperty(exports2, "__esModule", { value: true });
@@ -27198,7 +27198,7 @@ const asInteger = serializer.asInteger.bind(serializer)
     }
     function assertObjectDepth(schema, maxDepth, name) {
       const stack = [{ value: schema, depth: 0, exit: false }];
-      const path2 = /* @__PURE__ */ new WeakSet();
+      const path3 = /* @__PURE__ */ new WeakSet();
       let hasRef = false;
       while (stack.length > 0) {
         const entry = stack.pop();
@@ -27209,13 +27209,13 @@ const asInteger = serializer.asInteger.bind(serializer)
           throw schemaDepthError(maxDepth, name);
         }
         if (entry.exit) {
-          path2.delete(value);
+          path3.delete(value);
           continue;
         }
-        if (path2.has(value)) {
+        if (path3.has(value)) {
           throw new Error("schema contains a circular object reference; use $ref instead");
         }
-        path2.add(value);
+        path3.add(value);
         stack.push({ value, depth: entry.depth, exit: true });
         for (const key in value) {
           const child = value[key];
@@ -32981,8 +32981,8 @@ var require_node = __commonJS({
         return matchSingleCharPrefix;
       }
       if (prefix.length >= LONG_PREFIX_MIN_LENGTH) {
-        return function matchLongPrefix(path2, i5) {
-          return path2.indexOf(prefix, i5) === i5;
+        return function matchLongPrefix(path3, i5) {
+          return path3.indexOf(prefix, i5) === i5;
         };
       }
       const lines = [];
@@ -33031,13 +33031,13 @@ return ${lines.join(" && ")}`);
           this.staticChildrenNodes[index2] = node;
         }
       }
-      findStaticMatchingChild(path2, pathIndex) {
-        const charCode = path2.charCodeAt(pathIndex);
+      findStaticMatchingChild(path3, pathIndex) {
+        const charCode = path3.charCodeAt(pathIndex);
         const charCodes = this.staticChildrenCharCodes;
         for (let i5 = 0; i5 < charCodes.length; i5++) {
           if (charCodes[i5] === charCode) {
             const staticChild = this.staticChildrenNodes[i5];
-            if (staticChild.matchPrefix(path2, pathIndex)) {
+            if (staticChild.matchPrefix(path3, pathIndex)) {
               return staticChild;
             }
             return null;
@@ -33045,34 +33045,34 @@ return ${lines.join(" && ")}`);
         }
         return null;
       }
-      getStaticChild(path2, pathIndex = 0) {
-        if (path2.length === pathIndex) {
+      getStaticChild(path3, pathIndex = 0) {
+        if (path3.length === pathIndex) {
           return this;
         }
-        const staticChild = this.findStaticMatchingChild(path2, pathIndex);
+        const staticChild = this.findStaticMatchingChild(path3, pathIndex);
         if (staticChild) {
-          return staticChild.getStaticChild(path2, pathIndex + staticChild.prefix.length);
+          return staticChild.getStaticChild(path3, pathIndex + staticChild.prefix.length);
         }
         return null;
       }
-      createStaticChild(path2) {
-        if (path2.length === 0) {
+      createStaticChild(path3) {
+        if (path3.length === 0) {
           return this;
         }
-        const childIndex = this.staticChildrenCharCodes.indexOf(path2.charCodeAt(0));
+        const childIndex = this.staticChildrenCharCodes.indexOf(path3.charCodeAt(0));
         let staticChild = childIndex === -1 ? void 0 : this.staticChildrenNodes[childIndex];
         if (staticChild) {
           let i5 = 1;
           for (; i5 < staticChild.prefix.length; i5++) {
-            if (path2.charCodeAt(i5) !== staticChild.prefix.charCodeAt(i5)) {
+            if (path3.charCodeAt(i5) !== staticChild.prefix.charCodeAt(i5)) {
               staticChild = staticChild.split(this, i5);
               break;
             }
           }
-          return staticChild.createStaticChild(path2.slice(i5));
+          return staticChild.createStaticChild(path3.slice(i5));
         }
-        const node = createStaticNode(path2);
-        this.setStaticChild(path2.charAt(0), node);
+        const node = createStaticNode(path3);
+        this.setStaticChild(path3.charAt(0), node);
         return node;
       }
       getParametricChild(regex) {
@@ -33122,8 +33122,8 @@ return ${lines.join(" && ")}`);
       // static child, then the first parametric child, then the wildcard. Every
       // sibling that is skipped over is pushed on nodeStack as a flat triple
       // (node, pathIndex, paramsCount) so lookup can backtrack to it later.
-      getNextNode(path2, pathIndex, nodeStack, paramsCount) {
-        let node = this.findStaticMatchingChild(path2, pathIndex);
+      getNextNode(path3, pathIndex, nodeStack, paramsCount) {
+        let node = this.findStaticMatchingChild(path3, pathIndex);
         let parametricBrotherNodeIndex = 0;
         if (node === null) {
           if (this.parametricChildren.length === 0) {
@@ -33206,62 +33206,62 @@ var require_url_sanitizer = __commonJS({
       return String.fromCharCode(charCode);
     }
     var MIN_NATIVE_SCAN_LENGTH = 12;
-    function safeDecodeURI(path2, useSemicolonDelimiter) {
-      if (path2.length >= MIN_NATIVE_SCAN_LENGTH) {
-        return safeDecodeURINativeScan(path2, useSemicolonDelimiter);
+    function safeDecodeURI(path3, useSemicolonDelimiter) {
+      if (path3.length >= MIN_NATIVE_SCAN_LENGTH) {
+        return safeDecodeURINativeScan(path3, useSemicolonDelimiter);
       }
-      return safeDecodeURICharScan(path2, useSemicolonDelimiter, 1);
+      return safeDecodeURICharScan(path3, useSemicolonDelimiter, 1);
     }
-    function safeDecodeURINativeScan(path2, useSemicolonDelimiter) {
-      const percentIndex = path2.indexOf("%", 1);
-      let delimIndex = path2.indexOf("?", 1);
-      const hashIndex = path2.indexOf("#", 1);
+    function safeDecodeURINativeScan(path3, useSemicolonDelimiter) {
+      const percentIndex = path3.indexOf("%", 1);
+      let delimIndex = path3.indexOf("?", 1);
+      const hashIndex = path3.indexOf("#", 1);
       if (hashIndex !== -1 && (delimIndex === -1 || hashIndex < delimIndex)) {
         delimIndex = hashIndex;
       }
       if (useSemicolonDelimiter) {
-        const semicolonIndex = path2.indexOf(";", 1);
+        const semicolonIndex = path3.indexOf(";", 1);
         if (semicolonIndex !== -1 && (delimIndex === -1 || semicolonIndex < delimIndex)) {
           delimIndex = semicolonIndex;
         }
       }
       if (percentIndex === -1 || delimIndex !== -1 && percentIndex > delimIndex) {
         if (delimIndex === -1) {
-          return { path: path2, querystring: "", shouldDecodeParam: false };
+          return { path: path3, querystring: "", shouldDecodeParam: false };
         }
         return {
-          path: path2.slice(0, delimIndex),
-          querystring: path2.slice(delimIndex + 1),
+          path: path3.slice(0, delimIndex),
+          querystring: path3.slice(delimIndex + 1),
           shouldDecodeParam: false
         };
       }
-      return safeDecodeURIPercentScan(path2, useSemicolonDelimiter, percentIndex);
+      return safeDecodeURIPercentScan(path3, useSemicolonDelimiter, percentIndex);
     }
-    function safeDecodeURICharScan(path2, useSemicolonDelimiter, startIndex) {
-      for (let i5 = startIndex; i5 < path2.length; i5++) {
-        const charCode = path2.charCodeAt(i5);
+    function safeDecodeURICharScan(path3, useSemicolonDelimiter, startIndex) {
+      for (let i5 = startIndex; i5 < path3.length; i5++) {
+        const charCode = path3.charCodeAt(i5);
         if (charCode === 37) {
-          return safeDecodeURIPercentScan(path2, useSemicolonDelimiter, i5);
+          return safeDecodeURIPercentScan(path3, useSemicolonDelimiter, i5);
         } else if (charCode === 63 || charCode === 35 || charCode === 59 && useSemicolonDelimiter) {
           return {
-            path: path2.slice(0, i5),
-            querystring: path2.slice(i5 + 1),
+            path: path3.slice(0, i5),
+            querystring: path3.slice(i5 + 1),
             shouldDecodeParam: false
           };
         }
       }
-      return { path: path2, querystring: "", shouldDecodeParam: false };
+      return { path: path3, querystring: "", shouldDecodeParam: false };
     }
-    function safeDecodeURIPercentScan(path2, useSemicolonDelimiter, startIndex) {
+    function safeDecodeURIPercentScan(path3, useSemicolonDelimiter, startIndex) {
       let shouldDecode = false;
       let shouldDecodeParam = false;
       let querystring = "";
       let percentIndexes = null;
       let pathEnd = -1;
-      for (let i5 = startIndex; i5 < path2.length; i5++) {
-        const charCode = path2.charCodeAt(i5);
+      for (let i5 = startIndex; i5 < path3.length; i5++) {
+        const charCode = path3.charCodeAt(i5);
         if (charCode === 37) {
-          const componentCharCode = decodeComponentCharCode(path2.charCodeAt(i5 + 1), path2.charCodeAt(i5 + 2));
+          const componentCharCode = decodeComponentCharCode(path3.charCodeAt(i5 + 1), path3.charCodeAt(i5 + 2));
           if (componentCharCode === 0) {
             shouldDecode = true;
           } else {
@@ -33275,22 +33275,22 @@ var require_url_sanitizer = __commonJS({
             i5 += 2;
           }
         } else if (charCode === 63 || charCode === 35 || charCode === 59 && useSemicolonDelimiter) {
-          querystring = path2.slice(i5 + 1);
+          querystring = path3.slice(i5 + 1);
           pathEnd = i5;
           break;
         }
       }
       let decodedPath;
       if (percentIndexes === null) {
-        decodedPath = pathEnd === -1 ? path2 : path2.slice(0, pathEnd);
+        decodedPath = pathEnd === -1 ? path3 : path3.slice(0, pathEnd);
       } else {
         const parts = [];
         let last = 0;
         for (const index2 of percentIndexes) {
-          parts.push(path2.slice(last, index2), "%2525");
+          parts.push(path3.slice(last, index2), "%2525");
           last = index2 + 3;
         }
-        parts.push(path2.slice(last, pathEnd === -1 ? path2.length : pathEnd));
+        parts.push(path3.slice(last, pathEnd === -1 ? path3.length : pathEnd));
         decodedPath = parts.join("");
       }
       if (shouldDecode)
@@ -33819,14 +33819,14 @@ var require_compiler = __commonJS({
     }
     function compileTree(router, root5) {
       const sanitized = new TreeCompiler(router, false).compile(root5, null);
-      const slow = function findSanitized(path2, derivedConstraints) {
-        return router._findSanitized(sanitized, path2, derivedConstraints);
+      const slow = function findSanitized(path3, derivedConstraints) {
+        return router._findSanitized(sanitized, path3, derivedConstraints);
       };
       if (!supportsRawMatching(router, root5)) {
         return {
           find: slow,
-          lookup: function lookupSanitized(path2, derivedConstraints, req, res, ctx) {
-            return router.callHandler(slow(path2, derivedConstraints), req, res, ctx);
+          lookup: function lookupSanitized(path3, derivedConstraints, req, res, ctx) {
+            return router.callHandler(slow(path3, derivedConstraints), req, res, ctx);
           }
         };
       }
@@ -34233,7 +34233,7 @@ var require_find_my_way = __commonJS({
       const byPattern = router._routesByMethodAndPattern.get(method);
       return byPattern === void 0 ? void 0 : byPattern.get(pattern);
     }
-    Router.prototype.on = function on(method, path2, opts, handler2, store) {
+    Router.prototype.on = function on(method, path3, opts, handler2, store) {
       if (typeof opts === "function") {
         if (handler2 !== void 0) {
           store = handler2;
@@ -34241,34 +34241,34 @@ var require_find_my_way = __commonJS({
         handler2 = opts;
         opts = {};
       }
-      assert(typeof path2 === "string", "Path should be a string");
-      assert(path2.length > 0, "The path could not be empty");
-      assert(path2[0] === "/" || path2[0] === "*", "The first character of a path should be `/` or `*`");
+      assert(typeof path3 === "string", "Path should be a string");
+      assert(path3.length > 0, "The path could not be empty");
+      assert(path3[0] === "/" || path3[0] === "*", "The first character of a path should be `/` or `*`");
       assert(typeof handler2 === "function", "Handler should be a function");
-      const optionalParamMatch = path2.match(OPTIONAL_PARAM_REGEXP);
+      const optionalParamMatch = path3.match(OPTIONAL_PARAM_REGEXP);
       if (optionalParamMatch) {
-        assert(path2.length === optionalParamMatch.index + optionalParamMatch[0].length, "Optional Parameter needs to be the last parameter of the path");
-        const pathFull = path2.replace(OPTIONAL_PARAM_REGEXP, "$1$2");
-        const pathOptional = path2.replace(OPTIONAL_PARAM_REGEXP, "$2") || "/";
+        assert(path3.length === optionalParamMatch.index + optionalParamMatch[0].length, "Optional Parameter needs to be the last parameter of the path");
+        const pathFull = path3.replace(OPTIONAL_PARAM_REGEXP, "$1$2");
+        const pathOptional = path3.replace(OPTIONAL_PARAM_REGEXP, "$2") || "/";
         this.on(method, pathFull, opts, handler2, store);
         this.on(method, pathOptional, opts, handler2, store);
         return;
       }
-      const route = path2;
+      const route = path3;
       if (this.ignoreDuplicateSlashes) {
-        path2 = removeDuplicateSlashes(path2);
+        path3 = removeDuplicateSlashes(path3);
       }
       if (this.ignoreTrailingSlash) {
-        path2 = trimLastSlash(path2);
+        path3 = trimLastSlash(path3);
       }
       const methods = Array.isArray(method) ? method : [method];
       for (const method2 of methods) {
         assert(typeof method2 === "string", "Method should be a string");
         assert(httpMethods.includes(method2), `Method '${method2}' is not an http method.`);
-        this._on(method2, path2, opts, handler2, store, route);
+        this._on(method2, path3, opts, handler2, store, route);
       }
     };
-    Router.prototype._on = function _on(method, path2, opts, handler2, store) {
+    Router.prototype._on = function _on(method, path3, opts, handler2, store) {
       let constraints = {};
       if (opts.constraints !== void 0) {
         assert(typeof opts.constraints === "object" && opts.constraints !== null, "Constraints should be an object");
@@ -34283,7 +34283,7 @@ var require_find_my_way = __commonJS({
       if (this.trees[method] === void 0) {
         this.trees[method] = createStaticNode("/");
       }
-      let pattern = path2;
+      let pattern = path3;
       if (pattern === "*" && this.trees[method].prefix.length !== 0) {
         const currentRoot = this.trees[method];
         this.trees[method] = createStaticNode("");
@@ -34397,7 +34397,7 @@ var require_find_my_way = __commonJS({
           }
         }
       }
-      const route = { method, path: path2, pattern, params, opts, handler: handler2, store };
+      const route = { method, path: path3, pattern, params, opts, handler: handler2, store };
       this.routes.push(route);
       if (sameRoutes !== void 0) {
         sameRoutes.push(route);
@@ -34411,15 +34411,15 @@ var require_find_my_way = __commonJS({
       }
       currentNode.addRoute(route, this.constrainer);
     };
-    Router.prototype.hasRoute = function hasRoute(method, path2, constraints) {
-      const route = this.findRoute(method, path2, constraints);
+    Router.prototype.hasRoute = function hasRoute(method, path3, constraints) {
+      const route = this.findRoute(method, path3, constraints);
       return route !== null;
     };
-    Router.prototype.findRoute = function findNode(method, path2, constraints = {}) {
+    Router.prototype.findRoute = function findNode(method, path3, constraints = {}) {
       if (this.trees[method] === void 0) {
         return null;
       }
-      let pattern = path2;
+      let pattern = path3;
       let currentNode = this.trees[method];
       let parentNodePathIndex = currentNode.prefix.length;
       const params = [];
@@ -34550,39 +34550,39 @@ var require_find_my_way = __commonJS({
       this.routes = [];
       this._routesByMethodAndPattern = /* @__PURE__ */ new Map();
     };
-    Router.prototype.off = function off(method, path2, constraints) {
-      assert(typeof path2 === "string", "Path should be a string");
-      assert(path2.length > 0, "The path could not be empty");
-      assert(path2[0] === "/" || path2[0] === "*", "The first character of a path should be `/` or `*`");
+    Router.prototype.off = function off(method, path3, constraints) {
+      assert(typeof path3 === "string", "Path should be a string");
+      assert(path3.length > 0, "The path could not be empty");
+      assert(path3[0] === "/" || path3[0] === "*", "The first character of a path should be `/` or `*`");
       assert(
         typeof constraints === "undefined" || typeof constraints === "object" && !Array.isArray(constraints) && constraints !== null,
         "Constraints should be an object or undefined."
       );
-      const optionalParamMatch = path2.match(OPTIONAL_PARAM_REGEXP);
+      const optionalParamMatch = path3.match(OPTIONAL_PARAM_REGEXP);
       if (optionalParamMatch) {
-        assert(path2.length === optionalParamMatch.index + optionalParamMatch[0].length, "Optional Parameter needs to be the last parameter of the path");
-        const pathFull = path2.replace(OPTIONAL_PARAM_REGEXP, "$1$2");
-        const pathOptional = path2.replace(OPTIONAL_PARAM_REGEXP, "$2") || "/";
+        assert(path3.length === optionalParamMatch.index + optionalParamMatch[0].length, "Optional Parameter needs to be the last parameter of the path");
+        const pathFull = path3.replace(OPTIONAL_PARAM_REGEXP, "$1$2");
+        const pathOptional = path3.replace(OPTIONAL_PARAM_REGEXP, "$2") || "/";
         this.off(method, pathFull, constraints);
         this.off(method, pathOptional, constraints);
         return;
       }
       if (this.ignoreDuplicateSlashes) {
-        path2 = removeDuplicateSlashes(path2);
+        path3 = removeDuplicateSlashes(path3);
       }
       if (this.ignoreTrailingSlash) {
-        path2 = trimLastSlash(path2);
+        path3 = trimLastSlash(path3);
       }
       const methods = Array.isArray(method) ? method : [method];
       for (const method2 of methods) {
-        this._off(method2, path2, constraints);
+        this._off(method2, path3, constraints);
       }
     };
-    Router.prototype._off = function _off(method, path2, constraints) {
+    Router.prototype._off = function _off(method, path3, constraints) {
       assert(typeof method === "string", "Method should be a string");
       assert(httpMethods.includes(method), `Method '${method}' is not an http method.`);
       function matcherWithoutConstraints(route) {
-        return method !== route.method || path2 !== route.path;
+        return method !== route.method || path3 !== route.path;
       }
       function matcherWithConstraints(route) {
         return matcherWithoutConstraints(route) || !deepEqual(constraints, route.opts.constraints || {});
@@ -34620,41 +34620,41 @@ var require_find_my_way = __commonJS({
         return this._defaultRoute(req, res, ctx);
       return ctx === void 0 ? handle.handler(req, res, handle.params, handle.store, handle.searchParams) : handle.handler.call(ctx, req, res, handle.params, handle.store, handle.searchParams);
     };
-    Router.prototype.find = function find(method, path2, derivedConstraints) {
+    Router.prototype.find = function find(method, path3, derivedConstraints) {
       let currentNode = method === "GET" ? this._treeGET : this.trees[method];
       if (currentNode == null)
         return null;
-      if (path2.charCodeAt(0) !== 47) {
-        const absolutePath = getPathFromAbsoluteUrl(path2);
+      if (path3.charCodeAt(0) !== 47) {
+        const absolutePath = getPathFromAbsoluteUrl(path3);
         if (absolutePath === null) {
-          return this._onBadUrl(path2);
+          return this._onBadUrl(path3);
         }
-        path2 = absolutePath;
+        path3 = absolutePath;
       }
       let sanitizedUrl;
       let querystring2;
       let shouldDecodeParam;
       try {
-        sanitizedUrl = path2.length >= MIN_NATIVE_SCAN_LENGTH ? safeDecodeURINativeScan(path2, this.useSemicolonDelimiter) : safeDecodeURICharScan(path2, this.useSemicolonDelimiter, 1);
-        path2 = sanitizedUrl.path;
+        sanitizedUrl = path3.length >= MIN_NATIVE_SCAN_LENGTH ? safeDecodeURINativeScan(path3, this.useSemicolonDelimiter) : safeDecodeURICharScan(path3, this.useSemicolonDelimiter, 1);
+        path3 = sanitizedUrl.path;
         querystring2 = sanitizedUrl.querystring;
         shouldDecodeParam = sanitizedUrl.shouldDecodeParam;
       } catch (error2) {
-        return this._onBadUrl(path2);
+        return this._onBadUrl(path3);
       }
       if (this.ignoreDuplicateSlashes) {
-        path2 = removeDuplicateSlashes(path2);
+        path3 = removeDuplicateSlashes(path3);
       }
       if (this.ignoreTrailingSlash) {
-        path2 = trimLastSlash(path2);
+        path3 = trimLastSlash(path3);
       }
-      const originPath = path2;
+      const originPath = path3;
       if (this.caseSensitive === false) {
-        path2 = path2.toLowerCase();
+        path3 = path3.toLowerCase();
       }
       const maxParamLength = this.maxParamLength;
       let pathIndex = currentNode.prefix.length;
-      const pathLen = path2.length;
+      const pathLen = path3.length;
       let paramsCount = 0;
       let param0, param1, param2, param3;
       let extraParams = null;
@@ -34672,7 +34672,7 @@ var require_find_my_way = __commonJS({
             };
           }
         }
-        let node = currentNode.getNextNode(path2, pathIndex, brothersNodesStack, paramsCount);
+        let node = currentNode.getNextNode(path3, pathIndex, brothersNodesStack, paramsCount);
         if (node === null) {
           if (brothersNodesStack.length === 0) {
             if (maxParamLengthExceeded && this.onMaxParamLength) {
@@ -34795,14 +34795,14 @@ var require_find_my_way = __commonJS({
       }
       return compiled;
     };
-    Router.prototype._findCompiled = function _findCompiled(method, path2, derivedConstraints) {
+    Router.prototype._findCompiled = function _findCompiled(method, path3, derivedConstraints) {
       let compiled = method === "GET" ? this._compiledGET : this._compiledTrees[method];
       if (compiled == null) {
         compiled = this._compileTree(method);
         if (compiled === null)
           return null;
       }
-      return compiled.find(path2, derivedConstraints);
+      return compiled.find(path3, derivedConstraints);
     };
     Router.prototype._lookupCompiled = function _lookupCompiled(req, res, ctx, done) {
       if (typeof ctx === "function" || done !== void 0) {
@@ -34818,42 +34818,42 @@ var require_find_my_way = __commonJS({
       }
       return compiled.lookup(req.url, derivedConstraints, req, res, ctx);
     };
-    Router.prototype._findSanitized = function _findSanitized(matcher, path2, derivedConstraints) {
-      if (path2.charCodeAt(0) !== 47) {
-        const absolutePath = getPathFromAbsoluteUrl(path2);
+    Router.prototype._findSanitized = function _findSanitized(matcher, path3, derivedConstraints) {
+      if (path3.charCodeAt(0) !== 47) {
+        const absolutePath = getPathFromAbsoluteUrl(path3);
         if (absolutePath === null) {
-          return this._onBadUrl(path2);
+          return this._onBadUrl(path3);
         }
-        path2 = absolutePath;
+        path3 = absolutePath;
       }
       let sanitizedUrl;
       let querystring2;
       let shouldDecodeParam;
       try {
-        sanitizedUrl = path2.length >= MIN_NATIVE_SCAN_LENGTH ? safeDecodeURINativeScan(path2, this.useSemicolonDelimiter) : safeDecodeURICharScan(path2, this.useSemicolonDelimiter, 1);
-        path2 = sanitizedUrl.path;
+        sanitizedUrl = path3.length >= MIN_NATIVE_SCAN_LENGTH ? safeDecodeURINativeScan(path3, this.useSemicolonDelimiter) : safeDecodeURICharScan(path3, this.useSemicolonDelimiter, 1);
+        path3 = sanitizedUrl.path;
         querystring2 = sanitizedUrl.querystring;
         shouldDecodeParam = sanitizedUrl.shouldDecodeParam;
       } catch (error2) {
-        return this._onBadUrl(path2);
+        return this._onBadUrl(path3);
       }
       if (this.ignoreDuplicateSlashes) {
-        path2 = removeDuplicateSlashes(path2);
+        path3 = removeDuplicateSlashes(path3);
       }
       if (this.ignoreTrailingSlash) {
-        path2 = trimLastSlash(path2);
+        path3 = trimLastSlash(path3);
       }
-      const originPath = path2;
+      const originPath = path3;
       if (this.caseSensitive === false) {
-        path2 = path2.toLowerCase();
+        path3 = path3.toLowerCase();
       }
-      return matcher(path2, originPath, shouldDecodeParam, derivedConstraints, querystring2);
+      return matcher(path3, originPath, shouldDecodeParam, derivedConstraints, querystring2);
     };
     Router.prototype._rebuild = function(routes) {
       this.reset();
       for (const route of routes) {
-        const { method, path: path2, opts, handler: handler2, store } = route;
-        this._on(method, path2, opts, handler2, store);
+        const { method, path: path3, opts, handler: handler2, store } = route;
+        this._on(method, path3, opts, handler2, store);
       }
     };
     Router.prototype._defaultRoute = function(req, res, ctx) {
@@ -34864,24 +34864,24 @@ var require_find_my_way = __commonJS({
         res.end();
       }
     };
-    Router.prototype._onBadUrl = function(path2) {
+    Router.prototype._onBadUrl = function(path3) {
       if (this.onBadUrl === null) {
         return null;
       }
       const onBadUrl = this.onBadUrl;
       return {
-        handler: (req, res, ctx) => onBadUrl(path2, req, res),
+        handler: (req, res, ctx) => onBadUrl(path3, req, res),
         params: {},
         store: null
       };
     };
-    Router.prototype._onMaxParamLength = function(path2) {
+    Router.prototype._onMaxParamLength = function(path3) {
       if (this.onMaxParamLength === null) {
         return null;
       }
       const onMaxParamLength = this.onMaxParamLength;
       return {
-        handler: (req, res, ctx) => onMaxParamLength(path2, req, res),
+        handler: (req, res, ctx) => onMaxParamLength(path3, req, res),
         params: {},
         store: null
       };
@@ -34915,12 +34915,12 @@ var require_find_my_way = __commonJS({
         continue;
       const m4 = httpMethods[i5];
       const methodName = m4.toLowerCase();
-      Router.prototype[methodName] = function(path2, handler2, store) {
-        return this.on(m4, path2, handler2, store);
+      Router.prototype[methodName] = function(path3, handler2, store) {
+        return this.on(m4, path3, handler2, store);
       };
     }
-    Router.prototype.all = function(path2, handler2, store) {
-      this.on(httpMethods, path2, handler2, store);
+    Router.prototype.all = function(path3, handler2, store) {
+      this.on(httpMethods, path3, handler2, store);
     };
     Router.sanitizeUrlPath = function sanitizeUrlPath(url, useSemicolonDelimiter) {
       const decoded = safeDecodeURI(url, useSemicolonDelimiter);
@@ -34969,14 +34969,14 @@ var require_find_my_way = __commonJS({
       }
       return url.slice(pathStart);
     }
-    function removeDuplicateSlashes(path2) {
-      return path2.indexOf("//") !== -1 ? path2.replace(REMOVE_DUPLICATE_SLASHES_REGEXP, "/") : path2;
+    function removeDuplicateSlashes(path3) {
+      return path3.indexOf("//") !== -1 ? path3.replace(REMOVE_DUPLICATE_SLASHES_REGEXP, "/") : path3;
     }
-    function trimLastSlash(path2) {
-      if (path2.length > 1 && path2.charCodeAt(path2.length - 1) === 47) {
-        return path2.slice(0, -1);
+    function trimLastSlash(path3) {
+      if (path3.length > 1 && path3.charCodeAt(path3.length - 1) === 47) {
+        return path3.slice(0, -1);
       }
-      return path2;
+      return path3;
     }
     function trimRegExpStartAndEnd(regexString) {
       if (regexString.charCodeAt(1) === 94) {
@@ -34987,23 +34987,23 @@ var require_find_my_way = __commonJS({
       }
       return regexString;
     }
-    function getClosingParenthensePosition(path2, idx) {
+    function getClosingParenthensePosition(path3, idx) {
       let parentheses = 1;
-      while (idx < path2.length) {
+      while (idx < path3.length) {
         idx++;
-        if (path2.charCodeAt(idx) === 92) {
+        if (path3.charCodeAt(idx) === 92) {
           idx++;
           continue;
         }
-        if (path2.charCodeAt(idx) === 41) {
+        if (path3.charCodeAt(idx) === 41) {
           parentheses--;
-        } else if (path2.charCodeAt(idx) === 40) {
+        } else if (path3.charCodeAt(idx) === 40) {
           parentheses++;
         }
         if (!parentheses)
           return idx;
       }
-      throw new TypeError('Invalid regexp expression in "' + path2 + '"');
+      throw new TypeError('Invalid regexp expression in "' + path3 + '"');
     }
     function defaultBuildPrettyMeta(route) {
       if (!route)
@@ -35239,12 +35239,12 @@ var require_route = __commonJS({
       function route({ options: options2, isFastify }) {
         throwIfAlreadyStarted("Cannot add route!");
         const opts = { ...options2 };
-        const path2 = opts.url || opts.path || "";
+        const path3 = opts.url || opts.path || "";
         if (!opts.handler) {
-          throw new FST_ERR_ROUTE_MISSING_HANDLER(opts.method, path2);
+          throw new FST_ERR_ROUTE_MISSING_HANDLER(opts.method, path3);
         }
         if (opts.errorHandler !== void 0 && typeof opts.errorHandler !== "function") {
-          throw new FST_ERR_ROUTE_HANDLER_NOT_FN(opts.method, path2);
+          throw new FST_ERR_ROUTE_HANDLER_NOT_FN(opts.method, path3);
         }
         validateBodyLimitOption(opts.bodyLimit);
         validateHandlerTimeoutOption(opts.handlerTimeout);
@@ -35254,22 +35254,22 @@ var require_route = __commonJS({
         if (Array.isArray(opts.method)) {
           for (let i5 = 0; i5 < opts.method.length; ++i5) {
             opts.method[i5] = normalizeAndValidateMethod.call(this, opts.method[i5]);
-            validateSchemaBodyOption.call(this, opts.method[i5], path2, opts.schema);
+            validateSchemaBodyOption.call(this, opts.method[i5], path3, opts.schema);
             isGetRoute = opts.method.includes("GET");
             isHeadRoute = opts.method.includes("HEAD");
           }
         } else {
           opts.method = normalizeAndValidateMethod.call(this, opts.method);
-          validateSchemaBodyOption.call(this, opts.method, path2, opts.schema);
+          validateSchemaBodyOption.call(this, opts.method, path3, opts.schema);
           isGetRoute = opts.method === "GET";
           isHeadRoute = opts.method === "HEAD";
         }
         const headOpts = shouldExposeHead && isGetRoute ? { ...options2 } : null;
         const prefix = this[kRoutePrefix];
-        if (path2 === "/" && prefix.length > 0 && opts.method !== "HEAD") {
+        if (path3 === "/" && prefix.length > 0 && opts.method !== "HEAD") {
           switch (opts.prefixTrailingSlash) {
             case "slash":
-              addNewRoute.call(this, { path: path2, isFastify });
+              addNewRoute.call(this, { path: path3, isFastify });
               break;
             case "no-slash":
               addNewRoute.call(this, { path: "", isFastify });
@@ -35278,20 +35278,20 @@ var require_route = __commonJS({
             default:
               addNewRoute.call(this, { path: "", isFastify });
               if (ignoreTrailingSlash !== true && (ignoreDuplicateSlashes !== true || !prefix.endsWith("/"))) {
-                addNewRoute.call(this, { path: path2, prefixing: true, isFastify });
+                addNewRoute.call(this, { path: path3, prefixing: true, isFastify });
               }
           }
-        } else if (path2[0] === "/" && prefix.endsWith("/")) {
-          addNewRoute.call(this, { path: path2.slice(1), isFastify });
+        } else if (path3[0] === "/" && prefix.endsWith("/")) {
+          addNewRoute.call(this, { path: path3.slice(1), isFastify });
         } else {
-          addNewRoute.call(this, { path: path2, isFastify });
+          addNewRoute.call(this, { path: path3, isFastify });
         }
         return this;
-        function addNewRoute({ path: path3, prefixing = false, isFastify: isFastify2 = false }) {
-          const url = prefix + path3;
+        function addNewRoute({ path: path4, prefixing = false, isFastify: isFastify2 = false }) {
+          const url = prefix + path4;
           opts.url = url;
           opts.path = url;
-          opts.routePath = path3;
+          opts.routePath = path4;
           opts.prefix = prefix;
           opts.logLevel = opts.logLevel || this[kLogLevel];
           validateLogLevelOption(opts.logLevel, opts.method, opts.url, logger2);
@@ -35424,7 +35424,7 @@ var require_route = __commonJS({
           });
           if (shouldExposeHead && isGetRoute && !isHeadRoute && !hasHEADHandler) {
             const onSendHandlers = parseHeadOnSendHandlers(headOpts.onSend);
-            prepareRoute.call(this, { method: "HEAD", url: path3, options: { ...headOpts, onSend: onSendHandlers }, isFastify: true });
+            prepareRoute.call(this, { method: "HEAD", url: path4, options: { ...headOpts, onSend: onSendHandlers }, isFastify: true });
           }
         }
       }
@@ -35549,9 +35549,9 @@ var require_route = __commonJS({
       }
       return method;
     }
-    function validateSchemaBodyOption(method, path2, schema) {
+    function validateSchemaBodyOption(method, path3, schema) {
       if (this[kSupportedHTTPMethods].bodyless.has(method) && schema?.body) {
-        throw new FST_ERR_ROUTE_BODY_VALIDATION_SCHEMA_NOT_SUPPORTED(method, path2);
+        throw new FST_ERR_ROUTE_BODY_VALIDATION_SCHEMA_NOT_SUPPORTED(method, path3);
       }
     }
     function validateBodyLimitOption(bodyLimit) {
@@ -35568,13 +35568,13 @@ var require_route = __commonJS({
         throw new FST_ERR_ROUTE_HANDLER_TIMEOUT_OPTION_NOT_INT(handlerTimeout);
       }
     }
-    function validateLogLevelOption(logLevel, method, path2, logger2) {
+    function validateLogLevelOption(logLevel, method, path3, logger2) {
       if (logLevel == null || logLevel === "")
         return;
       if (logger2?.levels?.values == null)
         return;
       if (typeof logLevel !== "string" || logger2.levels.values[logLevel] === void 0) {
-        throw new FST_ERR_ROUTE_LOG_LEVEL_INVALID(method, path2, logLevel);
+        throw new FST_ERR_ROUTE_LOG_LEVEL_INVALID(method, path3, logLevel);
       }
     }
     function runPreParsing(err, request, reply) {
@@ -36219,14 +36219,14 @@ var require_cookies = __commonJS({
     "use strict";
     var { stringifySetCookie: stringifySetCookie2 } = (init_dist(), __toCommonJS(dist_exports));
     function cookiePathMatches(cookiePath, requestPath) {
-      const path2 = cookiePath || "/";
-      if (requestPath === path2) {
+      const path3 = cookiePath || "/";
+      if (requestPath === path3) {
         return true;
       }
-      if (!requestPath.startsWith(path2)) {
+      if (!requestPath.startsWith(path3)) {
         return false;
       }
-      return path2.endsWith("/") || requestPath.charAt(path2.length) === "/";
+      return path3.endsWith("/") || requestPath.charAt(path3.length) === "/";
     }
     function listCookies(cookies) {
       if (Array.isArray(cookies)) {
@@ -38719,19 +38719,19 @@ var require_fastify = __commonJS({
         }
         fourOhFour.router.lookup(req, res);
       }
-      function onBadUrl(path2, req, res) {
+      function onBadUrl(path3, req, res) {
         if (options.frameworkErrors) {
           const id = getGenReqId(routeEventContext.server, req);
           const childLogger = createChildLogger(routeEventContext, options.logger, req, id);
           const request = new Request(id, null, req, null, childLogger, routeEventContext);
           const reply = new Reply(res, request, childLogger);
           routeEventContext.server[kLogController].incomingRequest(request, reply);
-          return options.frameworkErrors(new FST_ERR_BAD_URL(path2), request, reply);
+          return options.frameworkErrors(new FST_ERR_BAD_URL(path3), request, reply);
         }
         const body = JSON.stringify({
           error: "Bad Request",
           code: "FST_ERR_BAD_URL",
-          message: `'${path2}' is not a valid url component`,
+          message: `'${path3}' is not a valid url component`,
           statusCode: 400
         });
         res.writeHead(400, {
@@ -38740,19 +38740,19 @@ var require_fastify = __commonJS({
         });
         res.end(body);
       }
-      function onMaxParamLength(path2, req, res) {
+      function onMaxParamLength(path3, req, res) {
         if (options.frameworkErrors) {
           const id = getGenReqId(routeEventContext.server, req);
           const childLogger = createChildLogger(routeEventContext, options.logger, req, id);
           const request = new Request(id, null, req, null, childLogger, routeEventContext);
           const reply = new Reply(res, request, childLogger);
           routeEventContext.server[kLogController].incomingRequest(request, reply);
-          return options.frameworkErrors(new FST_ERR_MAX_PARAM_LENGTH(path2), request, reply);
+          return options.frameworkErrors(new FST_ERR_MAX_PARAM_LENGTH(path3), request, reply);
         }
         const body = JSON.stringify({
           error: "Bad Request",
           code: "FST_ERR_MAX_PARAM_LENGTH",
-          message: `'${path2}' is exceeding the max param length`,
+          message: `'${path3}' is exceeding the max param length`,
           statusCode: 414
         });
         res.writeHead(414, {
@@ -39939,10 +39939,10 @@ var require_package2 = __commonJS({
 // node_modules/dotenv/lib/main.js
 var require_main = __commonJS({
   "node_modules/dotenv/lib/main.js"(exports2, module2) {
-    var fs2 = require("fs");
-    var path2 = require("path");
+    var fs3 = require("fs");
+    var path3 = require("path");
     var os = require("os");
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var packageJson = require_package2();
     var version2 = packageJson.version;
     var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
@@ -40048,7 +40048,7 @@ var require_main = __commonJS({
       if (options && options.path && options.path.length > 0) {
         if (Array.isArray(options.path)) {
           for (const filepath of options.path) {
-            if (fs2.existsSync(filepath)) {
+            if (fs3.existsSync(filepath)) {
               possibleVaultPath = filepath.endsWith(".vault") ? filepath : `${filepath}.vault`;
             }
           }
@@ -40056,15 +40056,15 @@ var require_main = __commonJS({
           possibleVaultPath = options.path.endsWith(".vault") ? options.path : `${options.path}.vault`;
         }
       } else {
-        possibleVaultPath = path2.resolve(process.cwd(), ".env.vault");
+        possibleVaultPath = path3.resolve(process.cwd(), ".env.vault");
       }
-      if (fs2.existsSync(possibleVaultPath)) {
+      if (fs3.existsSync(possibleVaultPath)) {
         return possibleVaultPath;
       }
       return null;
     }
     function _resolveHome(envPath) {
-      return envPath[0] === "~" ? path2.join(os.homedir(), envPath.slice(1)) : envPath;
+      return envPath[0] === "~" ? path3.join(os.homedir(), envPath.slice(1)) : envPath;
     }
     function _configVault(options) {
       const debug = Boolean(options && options.debug);
@@ -40081,7 +40081,7 @@ var require_main = __commonJS({
       return { parsed: parsed2 };
     }
     function configDotenv(options) {
-      const dotenvPath = path2.resolve(process.cwd(), ".env");
+      const dotenvPath = path3.resolve(process.cwd(), ".env");
       let encoding = "utf8";
       const debug = Boolean(options && options.debug);
       const quiet = options && "quiet" in options ? options.quiet : true;
@@ -40105,13 +40105,13 @@ var require_main = __commonJS({
       }
       let lastError;
       const parsedAll = {};
-      for (const path3 of optionPaths) {
+      for (const path4 of optionPaths) {
         try {
-          const parsed2 = DotenvModule.parse(fs2.readFileSync(path3, { encoding }));
+          const parsed2 = DotenvModule.parse(fs3.readFileSync(path4, { encoding }));
           DotenvModule.populate(parsedAll, parsed2, options);
         } catch (e5) {
           if (debug) {
-            _debug(`Failed to load ${path3} ${e5.message}`);
+            _debug(`Failed to load ${path4} ${e5.message}`);
           }
           lastError = e5;
         }
@@ -40126,7 +40126,7 @@ var require_main = __commonJS({
         const shortPaths = [];
         for (const filePath of optionPaths) {
           try {
-            const relative = path2.relative(process.cwd(), filePath);
+            const relative = path3.relative(process.cwd(), filePath);
             shortPaths.push(relative);
           } catch (e5) {
             if (debug) {
@@ -40161,7 +40161,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto4.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto5.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error2) {
@@ -43799,10 +43799,10 @@ var init_hex_encoding = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/serde/util-body-length/calculateBodyLength.js
-var import_node_fs, calculateBodyLength;
+var import_node_fs2, calculateBodyLength;
 var init_calculateBodyLength = __esm({
   "node_modules/@smithy/core/dist-es/submodules/serde/util-body-length/calculateBodyLength.js"() {
-    import_node_fs = require("node:fs");
+    import_node_fs2 = require("node:fs");
     calculateBodyLength = (body) => {
       if (!body) {
         return 0;
@@ -43815,11 +43815,11 @@ var init_calculateBodyLength = __esm({
         return body.size;
       } else if (typeof body.start === "number" && typeof body.end === "number") {
         return body.end + 1 - body.start;
-      } else if (body instanceof import_node_fs.ReadStream) {
+      } else if (body instanceof import_node_fs2.ReadStream) {
         if (body.path != null) {
-          return (0, import_node_fs.lstatSync)(body.path).size;
+          return (0, import_node_fs2.lstatSync)(body.path).size;
         } else if (typeof body.fd === "number") {
-          return (0, import_node_fs.fstatSync)(body.fd).size;
+          return (0, import_node_fs2.fstatSync)(body.fd).size;
         }
       }
       throw new Error(`Body Length computation failed for ${body}`);
@@ -44118,11 +44118,11 @@ var init_types = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getHomeDir.js
-var import_node_os, import_node_path, homeDirCache, getHomeDirCacheKey, getHomeDir;
+var import_node_os, import_node_path2, homeDirCache, getHomeDirCacheKey, getHomeDir;
 var init_getHomeDir = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getHomeDir.js"() {
     import_node_os = require("node:os");
-    import_node_path = require("node:path");
+    import_node_path2 = require("node:path");
     homeDirCache = {};
     getHomeDirCacheKey = () => {
       if (process && process.geteuid) {
@@ -44131,7 +44131,7 @@ var init_getHomeDir = __esm({
       return "DEFAULT";
     };
     getHomeDir = () => {
-      const { HOME, USERPROFILE, HOMEPATH, HOMEDRIVE = `C:${import_node_path.sep}` } = process.env;
+      const { HOME, USERPROFILE, HOMEPATH, HOMEDRIVE = `C:${import_node_path2.sep}` } = process.env;
       if (HOME)
         return HOME;
       if (USERPROFILE)
@@ -44157,16 +44157,16 @@ var init_getProfileName = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getSSOTokenFilepath.js
-var import_node_crypto, import_node_path2, getSSOTokenFilepath;
+var import_node_crypto, import_node_path3, getSSOTokenFilepath;
 var init_getSSOTokenFilepath = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getSSOTokenFilepath.js"() {
     import_node_crypto = require("node:crypto");
-    import_node_path2 = require("node:path");
+    import_node_path3 = require("node:path");
     init_getHomeDir();
     getSSOTokenFilepath = (id) => {
       const hasher = (0, import_node_crypto.createHash)("sha1");
       const cacheName = hasher.update(id).digest("hex");
-      return (0, import_node_path2.join)(getHomeDir(), ".aws", "sso", "cache", `${cacheName}.json`);
+      return (0, import_node_path3.join)(getHomeDir(), ".aws", "sso", "cache", `${cacheName}.json`);
     };
   }
 });
@@ -44221,24 +44221,24 @@ var init_getConfigData = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getConfigFilepath.js
-var import_node_path3, ENV_CONFIG_PATH, getConfigFilepath;
+var import_node_path4, ENV_CONFIG_PATH, getConfigFilepath;
 var init_getConfigFilepath = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getConfigFilepath.js"() {
-    import_node_path3 = require("node:path");
+    import_node_path4 = require("node:path");
     init_getHomeDir();
     ENV_CONFIG_PATH = "AWS_CONFIG_FILE";
-    getConfigFilepath = () => process.env[ENV_CONFIG_PATH] || (0, import_node_path3.join)(getHomeDir(), ".aws", "config");
+    getConfigFilepath = () => process.env[ENV_CONFIG_PATH] || (0, import_node_path4.join)(getHomeDir(), ".aws", "config");
   }
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getCredentialsFilepath.js
-var import_node_path4, ENV_CREDENTIALS_PATH, getCredentialsFilepath;
+var import_node_path5, ENV_CREDENTIALS_PATH, getCredentialsFilepath;
 var init_getCredentialsFilepath = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/getCredentialsFilepath.js"() {
-    import_node_path4 = require("node:path");
+    import_node_path5 = require("node:path");
     init_getHomeDir();
     ENV_CREDENTIALS_PATH = "AWS_SHARED_CREDENTIALS_FILE";
-    getCredentialsFilepath = () => process.env[ENV_CREDENTIALS_PATH] || (0, import_node_path4.join)(getHomeDir(), ".aws", "credentials");
+    getCredentialsFilepath = () => process.env[ENV_CREDENTIALS_PATH] || (0, import_node_path5.join)(getHomeDir(), ".aws", "credentials");
   }
 });
 
@@ -44305,23 +44305,23 @@ var init_readFile = __esm({
     import_promises2 = require("node:fs/promises");
     filePromises = {};
     fileIntercept = {};
-    readFile2 = (path2, options) => {
-      if (fileIntercept[path2] !== void 0) {
-        return fileIntercept[path2];
+    readFile2 = (path3, options) => {
+      if (fileIntercept[path3] !== void 0) {
+        return fileIntercept[path3];
       }
-      if (!filePromises[path2] || options?.ignoreCache) {
-        filePromises[path2] = (0, import_promises2.readFile)(path2, "utf8");
+      if (!filePromises[path3] || options?.ignoreCache) {
+        filePromises[path3] = (0, import_promises2.readFile)(path3, "utf8");
       }
-      return filePromises[path2];
+      return filePromises[path3];
     };
   }
 });
 
 // node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/loadSharedConfigFiles.js
-var import_node_path5, swallowError, loadSharedConfigFiles;
+var import_node_path6, swallowError, loadSharedConfigFiles;
 var init_loadSharedConfigFiles = __esm({
   "node_modules/@smithy/core/dist-es/submodules/config/shared-ini-file-loader/loadSharedConfigFiles.js"() {
-    import_node_path5 = require("node:path");
+    import_node_path6 = require("node:path");
     init_getConfigData();
     init_getConfigFilepath();
     init_getCredentialsFilepath();
@@ -44336,11 +44336,11 @@ var init_loadSharedConfigFiles = __esm({
       const relativeHomeDirPrefix = "~/";
       let resolvedFilepath = filepath;
       if (filepath.startsWith(relativeHomeDirPrefix)) {
-        resolvedFilepath = (0, import_node_path5.join)(homeDir, filepath.slice(2));
+        resolvedFilepath = (0, import_node_path6.join)(homeDir, filepath.slice(2));
       }
       let resolvedConfigFilepath = configFilepath;
       if (configFilepath.startsWith(relativeHomeDirPrefix)) {
-        resolvedConfigFilepath = (0, import_node_path5.join)(homeDir, configFilepath.slice(2));
+        resolvedConfigFilepath = (0, import_node_path6.join)(homeDir, configFilepath.slice(2));
       }
       const parsedFiles = await Promise.all([
         readFile2(resolvedConfigFilepath, {
@@ -44424,8 +44424,8 @@ var init_externalDataInterceptor = __esm({
       getFileRecord() {
         return fileIntercept;
       },
-      interceptFile(path2, contents) {
-        fileIntercept[path2] = Promise.resolve(contents);
+      interceptFile(path3, contents) {
+        fileIntercept[path3] = Promise.resolve(contents);
       },
       getTokenRecord() {
         return tokenIntercept;
@@ -45223,8 +45223,8 @@ var init_createConfigValueProvider = __esm({
               return endpoint.url.href;
             }
             if ("hostname" in endpoint) {
-              const { protocol, hostname, port, path: path2 } = endpoint;
-              return `${protocol}//${hostname}${port ? ":" + port : ""}${path2}`;
+              const { protocol, hostname, port, path: path3 } = endpoint;
+              return `${protocol}//${hostname}${port ? ":" + port : ""}${path3}`;
             }
           }
           return endpoint;
@@ -45600,18 +45600,18 @@ var getAttrPathList;
 var init_getAttrPathList = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/getAttrPathList.js"() {
     init_types2();
-    getAttrPathList = (path2) => {
-      const parts = path2.split(".");
+    getAttrPathList = (path3) => {
+      const parts = path3.split(".");
       const pathList = [];
       for (const part of parts) {
         const squareBracketIndex = part.indexOf("[");
         if (squareBracketIndex !== -1) {
           if (part.indexOf("]") !== part.length - 1) {
-            throw new EndpointError(`Path: '${path2}' does not end with ']'`);
+            throw new EndpointError(`Path: '${path3}' does not end with ']'`);
           }
           const arrayIndex = part.slice(squareBracketIndex + 1, -1);
           if (Number.isNaN(parseInt(arrayIndex))) {
-            throw new EndpointError(`Invalid array index: '${arrayIndex}' in path: '${path2}'`);
+            throw new EndpointError(`Invalid array index: '${arrayIndex}' in path: '${path3}'`);
           }
           if (squareBracketIndex !== 0) {
             pathList.push(part.slice(0, squareBracketIndex));
@@ -45632,9 +45632,9 @@ var init_getAttr = __esm({
   "node_modules/@smithy/core/dist-es/submodules/endpoints/util-endpoints/lib/getAttr.js"() {
     init_types2();
     init_getAttrPathList();
-    getAttr = (value, path2) => getAttrPathList(path2).reduce((acc, index2) => {
+    getAttr = (value, path3) => getAttrPathList(path3).reduce((acc, index2) => {
       if (typeof acc !== "object") {
-        throw new EndpointError(`Index '${index2}' in '${path2}' not found in '${JSON.stringify(value)}'`);
+        throw new EndpointError(`Index '${index2}' in '${path3}' not found in '${JSON.stringify(value)}'`);
       } else if (Array.isArray(acc)) {
         const i5 = parseInt(index2);
         return acc[i5 < 0 ? acc.length + i5 : i5];
@@ -45695,8 +45695,8 @@ var init_parseURL = __esm({
             return value;
           }
           if (typeof value === "object" && "hostname" in value) {
-            const { hostname: hostname2, port, protocol: protocol2 = "", path: path2 = "", query = {} } = value;
-            const url = new URL(`${protocol2}//${hostname2}${port ? `:${port}` : ""}${path2}`);
+            const { hostname: hostname2, port, protocol: protocol2 = "", path: path3 = "", query = {} } = value;
+            const url = new URL(`${protocol2}//${hostname2}${port ? `:${port}` : ""}${path3}`);
             url.search = Object.entries(query).map(([k5, v2]) => `${k5}=${v2}`).join("&");
             return url;
           }
@@ -47465,17 +47465,17 @@ var init_HashCalculator = __esm({
 });
 
 // node_modules/@smithy/core/dist-es/submodules/checksum/hash-stream-node/fileStreamHasher.js
-var import_node_fs2, fileStreamHasher, isReadStream;
+var import_node_fs3, fileStreamHasher, isReadStream;
 var init_fileStreamHasher = __esm({
   "node_modules/@smithy/core/dist-es/submodules/checksum/hash-stream-node/fileStreamHasher.js"() {
-    import_node_fs2 = require("node:fs");
+    import_node_fs3 = require("node:fs");
     init_HashCalculator();
     fileStreamHasher = (hashCtor, fileStream) => new Promise((resolve, reject) => {
       if (!isReadStream(fileStream)) {
         reject(new Error("Unable to calculate hash for non-file streams."));
         return;
       }
-      const fileStreamTee = (0, import_node_fs2.createReadStream)(fileStream.path, {
+      const fileStreamTee = (0, import_node_fs3.createReadStream)(fileStream.path, {
         start: fileStream.start,
         end: fileStream.end
       });
@@ -49398,11 +49398,11 @@ var init_HttpBindingProtocol = __esm({
           const opTraits = translateTraits(operationSchema.traits);
           if (opTraits.http) {
             request.method = opTraits.http[0];
-            const [path2, search] = opTraits.http[1].split("?");
+            const [path3, search] = opTraits.http[1].split("?");
             if (request.path == "/") {
-              request.path = path2;
+              request.path = path3;
             } else {
-              request.path += path2;
+              request.path += path3;
             }
             const traitSearchParams = new URLSearchParams(search ?? "");
             for (const [key, value] of traitSearchParams) {
@@ -49813,8 +49813,8 @@ var init_requestBuilder = __esm({
         return this;
       }
       p(memberName, labelValueProvider, uriLabel, isGreedyLabel) {
-        this.resolvePathStack.push((path2) => {
-          this.path = resolvedPath(path2, this.input, memberName, labelValueProvider, uriLabel, isGreedyLabel);
+        this.resolvePathStack.push((path3) => {
+          this.path = resolvedPath(path3, this.input, memberName, labelValueProvider, uriLabel, isGreedyLabel);
         });
         return this;
       }
@@ -51560,11 +51560,11 @@ var init_SmithyRpcV2JsonProtocol = __esm({
           request.body = "{}";
         }
         const { service, operation: operation2 } = getSmithyContext(context);
-        const path2 = `/service/${service}/operation/${operation2}`;
+        const path3 = `/service/${service}/operation/${operation2}`;
         if (request.path.endsWith("/")) {
-          request.path += path2.slice(1);
+          request.path += path3.slice(1);
         } else {
-          request.path += path2;
+          request.path += path3;
         }
         return request;
       }
@@ -53741,9 +53741,9 @@ var init_createPaginator = __esm({
       command5 = withCommand(command5) ?? command5;
       return await client.send(command5, ...args);
     };
-    get = (fromObject, path2) => {
+    get = (fromObject, path3) => {
       let cursor = fromObject;
-      const pathComponents = path2.split(".");
+      const pathComponents = path3.split(".");
       for (const step of pathComponents) {
         if (!cursor || typeof cursor !== "object") {
           return void 0;
@@ -57040,10 +57040,10 @@ ${longDate}
 ${credentialScope}
 ${toHex2(hashedRequest)}`;
       }
-      getCanonicalPath({ path: path2 }) {
+      getCanonicalPath({ path: path3 }) {
         if (this.uriEscapePath) {
           const normalizedPathSegments = [];
-          for (const pathSegment of path2.split("/")) {
+          for (const pathSegment of path3.split("/")) {
             if (pathSegment?.length === 0)
               continue;
             if (pathSegment === ".")
@@ -57054,11 +57054,11 @@ ${toHex2(hashedRequest)}`;
               normalizedPathSegments.push(pathSegment);
             }
           }
-          const normalizedPath = `${path2?.startsWith("/") ? "/" : ""}${normalizedPathSegments.join("/")}${normalizedPathSegments.length > 0 && path2?.endsWith("/") ? "/" : ""}`;
+          const normalizedPath = `${path3?.startsWith("/") ? "/" : ""}${normalizedPathSegments.join("/")}${normalizedPathSegments.length > 0 && path3?.endsWith("/") ? "/" : ""}`;
           const doubleEncoded = escapeUri2(normalizedPath);
           return doubleEncoded.replace(/%2F/g, "/");
         }
-        return path2;
+        return path3;
       }
       validateResolvedCredentials(credentials) {
         if (typeof credentials !== "object" || typeof credentials.accessKeyId !== "string" || typeof credentials.secretAccessKey !== "string") {
@@ -57714,15 +57714,15 @@ var init_arn = __esm({
 // node_modules/@aws-sdk/core/dist-es/submodules/util/util-format-url/format-url.js
 function formatUrl(request) {
   const { port, query } = request;
-  let { protocol, path: path2, hostname } = request;
+  let { protocol, path: path3, hostname } = request;
   if (protocol && protocol.slice(-1) !== ":") {
     protocol += ":";
   }
   if (port) {
     hostname += `:${port}`;
   }
-  if (path2 && path2.charAt(0) !== "/") {
-    path2 = `/${path2}`;
+  if (path3 && path3.charAt(0) !== "/") {
+    path3 = `/${path3}`;
   }
   let queryString = query ? buildQueryString(query) : "";
   if (queryString && queryString[0] !== "?") {
@@ -57738,7 +57738,7 @@ function formatUrl(request) {
   if (request.fragment) {
     fragment = `#${request.fragment}`;
   }
-  return `${protocol}//${auth}${hostname}${path2}${queryString}${fragment}`;
+  return `${protocol}//${auth}${hostname}${path3}${queryString}${fragment}`;
 }
 var init_format_url = __esm({
   "node_modules/@aws-sdk/core/dist-es/submodules/util/util-format-url/format-url.js"() {
@@ -61180,12 +61180,12 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             const password = request.password ?? "";
             auth = `${username}:${password}`;
           }
-          let path2 = request.path;
+          let path3 = request.path;
           if (queryString) {
-            path2 += `?${queryString}`;
+            path3 += `?${queryString}`;
           }
           if (request.fragment) {
-            path2 += `#${request.fragment}`;
+            path3 += `#${request.fragment}`;
           }
           let hostname = request.hostname ?? "";
           if (hostname[0] === "[" && hostname.endsWith("]")) {
@@ -61197,7 +61197,7 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             headers: request.headers,
             host: hostname,
             method: request.method,
-            path: path2,
+            path: path3,
             port: request.port,
             agent,
             auth
@@ -61606,16 +61606,16 @@ or increase socketAcquisitionWarningTimeout=(millis) in the NodeHttpHandler conf
             reject(err);
           };
           const queryString = query ? buildQueryString2(query) : "";
-          let path2 = request.path;
+          let path3 = request.path;
           if (queryString) {
-            path2 += `?${queryString}`;
+            path3 += `?${queryString}`;
           }
           if (request.fragment) {
-            path2 += `#${request.fragment}`;
+            path3 += `#${request.fragment}`;
           }
           const clientHttp2Stream = session.request({
             ...request.headers,
-            [constants.HTTP2_HEADER_PATH]: path2,
+            [constants.HTTP2_HEADER_PATH]: path3,
             [constants.HTTP2_HEADER_METHOD]: method
           });
           if (effectiveRequestTimeout) {
@@ -61704,7 +61704,7 @@ var require_dist_cjs8 = __commonJS({
     var { setCredentialFeature: setCredentialFeature2 } = (init_client3(), __toCommonJS(client_exports2));
     var { CredentialsProviderError: CredentialsProviderError2 } = (init_config2(), __toCommonJS(config_exports));
     var { NodeHttpHandler } = require_dist_cjs7();
-    var fs2 = require("node:fs/promises");
+    var fs3 = require("node:fs/promises");
     var { HttpRequest: HttpRequest2 } = (init_protocols(), __toCommonJS(protocols_exports));
     var { sdkStreamMixin: sdkStreamMixin3, parseRfc3339DateTime: parseRfc3339DateTime2 } = (init_serde(), __toCommonJS(serde_exports));
     var ECS_CONTAINER_HOST = "169.254.170.2";
@@ -61828,7 +61828,7 @@ Set AWS_CONTAINER_CREDENTIALS_FULL_URI or AWS_CONTAINER_CREDENTIALS_RELATIVE_URI
       const provider = retryWrapper(async () => {
         const request = createGetRequest(url);
         if (tokenFile) {
-          request.headers.Authorization = validateToken((await fs2.readFile(tokenFile)).toString());
+          request.headers.Authorization = validateToken((await fs3.readFile(tokenFile)).toString());
         } else if (token) {
           request.headers.Authorization = validateToken(token);
         }
@@ -77097,9 +77097,12 @@ module.exports = __toCommonJS(src_exports);
 // src/app.ts
 var import_fastify = __toESM(require_fastify());
 var import_cors = __toESM(require_cors());
-var import_crypto8 = require("crypto");
+var import_crypto9 = require("crypto");
 var import_fs = __toESM(require("fs"));
 var import_path = __toESM(require("path"));
+
+// src/config/env.ts
+var import_crypto = __toESM(require("crypto"));
 
 // node_modules/zod/v3/external.js
 var external_exports = {};
@@ -77579,8 +77582,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path2, errorMaps, issueData } = params;
-  const fullPath = [...path2, ...issueData.path || []];
+  const { data, path: path3, errorMaps, issueData } = params;
+  const fullPath = [...path3, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -77696,11 +77699,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path2, key) {
+  constructor(parent, value, path3, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path2;
+    this._path = path3;
     this._key = key;
   }
   get path() {
@@ -81144,6 +81147,18 @@ var NEVER = INVALID;
 
 // src/config/env.ts
 var dotenv = __toESM(require_main());
+
+// src/utils/errors.ts
+var AppError = class extends Error {
+  constructor(code, message, statusCode = 400) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.name = "AppError";
+  }
+};
+
+// src/config/env.ts
 dotenv.config();
 var DEFAULT_DATABASE_URL = "postgresql://neondb_owner:npg_PIJp8m3YwdaU@ep-fragrant-glade-a1oh9lfk-pooler.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
 var DEFAULT_DATABASE_URL_UNPOOLED = "postgresql://neondb_owner:npg_PIJp8m3YwdaU@ep-fragrant-glade-a1oh9lfk.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
@@ -81162,7 +81177,7 @@ var envSchema = external_exports.object({
   R2_PUBLIC_URL: external_exports.string().default(
     process.env.R2_PUBLIC_URL || "https://pub-ec2de406cfec4d6ba5d9a2beb58f023a.r2.dev"
   ),
-  AUTH_SECRET: external_exports.string().default("dev-neon-auth-secret-key-min-32-chars-long!"),
+  AUTH_SECRET: external_exports.string().optional().transform((v2) => (v2 || "").trim()),
   NEON_AUTH_BASE_URL: external_exports.string().optional(),
   RESEND_API_KEY: external_exports.string().default(process.env.RESEND_API_KEY || ""),
   RESEND_FROM_EMAIL: external_exports.string().default(
@@ -81171,9 +81186,63 @@ var envSchema = external_exports.object({
 });
 var parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
-  console.warn("WARNING: Environment validation issues detected:", parsed.error.format());
+  throw new Error(
+    `Invalid environment configuration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`
+  );
 }
-var env = parsed.success ? parsed.data : envSchema.parse({});
+var env = parsed.data;
+var ephemeralDevSecret = null;
+var hasLoggedEphemeralWarning = false;
+function resolveRuntimeAuthSecret() {
+  const configured = (process.env.AUTH_SECRET ?? "").trim();
+  const isPlaceholder = /^(dev-neon-auth-secret|changeme|placeholder|default-secret)/i.test(
+    configured
+  );
+  if (configured.length >= 32 && !isPlaceholder) {
+    return configured;
+  }
+  const runtimeNodeEnv = (process.env.NODE_ENV || env.NODE_ENV || "").trim();
+  if (runtimeNodeEnv === "production") {
+    throw new AppError(
+      "SERVER_MISCONFIGURED",
+      "Konfigurasi keamanan server (AUTH_SECRET) belum diatur.",
+      503
+    );
+  }
+  if (!ephemeralDevSecret) {
+    ephemeralDevSecret = import_crypto.default.randomBytes(32).toString("hex");
+  }
+  if (!hasLoggedEphemeralWarning) {
+    hasLoggedEphemeralWarning = true;
+    console.warn(
+      "WARNING: AUTH_SECRET is missing or insecure (< 32 chars). Using an ephemeral random secret for non-production runtime."
+    );
+  }
+  return ephemeralDevSecret;
+}
+
+// src/config/version.ts
+var import_node_fs = __toESM(require("node:fs"));
+var import_node_path = __toESM(require("node:path"));
+function resolveFallbackVersion() {
+  const candidates = [
+    import_node_path.default.resolve(process.cwd(), "../../package.json"),
+    import_node_path.default.resolve(process.cwd(), "package.json")
+  ];
+  for (const filePath of candidates) {
+    try {
+      const parsed2 = JSON.parse(import_node_fs.default.readFileSync(filePath, "utf8"));
+      if (parsed2.version)
+        return parsed2.version;
+    } catch {
+    }
+  }
+  return "0.0.0";
+}
+var APP_VERSION = "1.4.0".length > 0 ? "1.4.0" : resolveFallbackVersion();
+function getDeployCommit() {
+  return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local";
+}
 
 // node_modules/@neondatabase/serverless/index.mjs
 var io = Object.create;
@@ -83796,12 +83865,12 @@ var et = I((zh, tr) => {
     keepalives: 1,
     keepalives_idle: 0
   };
-  var Me2 = Xe(), Ga = Me2.getTypeParser(
+  var Me3 = Xe(), Ga = Me3.getTypeParser(
     20,
     "text"
-  ), $a = Me2.getTypeParser(1016, "text");
+  ), $a = Me3.getTypeParser(1016, "text");
   tr.exports.__defineSetter__("parseInt8", function(r5) {
-    Me2.setTypeParser(20, "text", r5 ? Me2.getTypeParser(23, "text") : Ga), Me2.setTypeParser(1016, "text", r5 ? Me2.getTypeParser(1007, "text") : $a);
+    Me3.setTypeParser(20, "text", r5 ? Me3.getTypeParser(23, "text") : Ga), Me3.setTypeParser(1016, "text", r5 ? Me3.getTypeParser(1007, "text") : $a);
   });
 });
 var tt = I((Zh, Ui) => {
@@ -84507,15 +84576,15 @@ var ls = I((Ll, hs) => {
 var ys = I((Ml, ds) => {
   "use strict";
   p();
-  var { EventEmitter: Du } = ge(), fs2 = ls(), ps = tt(), _r3 = class _r extends Du {
+  var { EventEmitter: Du } = ge(), fs3 = ls(), ps = tt(), _r3 = class _r extends Du {
     constructor(e5, t, n3) {
-      super(), e5 = ps.normalizeQueryConfig(e5, t, n3), this.text = e5.text, this.values = e5.values, this.rows = e5.rows, this.types = e5.types, this.name = e5.name, this.binary = e5.binary, this.portal = e5.portal || "", this.callback = e5.callback, this._rowMode = e5.rowMode, m.domain && e5.callback && (this.callback = m.domain.bind(e5.callback)), this._result = new fs2(this._rowMode, this.types), this._results = this._result, this.isPreparedStatement = false, this._canceledDueToError = false, this._promise = null;
+      super(), e5 = ps.normalizeQueryConfig(e5, t, n3), this.text = e5.text, this.values = e5.values, this.rows = e5.rows, this.types = e5.types, this.name = e5.name, this.binary = e5.binary, this.portal = e5.portal || "", this.callback = e5.callback, this._rowMode = e5.rowMode, m.domain && e5.callback && (this.callback = m.domain.bind(e5.callback)), this._result = new fs3(this._rowMode, this.types), this._results = this._result, this.isPreparedStatement = false, this._canceledDueToError = false, this._promise = null;
     }
     requiresPreparation() {
       return this.name || this.rows ? true : !this.text || !this.values ? false : this.values.length > 0;
     }
     _checkForMultirow() {
-      this._result.command && (Array.isArray(this._results) || (this._results = [this._result]), this._result = new fs2(
+      this._result.command && (Array.isArray(this._results) || (this._results = [this._result]), this._result = new fs3(
         this._rowMode,
         this.types
       ), this._results.push(this._result));
@@ -88086,7 +88155,7 @@ Subquery.prototype.getSQL = function() {
 function mapResultRow(columns, row, joinsNotNullableMap) {
   const nullifyMap = {};
   const result = columns.reduce(
-    (result2, { path: path2, field }, columnIndex) => {
+    (result2, { path: path3, field }, columnIndex) => {
       let decoder;
       if (is(field, Column)) {
         decoder = field;
@@ -88096,8 +88165,8 @@ function mapResultRow(columns, row, joinsNotNullableMap) {
         decoder = field.sql.decoder;
       }
       let node = result2;
-      for (const [pathChunkIndex, pathChunk] of path2.entries()) {
-        if (pathChunkIndex < path2.length - 1) {
+      for (const [pathChunkIndex, pathChunk] of path3.entries()) {
+        if (pathChunkIndex < path3.length - 1) {
           if (!(pathChunk in node)) {
             node[pathChunk] = {};
           }
@@ -88105,8 +88174,8 @@ function mapResultRow(columns, row, joinsNotNullableMap) {
         } else {
           const rawValue = row[columnIndex];
           const value = node[pathChunk] = rawValue === null ? null : decoder.mapFromDriverValue(rawValue);
-          if (joinsNotNullableMap && is(field, Column) && path2.length === 2) {
-            const objectName = path2[0];
+          if (joinsNotNullableMap && is(field, Column) && path3.length === 2) {
+            const objectName = path3[0];
             if (!(objectName in nullifyMap)) {
               nullifyMap[objectName] = value === null ? getTableName(field.table) : false;
             } else if (typeof nullifyMap[objectName] === "string" && nullifyMap[objectName] !== getTableName(field.table)) {
@@ -93543,6 +93612,7 @@ __export(schema_exports, {
   itemReturns: () => itemReturns,
   itemReturnsRelations: () => itemReturnsRelations,
   itemStatusEnum: () => itemStatusEnum,
+  otpChallenges: () => otpChallenges,
   reportStatusEnum: () => reportStatusEnum,
   servicePostPhotos: () => servicePostPhotos,
   servicePostPhotosRelations: () => servicePostPhotosRelations,
@@ -93662,6 +93732,8 @@ var foundItems = pgTable(
     foundLocation: text("found_location"),
     foundOn: date("found_on"),
     receivedAt: timestamp("received_at", { withTimezone: true }).defaultNow().notNull(),
+    storageLimitDays: integer("storage_limit_days"),
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
     status: itemStatusEnum("status").notNull().default("STORED"),
     isVisible: boolean("is_visible").notNull().default(true)
   },
@@ -93692,12 +93764,34 @@ var itemReturns = pgTable("item_returns", {
   itemId: uuid("item_id").notNull().unique().references(() => foundItems.itemId),
   returnedByUserId: uuid("returned_by_user_id").notNull().references(() => users.userId),
   recipientName: varchar("recipient_name", { length: 120 }).notNull(),
+  recipientIdentifier: varchar("recipient_identifier", { length: 50 }),
   verificationSummary: text("verification_summary").notNull(),
   verificationConfirmedAt: timestamp("verification_confirmed_at", {
     withTimezone: true
   }).defaultNow().notNull(),
   returnedAt: timestamp("returned_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+// src/db/schema/auth.ts
+var otpChallenges = pgTable(
+  "otp_challenges",
+  {
+    challengeId: uuid("challenge_id").primaryKey().defaultRandom(),
+    email: varchar("email", { length: 180 }).notNull(),
+    otpSalt: text("otp_salt").notNull(),
+    otpHash: text("otp_hash").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(5),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    resendAvailableAt: timestamp("resend_available_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    index("idx_otp_challenges_email_created").on(table.email, table.createdAt)
+  ]
+);
 
 // src/db/schema/relations.ts
 var usersRelations = relations(users, ({ many, one }) => ({
@@ -93821,7 +93915,8 @@ function resolvePhotoUrl(storagePath, ttlSeconds = 300) {
     };
   }
   const cleanPath = storagePath.replace(/^\/+/, "");
-  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : `http://localhost:${env.PORT}`;
+  const isLocalDev = env.NODE_ENV === "development" && !process.env.VERCEL;
+  const baseUrl = isLocalDev ? `http://localhost:${env.PORT}` : process.env.PUBLIC_APP_URL || "https://lostandfound-budiluhur.web.id";
   return {
     url: `${baseUrl}/storage/${cleanPath}?exp=${Math.floor(expiresAtDate.getTime() / 1e3)}`,
     expires_at
@@ -93970,7 +94065,7 @@ var postsRoutes = async (fastify) => {
 };
 
 // src/modules/items/items.service.ts
-var import_crypto = require("crypto");
+var import_crypto2 = require("crypto");
 
 // src/modules/items/items.repository.ts
 var ItemsRepository = class {
@@ -94099,7 +94194,7 @@ var ItemsService = class {
       },
       photos: [
         {
-          photo_id: row.photoId || (0, import_crypto.randomUUID)(),
+          photo_id: row.photoId || (0, import_crypto2.randomUUID)(),
           url: resolved.url,
           expires_at: resolved.expires_at,
           is_primary: true
@@ -94196,7 +94291,7 @@ var itemsRoutes = async (fastify) => {
 };
 
 // node_modules/bcryptjs/index.js
-var import_crypto2 = __toESM(require("crypto"), 1);
+var import_crypto3 = __toESM(require("crypto"), 1);
 var randomFallback = null;
 function randomBytes(len) {
   try {
@@ -94204,7 +94299,7 @@ function randomBytes(len) {
   } catch {
   }
   try {
-    return import_crypto2.default.randomBytes(len);
+    return import_crypto3.default.randomBytes(len);
   } catch {
   }
   if (!randomFallback) {
@@ -95957,18 +96052,22 @@ var bcryptjs_default = {
 };
 
 // src/modules/auth/auth.service.ts
-var import_crypto4 = __toESM(require("crypto"));
+var import_crypto5 = __toESM(require("crypto"));
 
 // src/modules/auth/jwt.service.ts
-var import_crypto3 = __toESM(require("crypto"));
+var import_crypto4 = __toESM(require("crypto"));
 var JwtService = class {
   /**
    * Helper to sign a deterministic JWT with HMAC-SHA256 (HS256).
    */
   createToken(payload, expiresInSeconds = 2 * 3600) {
+    const secret = resolveRuntimeAuthSecret();
     const now = Math.floor(Date.now() / 1e3);
     const fullPayload = {
-      ...payload,
+      sub: payload.sub,
+      ...payload.email !== void 0 ? { email: payload.email } : {},
+      ...payload.name !== void 0 ? { name: payload.name } : {},
+      ...payload.purpose !== void 0 ? { purpose: payload.purpose } : {},
       iat: now,
       exp: now + expiresInSeconds,
       iss: "ubl-lostnfound-auth"
@@ -95976,7 +96075,7 @@ var JwtService = class {
     const header = { alg: "HS256", typ: "JWT" };
     const headerB64 = Buffer.from(JSON.stringify(header)).toString("base64url");
     const payloadB64 = Buffer.from(JSON.stringify(fullPayload)).toString("base64url");
-    const signature = import_crypto3.default.createHmac("sha256", env.AUTH_SECRET).update(`${headerB64}.${payloadB64}`).digest("base64url");
+    const signature = import_crypto4.default.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
     return `${headerB64}.${payloadB64}.${signature}`;
   }
   /**
@@ -95984,27 +96083,31 @@ var JwtService = class {
    * Returns TokenPayload if valid, or null if tampered, expired, or malformed.
    */
   verifyToken(token) {
+    const secret = resolveRuntimeAuthSecret();
     try {
       const parts = token.split(".");
       if (parts.length !== 3) {
         return null;
       }
       const [headerB64, payloadB64, signatureB64] = parts;
-      const expectedSignature = import_crypto3.default.createHmac("sha256", env.AUTH_SECRET).update(`${headerB64}.${payloadB64}`).digest("base64url");
+      if (!headerB64 || !payloadB64 || !signatureB64) {
+        return null;
+      }
+      const expectedSignature = import_crypto4.default.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
       const sigBuf = Buffer.from(signatureB64);
       const expectedBuf = Buffer.from(expectedSignature);
       if (sigBuf.length !== expectedBuf.length) {
         return null;
       }
-      if (!import_crypto3.default.timingSafeEqual(sigBuf, expectedBuf)) {
+      if (!import_crypto4.default.timingSafeEqual(sigBuf, expectedBuf)) {
         return null;
       }
       const payloadStr = Buffer.from(payloadB64, "base64url").toString("utf-8");
       const payload = JSON.parse(payloadStr);
-      if (!payload.sub) {
+      if (!payload || typeof payload !== "object" || typeof payload.sub !== "string" || !payload.sub) {
         return null;
       }
-      if (payload.exp && Math.floor(Date.now() / 1e3) > payload.exp) {
+      if (typeof payload.exp === "number" && Math.floor(Date.now() / 1e3) > payload.exp) {
         return null;
       }
       return payload;
@@ -96015,21 +96118,100 @@ var JwtService = class {
 };
 var jwtService = new JwtService();
 
+// src/modules/auth/auth.dto.ts
+var STUDENT_EMAIL_DOMAIN = "@student.budiluhur.ac.id";
+var STRICT_STUDENT_NIM_REGEX = /^\d{10}$/;
+var meSchema = external_exports.object({
+  user_id: external_exports.string().uuid(),
+  full_name: external_exports.string(),
+  email: external_exports.string().email(),
+  student_number: external_exports.string().nullable(),
+  role: external_exports.enum(["STUDENT", "OFFICER"]),
+  assigned_post_id: external_exports.number().int().nullable(),
+  nim_verification_status: external_exports.literal("NOT_VERIFIED")
+});
+var meResponseSchema = external_exports.object({
+  data: meSchema
+});
+var officerLoginSchema = external_exports.object({
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(1, "Kata sandi wajib diisi")
+});
+var officerLoginResponseSchema = external_exports.object({
+  data: external_exports.object({
+    token: external_exports.string(),
+    user: meSchema
+  })
+});
+var bootstrapRequestSchema = external_exports.object({
+  full_name: external_exports.string().trim().min(1, "Nama lengkap tidak boleh kosong").max(120, "Nama lengkap maksimal 120 karakter")
+}).strict();
+var studentLoginSchema = external_exports.object({
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(1, "Kata sandi wajib diisi")
+});
+var studentRegisterRequestOtpSchema = external_exports.object({
+  full_name: external_exports.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(120, "Nama lengkap maksimal 120 karakter"),
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(8, "Kata sandi minimal 8 karakter")
+}).strict();
+var studentRegisterSchema = external_exports.object({
+  full_name: external_exports.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(120, "Nama lengkap maksimal 120 karakter"),
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(8, "Kata sandi minimal 8 karakter"),
+  otp: external_exports.string().trim().regex(/^\d{6}$/, "Kode OTP harus tepat 6 angka"),
+  challenge_token: external_exports.string().min(20, "Token tantangan OTP tidak valid")
+}).strict();
+var forgotPasswordSchema = external_exports.object({
+  email: external_exports.string().trim().email("Format email tidak valid")
+});
+var resetPasswordSchema = external_exports.object({
+  token: external_exports.string().min(10, "Token pemulihan tidak valid"),
+  new_password: external_exports.string().min(8, "Kata sandi baru minimal 8 karakter")
+});
+
 // src/services/email.service.ts
+function escapeHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 var EmailService = class {
-  async sendPasswordResetEmail(toEmail, resetUrl, fullName) {
+  /**
+   * Dispatches an HTML email through the Resend HTTP API without logging sensitive body contents.
+   */
+  async dispatchResendEmail(toEmail, subject, html) {
+    const apiKey = (env.RESEND_API_KEY || "").trim();
+    if (!apiKey) {
+      console.error("RESEND_API_KEY is not configured; skipping email dispatch.");
+      return false;
+    }
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           from: env.RESEND_FROM_EMAIL,
           to: [toEmail],
-          subject: "Atur Ulang Kata Sandi Akun \u2014 UBL LostnFound",
-          html: `
+          subject,
+          html
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Resend API error:", errorData);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to send email via Resend:", err);
+      return false;
+    }
+  }
+  async sendPasswordResetEmail(toEmail, resetUrl, fullName) {
+    const safeName = escapeHtml(fullName);
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -96053,7 +96235,7 @@ var EmailService = class {
       <p class="subtitle">Layanan Barang Temuan Kampus Universitas Budi Luhur</p>
     </div>
     <div class="body">
-      <p>Halo, <strong>${fullName}</strong>!</p>
+      <p>Halo, <strong>${safeName}</strong>!</p>
       <p>Kami menerima permintaan untuk mengatur ulang kata sandi akun mahasiswa Anda. Klik tombol di bawah ini untuk membuat kata sandi baru:</p>
       <div class="btn-container">
         <a href="${resetUrl}" class="btn">Atur Ulang Kata Sandi</a>
@@ -96070,24 +96252,74 @@ var EmailService = class {
   </div>
 </body>
 </html>
-          `
-        })
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Resend API error:", errorData);
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.error("Failed to send reset email:", err);
-      return false;
-    }
+    `;
+    return this.dispatchResendEmail(
+      toEmail,
+      "Atur Ulang Kata Sandi Akun \u2014 UBL LostnFound",
+      html
+    );
+  }
+  /**
+   * Sends a 6-digit registration verification OTP email to a student's official campus inbox.
+   */
+  async sendRegistrationOtpEmail(toEmail, otpCode, fullName, nim) {
+    const safeName = escapeHtml(fullName);
+    const safeNim = escapeHtml(nim);
+    const safeOtp = escapeHtml(otpCode);
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f6f8fb; margin: 0; padding: 24px; }
+    .card { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; }
+    .header { background: #0050c8; padding: 28px 24px; text-align: center; color: #ffffff; }
+    .title { font-size: 20px; font-weight: 700; margin: 0; }
+    .subtitle { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+    .body { padding: 32px 28px; color: #1e293b; line-height: 1.6; font-size: 14px; }
+    .nim-badge { display: inline-block; background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin: 8px 0 16px; }
+    .otp-container { text-align: center; margin: 24px 0; }
+    .otp-code { display: inline-block; background-color: #f8fafc; border: 2px dashed #0050c8; color: #0050c8; font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; padding: 14px 28px; border-radius: 12px; }
+    .footer { padding: 20px 28px; background: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1 class="title">UBL LostnFound</h1>
+      <p class="subtitle">Layanan Barang Temuan Kampus Universitas Budi Luhur</p>
+    </div>
+    <div class="body">
+      <p>Halo, <strong>${safeName}</strong>!</p>
+      <p>Terima kasih telah mendaftar di UBL LostnFound. Gunakan kode verifikasi OTP berikut untuk menyelesaikan pendaftaran akun mahasiswa Anda:</p>
+      <div>
+        <span class="nim-badge">NIM Terdeteksi: ${safeNim}</span>
+      </div>
+      <div class="otp-container">
+        <span class="otp-code">${safeOtp}</span>
+      </div>
+      <p style="font-size: 12px; color: #64748b;">Kode OTP ini hanya berlaku selama <strong>10 menit</strong> dan bersifat rahasia. Jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku sebagai petugas.</p>
+      <p style="font-size: 12px; color: #64748b;">Jika Anda tidak merasa melakukan pendaftaran akun, abaikan email ini dengan aman.</p>
+    </div>
+    <div class="footer">
+      &copy; ${(/* @__PURE__ */ new Date()).getFullYear()} Universitas Budi Luhur \u2014 Pos Pengajaran Terpadu.
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    return this.dispatchResendEmail(
+      toEmail,
+      "Kode OTP Verifikasi Pendaftaran \u2014 UBL LostnFound",
+      html
+    );
   }
 };
 var emailService = new EmailService();
 
 // src/modules/auth/auth.service.ts
+var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var AuthService = class {
   /**
    * Helper to sign a deterministic JWT with HMAC-SHA256 (HS256).
@@ -96102,6 +96334,110 @@ var AuthService = class {
    */
   verifyToken(token) {
     return jwtService.verifyToken(token);
+  }
+  /**
+   * Strictly validates campus student email domain and extracts exact 10-digit NIM from local-part.
+   */
+  extractStrictStudentNim(email) {
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    if (!normalizedEmail.endsWith(STUDENT_EMAIL_DOMAIN)) {
+      return {
+        valid: false,
+        code: "INVALID_STUDENT_DOMAIN",
+        message: "Hanya email resmi mahasiswa (@student.budiluhur.ac.id) yang diizinkan untuk akun mahasiswa",
+        statusCode: 403
+      };
+    }
+    const localPart = normalizedEmail.slice(
+      0,
+      normalizedEmail.length - STUDENT_EMAIL_DOMAIN.length
+    );
+    if (!STRICT_STUDENT_NIM_REGEX.test(localPart)) {
+      const message = /^\d+$/.test(localPart) ? `NIM pada email kampus harus tepat 10 angka (terdeteksi ${localPart.length} angka). Contoh: 2411502194@student.budiluhur.ac.id` : "Bagian sebelum @ pada email kampus harus berupa tepat 10 angka NIM tanpa huruf atau simbol. Contoh: 2411502194@student.budiluhur.ac.id";
+      return {
+        valid: false,
+        code: "INVALID_STUDENT_NIM",
+        message,
+        statusCode: 400
+      };
+    }
+    return {
+      valid: true,
+      normalizedEmail,
+      nim: localPart
+    };
+  }
+  /**
+   * Computes a deterministic HMAC-SHA256 digest binding an OTP code to challengeId, email, and per-challenge salt.
+   */
+  computeOtpHmac(email, otp, challengeId, salt) {
+    return import_crypto5.default.createHmac("sha256", resolveRuntimeAuthSecret()).update(`${challengeId}:${email}:${otp}:${salt}`).digest("hex");
+  }
+  /**
+   * Maps PostgreSQL unique constraint violation (23505) to deterministic 409 API errors.
+   */
+  mapPgUniqueViolation(err) {
+    const candidate = err;
+    const code = candidate?.code ?? candidate?.cause?.code;
+    if (code !== "23505") {
+      return null;
+    }
+    const constraint = (candidate?.constraint ?? candidate?.cause?.constraint ?? "").toLowerCase();
+    const detail = (candidate?.detail ?? candidate?.cause?.detail ?? "").toLowerCase();
+    if (constraint.includes("student_number") || detail.includes("student_number")) {
+      return {
+        success: false,
+        code: "STUDENT_NUMBER_EXISTS",
+        message: "NIM mahasiswa sudah terdaftar",
+        statusCode: 409
+      };
+    }
+    return {
+      success: false,
+      code: "EMAIL_EXISTS",
+      message: "Email mahasiswa sudah terdaftar",
+      statusCode: 409
+    };
+  }
+  /**
+   * Checks whether email or NIM already belongs to another user record in a single query.
+   */
+  async findDuplicateStudent(normalizedEmail, nim, excludeAuthUserId) {
+    const matches = await db.query.users.findMany({
+      where: or2(eq(users.email, normalizedEmail), eq(users.studentNumber, nim))
+    });
+    const filtered = excludeAuthUserId ? matches.filter((u) => u.authUserId !== excludeAuthUserId) : matches;
+    if (filtered.some((u) => u.email === normalizedEmail)) {
+      return {
+        success: false,
+        code: "EMAIL_EXISTS",
+        message: "Email mahasiswa sudah terdaftar",
+        statusCode: 409
+      };
+    }
+    if (filtered.some((u) => u.studentNumber === nim)) {
+      return {
+        success: false,
+        code: "STUDENT_NUMBER_EXISTS",
+        message: "NIM mahasiswa sudah terdaftar",
+        statusCode: 409
+      };
+    }
+    return null;
+  }
+  /**
+   * Maps a student database row into the canonical OpenAPI Me DTO.
+   */
+  toStudentMe(user) {
+    return {
+      user_id: user.userId,
+      full_name: user.fullName,
+      email: user.email,
+      student_number: user.studentNumber,
+      role: user.role,
+      assigned_post_id: null,
+      nim_verification_status: "NOT_VERIFIED"
+    };
   }
   /**
    * B/D.1.1: Resolves local user from Neon PostgreSQL by auth_user_id (Never trusts role from client)
@@ -96190,23 +96526,32 @@ var AuthService = class {
   /**
    * B/H.1.0: POST /me/bootstrap
    * Creates a student profile after verified email authentication.
-   * Derives authUserId and email strictly from verified session.
-   * Returns 409 PROFILE_EXISTS if user already has an active student profile.
+   * Derives authUserId, email, and strict 10-digit NIM strictly from verified session.
+   * Never overwrites existing user accounts or roles.
    */
-  async bootstrapStudent(authUserId, email, fullName, studentNumber) {
-    const normalizedEmail = (email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@student.budiluhur.ac.id")) {
+  async bootstrapStudent(authUserId, email, fullName) {
+    const nimResult = this.extractStrictStudentNim(email);
+    if (!nimResult.valid) {
       return {
         success: false,
-        code: "INVALID_STUDENT_DOMAIN",
-        message: "Hanya email resmi mahasiswa (@student.budiluhur.ac.id) yang diizinkan untuk akun mahasiswa",
-        statusCode: 403
+        code: nimResult.code,
+        message: nimResult.message,
+        statusCode: nimResult.statusCode
       };
     }
+    const { normalizedEmail, nim } = nimResult;
     const existing = await db.query.users.findFirst({
       where: eq(users.authUserId, authUserId)
     });
-    if (existing && existing.studentNumber) {
+    if (existing) {
+      if (existing.role !== "STUDENT") {
+        return {
+          success: false,
+          code: "PROFILE_EXISTS",
+          message: "Akun sudah memiliki profil terdaftar",
+          statusCode: 403
+        };
+      }
       return {
         success: false,
         code: "PROFILE_EXISTS",
@@ -96214,37 +96559,29 @@ var AuthService = class {
         statusCode: 409
       };
     }
-    let user;
-    if (existing) {
-      const [updated] = await db.update(users).set({
-        fullName,
-        studentNumber,
-        role: "STUDENT"
-      }).where(eq(users.userId, existing.userId)).returning();
-      user = updated;
-    } else {
+    const duplicate = await this.findDuplicateStudent(normalizedEmail, nim, authUserId);
+    if (duplicate) {
+      return duplicate;
+    }
+    try {
       const [created] = await db.insert(users).values({
         authUserId,
-        email,
-        fullName,
-        studentNumber,
+        email: normalizedEmail,
+        fullName: fullName.trim(),
+        studentNumber: nim,
         role: "STUDENT"
       }).returning();
-      user = created;
+      return {
+        success: true,
+        data: this.toStudentMe(created)
+      };
+    } catch (err) {
+      const uniqueErr = this.mapPgUniqueViolation(err);
+      if (uniqueErr) {
+        return uniqueErr;
+      }
+      throw err;
     }
-    const meData = {
-      user_id: user.userId,
-      full_name: user.fullName,
-      email: user.email,
-      student_number: user.studentNumber,
-      role: user.role,
-      assigned_post_id: null,
-      nim_verification_status: "NOT_VERIFIED"
-    };
-    return {
-      success: true,
-      data: meData
-    };
   }
   /**
    * Student Login: Zero-Trust Server-Side Credential & Domain Validation
@@ -96255,7 +96592,7 @@ var AuthService = class {
    */
   async studentLogin(email, password) {
     const normalizedEmail = (email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@student.budiluhur.ac.id")) {
+    if (!normalizedEmail.endsWith(STUDENT_EMAIL_DOMAIN)) {
       return {
         success: false,
         code: "INVALID_STUDENT_DOMAIN",
@@ -96288,94 +96625,268 @@ var AuthService = class {
       email: user.email,
       name: user.fullName
     });
-    const studentProfile = {
-      user_id: user.userId,
-      full_name: user.fullName,
-      email: user.email,
-      student_number: user.studentNumber,
-      role: user.role,
-      assigned_post_id: null,
-      nim_verification_status: "NOT_VERIFIED"
-    };
     return {
       success: true,
       data: {
         token,
-        user: studentProfile
+        user: this.toStudentMe(user)
       }
     };
   }
   /**
-   * Student Register: Server-Side Registration with Domain & Duplicate Checks
-   * - Verifies email ends with @student.budiluhur.ac.id
-   * - Checks duplicate email or studentNumber
-   * - Hashes password using bcrypt
-   * - Creates user with role === 'STUDENT'
-   * - Issues JWT token and returns verified student profile
+   * v1.4.0 Step 1: Request Student Registration OTP (Stateful Neon PostgreSQL Challenge)
+   * - Validates campus domain and strict 10-digit NIM local-part
+   * - Checks duplicate email and NIM in DB
+   * - Enforces 60-second server-side resend cooldown per email
+   * - Persists salted HMAC-SHA256 OTP digest in otp_challenges and issues challenge_token (without otpHash/salt)
+   * - Delivers OTP exclusively to student's campus email via Resend
    */
-  async studentRegister(fullName, email, password, studentNumber) {
-    const normalizedEmail = (email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@student.budiluhur.ac.id")) {
+  async requestStudentRegisterOtp(fullName, email, password) {
+    const nimResult = this.extractStrictStudentNim(email);
+    if (!nimResult.valid) {
       return {
         success: false,
-        code: "INVALID_STUDENT_DOMAIN",
-        message: "Hanya email resmi mahasiswa (@student.budiluhur.ac.id) yang diizinkan untuk akun mahasiswa",
-        statusCode: 403
+        code: nimResult.code,
+        message: nimResult.message,
+        statusCode: nimResult.statusCode
       };
     }
-    const existingEmail = await db.query.users.findFirst({
-      where: eq(users.email, normalizedEmail)
+    if (!password || password.length < 8) {
+      return {
+        success: false,
+        code: "VALIDATION_ERROR",
+        message: "Kata sandi minimal 8 karakter",
+        statusCode: 400
+      };
+    }
+    const { normalizedEmail, nim } = nimResult;
+    const duplicate = await this.findDuplicateStudent(normalizedEmail, nim);
+    if (duplicate) {
+      return duplicate;
+    }
+    const latestChallenge = await db.query.otpChallenges.findFirst({
+      where: eq(otpChallenges.email, normalizedEmail),
+      orderBy: [desc(otpChallenges.createdAt)]
     });
-    if (existingEmail) {
+    const now = /* @__PURE__ */ new Date();
+    if (latestChallenge && !latestChallenge.consumedAt && latestChallenge.resendAvailableAt > now) {
+      const remainingSeconds = Math.max(
+        1,
+        Math.ceil((latestChallenge.resendAvailableAt.getTime() - now.getTime()) / 1e3)
+      );
       return {
         success: false,
-        code: "EMAIL_EXISTS",
-        message: "Email mahasiswa sudah terdaftar",
-        statusCode: 409
+        code: "OTP_COOLDOWN_ACTIVE",
+        message: `Mohon tunggu ${remainingSeconds} detik sebelum meminta kode OTP baru.`,
+        statusCode: 429,
+        retryAfter: remainingSeconds
       };
     }
-    const existingNim = await db.query.users.findFirst({
-      where: eq(users.studentNumber, studentNumber.trim())
-    });
-    if (existingNim) {
-      return {
-        success: false,
-        code: "STUDENT_NUMBER_EXISTS",
-        message: "NIM mahasiswa sudah terdaftar",
-        statusCode: 409
-      };
-    }
-    const passwordHash = await bcryptjs_default.hash(password, 10);
-    const authUserId = `student-${import_crypto4.default.randomUUID()}`;
-    const [created] = await db.insert(users).values({
-      authUserId,
+    const challengeId = import_crypto5.default.randomUUID();
+    const salt = import_crypto5.default.randomBytes(16).toString("hex");
+    const otp = import_crypto5.default.randomInt(1e5, 1e6).toString();
+    const otpHash = this.computeOtpHmac(normalizedEmail, otp, challengeId, salt);
+    const expiresInSeconds = 600;
+    const expiresAt = new Date(now.getTime() + expiresInSeconds * 1e3);
+    const resendAvailableAt = new Date(now.getTime() + 60 * 1e3);
+    const challenge_token = this.createToken(
+      {
+        sub: challengeId,
+        email: normalizedEmail,
+        purpose: "register_otp"
+      },
+      expiresInSeconds
+    );
+    await db.insert(otpChallenges).values({
+      challengeId,
       email: normalizedEmail,
-      fullName: fullName.trim(),
-      studentNumber: studentNumber.trim(),
-      passwordHash,
-      role: "STUDENT"
-    }).returning();
-    const token = this.createToken({
-      sub: created.authUserId,
-      email: created.email,
-      name: created.fullName
+      otpSalt: salt,
+      otpHash,
+      attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+      resendAvailableAt
     });
-    const studentProfile = {
-      user_id: created.userId,
-      full_name: created.fullName,
-      email: created.email,
-      student_number: created.studentNumber,
-      role: created.role,
-      assigned_post_id: null,
-      nim_verification_status: "NOT_VERIFIED"
-    };
+    const sent = await emailService.sendRegistrationOtpEmail(
+      normalizedEmail,
+      otp,
+      fullName.trim(),
+      nim
+    );
+    if (!sent) {
+      await db.delete(otpChallenges).where(eq(otpChallenges.challengeId, challengeId));
+      return {
+        success: false,
+        code: "EMAIL_DELIVERY_FAILED",
+        message: "Gagal mengirim kode OTP ke email kampus Anda. Pastikan alamat email aktif dan coba lagi.",
+        statusCode: 502
+      };
+    }
+    await db.update(otpChallenges).set({ lockedAt: /* @__PURE__ */ new Date() }).where(
+      and(
+        eq(otpChallenges.email, normalizedEmail),
+        ne(otpChallenges.challengeId, challengeId),
+        isNull(otpChallenges.consumedAt),
+        isNull(otpChallenges.lockedAt)
+      )
+    );
     return {
       success: true,
       data: {
-        token,
-        user: studentProfile
+        challenge_token,
+        expires_in: expiresInSeconds,
+        extracted_nim: nim,
+        message: "Kode OTP 6 digit telah dikirim ke email kampus Anda."
       }
     };
+  }
+  /**
+   * v1.4.0 Step 2: Student Register with Stateful Signed OTP Challenge Verification
+   * - Re-validates campus domain and strict 10-digit NIM extraction from email
+   * - Verifies challenge_token signature, expiry, purpose === 'register_otp', email binding, and UUID sub
+   * - Enforces server-side max 5 attempts lockout and single-use atomic consumption in DB transaction
+   * - Hashes password using bcrypt and persists studentNumber extracted strictly from email
+   */
+  async studentRegister(fullName, email, password, otp, challengeToken) {
+    const nimResult = this.extractStrictStudentNim(email);
+    if (!nimResult.valid) {
+      return {
+        success: false,
+        code: nimResult.code,
+        message: nimResult.message,
+        statusCode: nimResult.statusCode
+      };
+    }
+    const { normalizedEmail, nim } = nimResult;
+    const payload = this.verifyToken(challengeToken);
+    if (!payload || payload.purpose !== "register_otp" || payload.email !== normalizedEmail || !UUID_REGEX.test(payload.sub)) {
+      return {
+        success: false,
+        code: "INVALID_OR_EXPIRED_OTP",
+        message: "Token tantangan OTP tidak valid atau sudah kedaluwarsa. Silakan minta kode OTP baru.",
+        statusCode: 400
+      };
+    }
+    const challenge = await db.query.otpChallenges.findFirst({
+      where: and(
+        eq(otpChallenges.challengeId, payload.sub),
+        eq(otpChallenges.email, normalizedEmail)
+      )
+    });
+    const now = /* @__PURE__ */ new Date();
+    if (!challenge || challenge.consumedAt !== null || challenge.expiresAt <= now) {
+      return {
+        success: false,
+        code: "INVALID_OR_EXPIRED_OTP",
+        message: "Token tantangan OTP tidak valid atau sudah kedaluwarsa. Silakan minta kode OTP baru.",
+        statusCode: 400
+      };
+    }
+    if (challenge.lockedAt !== null || challenge.attempts >= challenge.maxAttempts) {
+      return {
+        success: false,
+        code: "OTP_MAX_ATTEMPTS_EXCEEDED",
+        message: "Terlalu banyak percobaan OTP salah (maksimal 5x). Silakan minta ulang kode OTP baru.",
+        statusCode: 429
+      };
+    }
+    const expectedHash = this.computeOtpHmac(
+      normalizedEmail,
+      otp.trim(),
+      challenge.challengeId,
+      challenge.otpSalt
+    );
+    const storedHashBuf = Buffer.from(challenge.otpHash, "utf8");
+    const expectedHashBuf = Buffer.from(expectedHash, "utf8");
+    if (storedHashBuf.length !== expectedHashBuf.length || !import_crypto5.default.timingSafeEqual(storedHashBuf, expectedHashBuf)) {
+      const [updated] = await db.update(otpChallenges).set({
+        attempts: sql`${otpChallenges.attempts} + 1`,
+        lockedAt: sql`CASE WHEN ${otpChallenges.attempts} + 1 >= ${otpChallenges.maxAttempts} THEN NOW() ELSE ${otpChallenges.lockedAt} END`
+      }).where(
+        and(
+          eq(otpChallenges.challengeId, challenge.challengeId),
+          isNull(otpChallenges.consumedAt),
+          isNull(otpChallenges.lockedAt),
+          lt(otpChallenges.attempts, otpChallenges.maxAttempts)
+        )
+      ).returning();
+      if (!updated || updated.lockedAt !== null || updated.attempts >= updated.maxAttempts) {
+        return {
+          success: false,
+          code: "OTP_MAX_ATTEMPTS_EXCEEDED",
+          message: "Terlalu banyak percobaan OTP salah (maksimal 5x). Silakan minta ulang kode OTP baru.",
+          statusCode: 429
+        };
+      }
+      const remaining = updated.maxAttempts - updated.attempts;
+      return {
+        success: false,
+        code: "INVALID_OTP",
+        message: `Kode OTP tidak sesuai. Sisa percobaan: ${remaining}.`,
+        statusCode: 400
+      };
+    }
+    const duplicate = await this.findDuplicateStudent(normalizedEmail, nim);
+    if (duplicate) {
+      return duplicate;
+    }
+    const passwordHash = await bcryptjs_default.hash(password, 10);
+    try {
+      const created = await db.transaction(async (tx) => {
+        const consumed = await tx.update(otpChallenges).set({ consumedAt: sql`NOW()` }).where(
+          and(
+            eq(otpChallenges.challengeId, challenge.challengeId),
+            eq(otpChallenges.email, normalizedEmail),
+            isNull(otpChallenges.consumedAt),
+            isNull(otpChallenges.lockedAt),
+            gt(otpChallenges.expiresAt, sql`NOW()`),
+            lt(otpChallenges.attempts, otpChallenges.maxAttempts)
+          )
+        ).returning({ challengeId: otpChallenges.challengeId });
+        if (consumed.length === 0) {
+          throw new AppError(
+            "INVALID_OR_EXPIRED_OTP",
+            "Token tantangan OTP tidak valid atau sudah digunakan. Silakan minta kode OTP baru.",
+            400
+          );
+        }
+        const [insertedUser] = await tx.insert(users).values({
+          authUserId: `student-${import_crypto5.default.randomUUID()}`,
+          email: normalizedEmail,
+          fullName: fullName.trim(),
+          studentNumber: nim,
+          passwordHash,
+          role: "STUDENT"
+        }).returning();
+        return insertedUser;
+      });
+      const token = this.createToken({
+        sub: created.authUserId,
+        email: created.email,
+        name: created.fullName
+      });
+      return {
+        success: true,
+        data: {
+          token,
+          user: this.toStudentMe(created)
+        }
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        return {
+          success: false,
+          code: err.code,
+          message: err.message,
+          statusCode: err.statusCode
+        };
+      }
+      const uniqueErr = this.mapPgUniqueViolation(err);
+      if (uniqueErr) {
+        return uniqueErr;
+      }
+      throw err;
+    }
   }
   /**
    * Request Password Reset:
@@ -96393,13 +96904,18 @@ var AuthService = class {
       };
     }
     const resetToken = jwtService.createToken(
-      { sub: user.userId, email: user.email, name: "password_reset" },
+      {
+        sub: user.userId,
+        email: user.email,
+        name: user.fullName,
+        purpose: "password_reset"
+      },
       1800
       // 30 minutes
     );
     const baseUrl = originUrl || env.FRONTEND_ORIGIN || "https://lostandfound-budiluhur.web.id";
     const cleanBaseUrl = baseUrl.replace(/\/$/, "");
-    const resetUrl = `${cleanBaseUrl}/lupa-password?token=${resetToken}&email=${encodeURIComponent(
+    const resetUrl = `${cleanBaseUrl}/lupa-sandi?token=${resetToken}&email=${encodeURIComponent(
       user.email
     )}`;
     await emailService.sendPasswordResetEmail(user.email, resetUrl, user.fullName);
@@ -96422,7 +96938,7 @@ var AuthService = class {
       };
     }
     const payload = jwtService.verifyToken(token);
-    if (!payload || payload.name !== "password_reset" || !payload.sub) {
+    if (!payload || payload.purpose !== "password_reset" || !payload.sub) {
       return {
         success: false,
         code: "INVALID_TOKEN",
@@ -96454,7 +96970,7 @@ async function authenticate(request, reply) {
   }
   const token = authHeader.slice(7).trim();
   const payload = authService.verifyToken(token);
-  if (!payload) {
+  if (!payload || payload.purpose) {
     return reply.status(401).send({
       error: {
         code: "UNAUTHORIZED",
@@ -96531,52 +97047,53 @@ async function requireStudent(request, reply) {
   }
 }
 
-// src/modules/auth/auth.dto.ts
-var meSchema = external_exports.object({
-  user_id: external_exports.string().uuid(),
-  full_name: external_exports.string(),
-  email: external_exports.string().email(),
-  student_number: external_exports.string().nullable(),
-  role: external_exports.enum(["STUDENT", "OFFICER"]),
-  assigned_post_id: external_exports.number().int().nullable(),
-  nim_verification_status: external_exports.literal("NOT_VERIFIED")
-});
-var meResponseSchema = external_exports.object({
-  data: meSchema
-});
-var officerLoginSchema = external_exports.object({
-  email: external_exports.string().trim().email("Format email tidak valid"),
-  password: external_exports.string().min(1, "Kata sandi wajib diisi")
-});
-var officerLoginResponseSchema = external_exports.object({
-  data: external_exports.object({
-    token: external_exports.string(),
-    user: meSchema
-  })
-});
-var bootstrapRequestSchema = external_exports.object({
-  full_name: external_exports.string().trim().min(1, "Nama lengkap tidak boleh kosong").max(120),
-  student_number: external_exports.string().trim().min(1, "NIM tidak boleh kosong").max(30)
-}).strict();
-var studentLoginSchema = external_exports.object({
-  email: external_exports.string().trim().email("Format email tidak valid"),
-  password: external_exports.string().min(1, "Kata sandi wajib diisi")
-});
-var studentRegisterSchema = external_exports.object({
-  full_name: external_exports.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(120),
-  email: external_exports.string().trim().email("Format email tidak valid"),
-  password: external_exports.string().min(8, "Kata sandi minimal 8 karakter"),
-  student_number: external_exports.string().trim().min(5, "NIM minimal 5 karakter").max(30)
-});
-var forgotPasswordSchema = external_exports.object({
-  email: external_exports.string().trim().email("Format email tidak valid")
-});
-var resetPasswordSchema = external_exports.object({
-  token: external_exports.string().min(10, "Token pemulihan tidak valid"),
-  new_password: external_exports.string().min(8, "Kata sandi baru minimal 8 karakter")
-});
-
 // src/modules/auth/auth.routes.ts
+function resolveTrustedFrontendOrigin(originHeader, refererHeader) {
+  const fallbackOrigin = (() => {
+    try {
+      return new URL(env.FRONTEND_ORIGIN).origin;
+    } catch {
+      return "https://lostandfound-budiluhur.web.id";
+    }
+  })();
+  const allowedOrigins = /* @__PURE__ */ new Set([
+    fallbackOrigin,
+    "https://lostandfound-budiluhur.web.id",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ]);
+  for (const candidate of [originHeader, refererHeader]) {
+    if (!candidate)
+      continue;
+    try {
+      const parsedOrigin = new URL(candidate).origin;
+      if (allowedOrigins.has(parsedOrigin)) {
+        return parsedOrigin;
+      }
+    } catch {
+    }
+  }
+  return fallbackOrigin;
+}
+function handleAuthCatchError(request, reply, err, logContext) {
+  if (err instanceof AppError) {
+    return reply.status(err.statusCode).send({
+      error: {
+        code: err.code,
+        message: err.message,
+        request_id: request.id
+      }
+    });
+  }
+  request.log.error(err, logContext);
+  return reply.status(500).send({
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Terjadi kesalahan internal server",
+      request_id: request.id
+    }
+  });
+}
 var authRoutes = async (fastify) => {
   fastify.post("/me/bootstrap", async (request, reply) => {
     const authHeader = request.headers.authorization;
@@ -96591,11 +97108,20 @@ var authRoutes = async (fastify) => {
     }
     const token = authHeader.slice(7).trim();
     const payload = authService.verifyToken(token);
-    if (!payload || !payload.sub) {
+    if (!payload || !payload.sub || payload.purpose) {
       return reply.status(401).send({
         error: {
           code: "UNAUTHORIZED",
           message: "Token autentikasi tidak valid atau sudah kedaluwarsa",
+          request_id: request.id
+        }
+      });
+    }
+    if (typeof payload.email !== "string" || payload.email.trim().length === 0) {
+      return reply.status(401).send({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Token tidak memiliki klaim email yang valid",
           request_id: request.id
         }
       });
@@ -96611,12 +97137,10 @@ var authRoutes = async (fastify) => {
         }
       });
     }
-    const email = payload.email || `${payload.sub}@student.budiluhur.ac.id`;
     const result = await authService.bootstrapStudent(
       payload.sub,
-      email,
-      parseResult.data.full_name,
-      parseResult.data.student_number
+      payload.email,
+      parseResult.data.full_name
     );
     if (!result.success) {
       return reply.status(result.statusCode || 400).send({
@@ -96706,14 +97230,41 @@ var authRoutes = async (fastify) => {
         data: loginResult.data
       });
     } catch (err) {
-      request.log.error(err, "Unhandled error during student login");
-      return reply.status(500).send({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: err instanceof Error ? err.message : "Terjadi kesalahan internal saat masuk sebagai mahasiswa",
-          request_id: request.id
+      return handleAuthCatchError(request, reply, err, "Unhandled error during student login");
+    }
+  };
+  const handleStudentRegisterRequestOtp = async (request, reply) => {
+    try {
+      const parseResult = studentRegisterRequestOtpSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parseResult.error.issues[0]?.message || "Input tidak valid",
+            request_id: request.id
+          }
+        });
+      }
+      const { full_name, email, password } = parseResult.data;
+      const otpResult = await authService.requestStudentRegisterOtp(full_name, email, password);
+      if (!otpResult.success) {
+        if (otpResult.retryAfter !== void 0) {
+          reply.header("Retry-After", String(otpResult.retryAfter));
         }
+        return reply.status(otpResult.statusCode || 400).send({
+          error: {
+            code: otpResult.code,
+            message: otpResult.message,
+            request_id: request.id,
+            ...otpResult.retryAfter !== void 0 ? { retry_after: otpResult.retryAfter } : {}
+          }
+        });
+      }
+      return reply.status(200).send({
+        data: otpResult.data
       });
+    } catch (err) {
+      return handleAuthCatchError(request, reply, err, "Unhandled error during student OTP request");
     }
   };
   const handleStudentRegister = async (request, reply) => {
@@ -96728,12 +97279,13 @@ var authRoutes = async (fastify) => {
           }
         });
       }
-      const { full_name, email, password, student_number } = parseResult.data;
+      const { full_name, email, password, otp, challenge_token } = parseResult.data;
       const registerResult = await authService.studentRegister(
         full_name,
         email,
         password,
-        student_number
+        otp,
+        challenge_token
       );
       if (!registerResult.success) {
         return reply.status(registerResult.statusCode || 400).send({
@@ -96748,18 +97300,18 @@ var authRoutes = async (fastify) => {
         data: registerResult.data
       });
     } catch (err) {
-      request.log.error(err, "Unhandled error during student registration");
-      return reply.status(500).send({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: err instanceof Error ? err.message : "Terjadi kesalahan internal saat registrasi akun mahasiswa",
-          request_id: request.id
-        }
-      });
+      return handleAuthCatchError(
+        request,
+        reply,
+        err,
+        "Unhandled error during student registration"
+      );
     }
   };
   fastify.post("/auth/student-login", handleStudentLogin);
   fastify.post("/student/login", handleStudentLogin);
+  fastify.post("/auth/student-register/request-otp", handleStudentRegisterRequestOtp);
+  fastify.post("/student/register/request-otp", handleStudentRegisterRequestOtp);
   fastify.post("/auth/student-register", handleStudentRegister);
   fastify.post("/student/register", handleStudentRegister);
   fastify.post("/auth/forgot-password", async (request, reply) => {
@@ -96773,7 +97325,10 @@ var authRoutes = async (fastify) => {
         }
       });
     }
-    const origin = request.headers.origin || request.headers.referer;
+    const origin = resolveTrustedFrontendOrigin(
+      request.headers.origin,
+      request.headers.referer
+    );
     const result = await authService.requestPasswordReset(parseResult.data.email, origin);
     return reply.status(200).send({
       data: result
@@ -96842,7 +97397,7 @@ var uploadIdParamSchema = external_exports.object({
 }).strict();
 
 // src/modules/uploads/uploads.service.ts
-var import_crypto7 = require("crypto");
+var import_crypto8 = require("crypto");
 
 // src/modules/uploads/storage/r2.provider.ts
 var import_client_s3 = __toESM(require_dist_cjs16());
@@ -96992,27 +97547,29 @@ var MockStorageProvider = class {
 var mockStorageProvider = new MockStorageProvider();
 
 // src/modules/uploads/token.service.ts
-var import_crypto6 = require("crypto");
+var import_crypto7 = require("crypto");
 
 // src/modules/uploads/token.signer.ts
-var import_crypto5 = require("crypto");
+var import_crypto6 = require("crypto");
 var TokenSigner = class {
   sign(payload) {
+    const secret = resolveRuntimeAuthSecret();
     const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-    const sig = (0, import_crypto5.createHmac)("sha256", env.AUTH_SECRET).update(data).digest("base64url");
+    const sig = (0, import_crypto6.createHmac)("sha256", secret).update(data).digest("base64url");
     return `${data}.${sig}`;
   }
   verify(token) {
+    const secret = resolveRuntimeAuthSecret();
     const parts = token.split(".");
     if (parts.length !== 2)
       return null;
     const [data, sig] = parts;
-    const expectedSig = (0, import_crypto5.createHmac)("sha256", env.AUTH_SECRET).update(data).digest("base64url");
+    const expectedSig = (0, import_crypto6.createHmac)("sha256", secret).update(data).digest("base64url");
     const sigBuf = Buffer.from(sig);
     const expBuf = Buffer.from(expectedSig);
     if (sigBuf.length !== expBuf.length)
       return null;
-    if (!(0, import_crypto5.timingSafeEqual)(sigBuf, expBuf))
+    if (!(0, import_crypto6.timingSafeEqual)(sigBuf, expBuf))
       return null;
     try {
       return JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
@@ -97023,22 +97580,12 @@ var TokenSigner = class {
 };
 var tokenSigner = new TokenSigner();
 
-// src/utils/errors.ts
-var AppError = class extends Error {
-  constructor(code, message, statusCode = 400) {
-    super(message);
-    this.code = code;
-    this.statusCode = statusCode;
-    this.name = "AppError";
-  }
-};
-
 // src/modules/uploads/token.service.ts
 var UploadTokenService = class {
   consumedTokens = /* @__PURE__ */ new Set();
   issueUploadToken(userId, purpose, storagePath, expiresInSeconds = 900) {
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1e3);
-    const tokenId = (0, import_crypto6.randomUUID)();
+    const tokenId = (0, import_crypto7.randomUUID)();
     const payload = {
       tokenId,
       userId,
@@ -97160,7 +97707,7 @@ var UploadsService = class {
   }
   async createUploadIntent(user, purpose, contentType, sizeBytes) {
     assertRoleForPurpose(user, purpose);
-    const uploadId = (0, import_crypto7.randomUUID)();
+    const uploadId = (0, import_crypto8.randomUUID)();
     const storagePath = generateStoragePath(purpose, uploadId, contentType);
     const expiresInSeconds = 300;
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1e3);
@@ -97345,6 +97892,16 @@ var itemCreateRequestSchema = external_exports.object({
   found_on: external_exports.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD").nullable().optional(),
   item_photo_upload_tokens: external_exports.array(external_exports.string().min(1)).length(1, "Pencatatan barang mewajibkan tepat 1 token foto")
 }).strict();
+var returnRecordDtoSchema = external_exports.object({
+  return_id: external_exports.string().uuid(),
+  item_id: external_exports.string().uuid(),
+  recipient_name: external_exports.string(),
+  recipient_identifier: external_exports.string().nullable().optional(),
+  verification_summary: external_exports.string(),
+  verification_confirmed_at: external_exports.string().datetime(),
+  returned_at: external_exports.string().datetime(),
+  returned_by_name: external_exports.string().nullable().optional()
+}).strict();
 var inventoryOfficerDtoSchema = external_exports.object({
   item_id: external_exports.string().uuid(),
   inventory_code: external_exports.string().min(1),
@@ -97355,6 +97912,8 @@ var inventoryOfficerDtoSchema = external_exports.object({
   found_location: external_exports.string().nullable(),
   found_on: external_exports.string().nullable(),
   received_at: external_exports.string().datetime(),
+  storage_limit_days: external_exports.number().int().positive().nullable().optional(),
+  archived_at: external_exports.string().datetime().nullable().optional(),
   status: external_exports.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]),
   is_visible: external_exports.boolean(),
   storage_post_id: external_exports.number().int(),
@@ -97370,7 +97929,8 @@ var inventoryOfficerDtoSchema = external_exports.object({
       expires_at: external_exports.string().datetime(),
       is_primary: external_exports.boolean()
     })
-  )
+  ),
+  return_record: returnRecordDtoSchema.nullable().optional()
 }).strict();
 var itemCreateResponseSchema = external_exports.object({
   data: inventoryOfficerDtoSchema
@@ -97387,7 +97947,7 @@ var inventoryListResponseSchema = external_exports.object({
 var receiveRequestSchema = external_exports.object({
   public_description: external_exports.string().trim().min(1, "Deskripsi publik tidak boleh kosong"),
   private_verification_notes: external_exports.string().trim().nullable().optional(),
-  item_photo_upload_tokens: external_exports.array(external_exports.string().min(1)).length(1, "Penerimaan barang mewajibkan tepat 1 token foto")
+  item_photo_upload_tokens: external_exports.array(external_exports.string().min(1)).max(1, "Maksimal 1 token foto yang diperbolehkan").optional()
 }).strict();
 var reasonRequestSchema = external_exports.object({
   reason: external_exports.string().trim().min(1, "Alasan wajib diisi").max(2e3)
@@ -97397,15 +97957,8 @@ var visibilityRequestSchema = external_exports.object({
 }).strict();
 var returnRequestSchema = external_exports.object({
   recipient_name: external_exports.string().trim().min(1, "Nama penerima tidak boleh kosong").max(120),
+  recipient_identifier: external_exports.string().trim().max(50).nullable().optional(),
   verification_summary: external_exports.string().trim().min(1, "Ringkasan verifikasi kepemilikan tidak boleh kosong").max(5e3)
-}).strict();
-var returnRecordDtoSchema = external_exports.object({
-  return_id: external_exports.string().uuid(),
-  item_id: external_exports.string().uuid(),
-  recipient_name: external_exports.string(),
-  verification_summary: external_exports.string(),
-  verification_confirmed_at: external_exports.string().datetime(),
-  returned_at: external_exports.string().datetime()
 }).strict();
 var returnResponseSchema = external_exports.object({
   data: returnRecordDtoSchema
@@ -97422,6 +97975,25 @@ var overdueInventoryDtoSchema = external_exports.object({
 }).strict();
 var overdueResponseSchema = external_exports.object({
   data: external_exports.array(overdueInventoryDtoSchema)
+}).strict();
+var postSettingsDtoSchema = external_exports.object({
+  post_id: external_exports.number().int(),
+  name: external_exports.string(),
+  storage_limit_days: external_exports.number().int().min(1).max(730)
+}).strict();
+var postSettingsResponseSchema = external_exports.object({
+  data: postSettingsDtoSchema
+}).strict();
+var postSettingsUpdateSchema = external_exports.object({
+  storage_limit_days: external_exports.number({ invalid_type_error: "Batas hari penyimpanan harus berupa angka" }).int("Batas hari penyimpanan harus berupa bilangan bulat").min(1, "Minimal batas simpan adalah 1 hari").max(730, "Maksimal batas simpan adalah 730 hari (2 tahun)")
+}).strict();
+var cleanInventoryRequestSchema = external_exports.object({
+  month: external_exports.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Format bulan harus YYYY-MM").optional()
+}).strict();
+var cleanInventoryResponseSchema = external_exports.object({
+  data: external_exports.object({
+    archived_count: external_exports.number().int().nonnegative()
+  })
 }).strict();
 
 // src/modules/officer/inventory-code.util.ts
@@ -97446,7 +98018,101 @@ async function generateInventoryCode(tx, year2) {
   return candidate;
 }
 
+// src/modules/officer/officer-policy.repository.ts
+var OfficerPolicyRepository = class {
+  /**
+   * B/G.2.0: Calculates overdue items dynamically from received_at and storage_limit_days
+   */
+  async getOverdueItems(storagePostId) {
+    const post = await db.query.servicePosts.findFirst({
+      where: eq(servicePosts.postId, storagePostId)
+    });
+    if (!post) {
+      return [];
+    }
+    const postFallbackLimit = post.storageLimitDays !== null && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
+    const now = /* @__PURE__ */ new Date();
+    const storedItems = await db.query.foundItems.findMany({
+      where: and(
+        eq(foundItems.storagePostId, storagePostId),
+        eq(foundItems.status, "STORED"),
+        isNull(foundItems.archivedAt)
+      )
+    });
+    const overdueList = [];
+    for (const item of storedItems) {
+      const effectiveLimit = item.storageLimitDays !== null && item.storageLimitDays > 0 ? item.storageLimitDays : postFallbackLimit;
+      const receivedDate = new Date(item.receivedAt);
+      const ageMs = now.getTime() - receivedDate.getTime();
+      const storageAgeDays = Math.floor(ageMs / (1e3 * 60 * 60 * 24));
+      if (storageAgeDays > effectiveLimit) {
+        overdueList.push({
+          item_id: item.itemId,
+          inventory_code: item.inventoryCode,
+          item_name: item.itemName,
+          category: item.category,
+          received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
+          storage_limit_days: effectiveLimit,
+          storage_age_days: storageAgeDays,
+          overdue_days: storageAgeDays - effectiveLimit
+        });
+      }
+    }
+    return overdueList;
+  }
+  /**
+   * Read officer service post policy settings
+   */
+  async getPostSettings(storagePostId) {
+    const post = await db.query.servicePosts.findFirst({
+      where: eq(servicePosts.postId, storagePostId),
+      columns: {
+        postId: true,
+        name: true,
+        storageLimitDays: true
+      }
+    });
+    if (!post)
+      return null;
+    return {
+      post_id: post.postId,
+      name: post.name,
+      storage_limit_days: post.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365
+    };
+  }
+  /**
+   * Update officer service post storage limit (non-retroactive for existing items)
+   */
+  async updatePostStorageLimit(storagePostId, storageLimitDays) {
+    const [updated] = await db.update(servicePosts).set({ storageLimitDays }).where(eq(servicePosts.postId, storagePostId)).returning({
+      postId: servicePosts.postId,
+      name: servicePosts.name,
+      storageLimitDays: servicePosts.storageLimitDays
+    });
+    if (!updated)
+      return null;
+    return {
+      post_id: updated.postId,
+      name: updated.name,
+      storage_limit_days: updated.storageLimitDays ?? storageLimitDays
+    };
+  }
+};
+var officerPolicyRepository = new OfficerPolicyRepository();
+
 // src/modules/officer/officer-inventory.repository.ts
+var officerItemWithRelations = {
+  photo: true,
+  returnRecord: {
+    with: {
+      returnedBy: {
+        columns: {
+          fullName: true
+        }
+      }
+    }
+  }
+};
 var OfficerInventoryRepository = class {
   /**
    * B/F.1: Executes atomic insertion of found item and its primary photo within a transaction
@@ -97454,6 +98120,11 @@ var OfficerInventoryRepository = class {
   async insertItemWithPhoto(params) {
     const { request, officerUserId, storagePostId, storagePath } = params;
     return await db.transaction(async (tx) => {
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true }
+      });
+      const snapshotLimitDays = post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
       const inventoryCode = await generateInventoryCode(tx);
       const [item] = await tx.insert(foundItems).values({
         inventoryCode,
@@ -97465,6 +98136,7 @@ var OfficerInventoryRepository = class {
         privateVerificationNotes: request.private_verification_notes ?? null,
         foundLocation: request.found_location ?? null,
         foundOn: request.found_on ?? null,
+        storageLimitDays: snapshotLimitDays,
         status: "STORED",
         isVisible: true
       }).returning();
@@ -97480,11 +98152,23 @@ var OfficerInventoryRepository = class {
    * B/G.1.0: Lists inventory items stored at this post with filters and pagination
    */
   async getInventoryByPost(params) {
-    const { storagePostId, status, category, q: q3 } = params;
+    const {
+      storagePostId,
+      status,
+      category,
+      q: q3,
+      includeArchived = false,
+      archivedOnly = false
+    } = params;
     const page = Math.max(1, params.page || 1);
-    const limit = Math.min(10, Math.max(1, params.limit || 10));
+    const limit = Math.min(100, Math.max(1, params.limit || 10));
     const offset = (page - 1) * limit;
     const conditions = [eq(foundItems.storagePostId, storagePostId)];
+    if (archivedOnly) {
+      conditions.push(isNotNull(foundItems.archivedAt));
+    } else if (!includeArchived) {
+      conditions.push(isNull(foundItems.archivedAt));
+    }
     if (status) {
       conditions.push(eq(foundItems.status, status));
     }
@@ -97505,9 +98189,7 @@ var OfficerInventoryRepository = class {
     const sortOrder = params.sort === "received_at_asc" ? asc(foundItems.receivedAt) : desc(foundItems.receivedAt);
     const items = await db.query.foundItems.findMany({
       where: whereClause,
-      with: {
-        photo: true
-      },
+      with: officerItemWithRelations,
       orderBy: [sortOrder],
       limit,
       offset
@@ -97520,9 +98202,7 @@ var OfficerInventoryRepository = class {
   async getItemById(itemId, storagePostId) {
     const item = await db.query.foundItems.findFirst({
       where: eq(foundItems.itemId, itemId),
-      with: {
-        photo: true
-      }
+      with: officerItemWithRelations
     });
     if (!item) {
       return { item: null, photo: null, forbidden: false };
@@ -97561,46 +98241,63 @@ var OfficerInventoryRepository = class {
   /**
    * B/G.2.0: Calculates overdue items dynamically from received_at and storage_limit_days
    */
-  async getOverdueItems(storagePostId) {
-    const post = await db.query.servicePosts.findFirst({
-      where: eq(servicePosts.postId, storagePostId)
-    });
-    if (!post || post.storageLimitDays === null || post.storageLimitDays <= 0) {
-      return [];
+  getOverdueItems(storagePostId) {
+    return officerPolicyRepository.getOverdueItems(storagePostId);
+  }
+  /**
+   * Read officer service post policy settings
+   */
+  getPostSettings(storagePostId) {
+    return officerPolicyRepository.getPostSettings(storagePostId);
+  }
+  /**
+   * Update officer service post storage limit (non-retroactive for existing items)
+   */
+  updatePostStorageLimit(storagePostId, storageLimitDays) {
+    return officerPolicyRepository.updatePostStorageLimit(storagePostId, storageLimitDays);
+  }
+  /**
+   * Soft-archives completed items (RETURNED_TO_OWNER & DISTRIBUTED), preserving audit rows & STORED items
+   */
+  async cleanCompletedInventory(storagePostId, month) {
+    const conditions = [
+      eq(foundItems.storagePostId, storagePostId),
+      isNull(foundItems.archivedAt),
+      inArray(foundItems.status, ["RETURNED_TO_OWNER", "DISTRIBUTED"])
+    ];
+    if (month) {
+      const [yearStr, monthStr] = month.split("-");
+      const year2 = Number(yearStr);
+      const monthNum = Number(monthStr);
+      const nextYear = monthNum === 12 ? year2 + 1 : year2;
+      const nextMonth = monthNum === 12 ? 1 : monthNum + 1;
+      const startWib = /* @__PURE__ */ new Date(`${yearStr}-${monthStr}-01T00:00:00+07:00`);
+      const endWib = /* @__PURE__ */ new Date(`${nextYear}-${String(nextMonth).padStart(2, "0")}-01T00:00:00+07:00`);
+      conditions.push(gte(foundItems.receivedAt, startWib), lt(foundItems.receivedAt, endWib));
     }
-    const limitDays = post.storageLimitDays;
-    const now = /* @__PURE__ */ new Date();
-    const storedItems = await db.query.foundItems.findMany({
-      where: and(
-        eq(foundItems.storagePostId, storagePostId),
-        eq(foundItems.status, "STORED")
-      )
-    });
-    const overdueList = [];
-    for (const item of storedItems) {
-      const receivedDate = new Date(item.receivedAt);
-      const ageMs = now.getTime() - receivedDate.getTime();
-      const storageAgeDays = Math.floor(ageMs / (1e3 * 60 * 60 * 24));
-      if (storageAgeDays > limitDays) {
-        overdueList.push({
-          item_id: item.itemId,
-          inventory_code: item.inventoryCode,
-          item_name: item.itemName,
-          category: item.category,
-          received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
-          storage_limit_days: limitDays,
-          storage_age_days: storageAgeDays,
-          overdue_days: storageAgeDays - limitDays
-        });
-      }
-    }
-    return overdueList;
+    const updated = await db.update(foundItems).set({ archivedAt: /* @__PURE__ */ new Date() }).where(and(...conditions)).returning({ itemId: foundItems.itemId });
+    return { archived_count: updated.length };
   }
 };
 var officerInventoryRepository = new OfficerInventoryRepository();
 
 // src/modules/officer/officer.mapper.ts
-function mapToOfficerDto(item, photo, context) {
+function toIsoString(value) {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
+}
+function mapReturnRecordDto(returnRecord) {
+  return {
+    return_id: returnRecord.returnId,
+    item_id: returnRecord.itemId,
+    recipient_name: returnRecord.recipientName,
+    recipient_identifier: returnRecord.recipientIdentifier ?? null,
+    verification_summary: returnRecord.verificationSummary,
+    verification_confirmed_at: toIsoString(returnRecord.verificationConfirmedAt),
+    returned_at: toIsoString(returnRecord.returnedAt),
+    returned_by_name: returnRecord.returnedBy?.fullName ?? null
+  };
+}
+function mapToOfficerDto(item, photo, context, returnRecord = null) {
   const resolved = photo?.storagePath ? resolvePhotoUrl(photo.storagePath) : null;
   return {
     item_id: item.itemId,
@@ -97611,7 +98308,9 @@ function mapToOfficerDto(item, photo, context) {
     private_verification_notes: item.privateVerificationNotes ?? null,
     found_location: item.foundLocation ?? null,
     found_on: item.foundOn ? String(item.foundOn).split("T")[0] : null,
-    received_at: item.receivedAt instanceof Date ? item.receivedAt.toISOString() : new Date(item.receivedAt).toISOString(),
+    received_at: toIsoString(item.receivedAt),
+    storage_limit_days: item.storageLimitDays ?? null,
+    archived_at: item.archivedAt ? toIsoString(item.archivedAt) : null,
     status: item.status,
     is_visible: item.isVisible,
     storage_post_id: item.storagePostId,
@@ -97627,7 +98326,8 @@ function mapToOfficerDto(item, photo, context) {
         expires_at: resolved.expires_at,
         is_primary: true
       }
-    ] : []
+    ] : [],
+    return_record: returnRecord ? mapReturnRecordDto(returnRecord) : null
   };
 }
 
@@ -97660,7 +98360,9 @@ var OfficerInventoryService = class {
       ...params
     });
     return {
-      data: result.items.map((item) => mapToOfficerDto(item, item.photo || null, context)),
+      data: result.items.map(
+        (item) => mapToOfficerDto(item, item.photo || null, context, item.returnRecord || null)
+      ),
       meta: {
         page: result.page,
         limit: result.limit,
@@ -97683,7 +98385,7 @@ var OfficerInventoryService = class {
     if (!item) {
       throw new AppError("NOT_FOUND", "Barang inventaris tidak ditemukan", 404);
     }
-    return mapToOfficerDto(item, photo, context);
+    return mapToOfficerDto(item, photo, context, item.returnRecord || null);
   }
   /**
    * B/G.1.2: Toggle visibility
@@ -97717,6 +98419,43 @@ var OfficerInventoryService = class {
   async getOverdue(context) {
     return await officerInventoryRepository.getOverdueItems(context.postId);
   }
+  /**
+   * Read officer post storage policy settings
+   */
+  async getPostSettings(context) {
+    const settings = await officerInventoryRepository.getPostSettings(context.postId);
+    if (!settings) {
+      throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
+    }
+    return settings;
+  }
+  /**
+   * Update officer post storage policy settings (applies to new items only)
+   */
+  async updatePostSettings(context, storageLimitDays) {
+    const updated = await officerInventoryRepository.updatePostStorageLimit(
+      context.postId,
+      storageLimitDays
+    );
+    if (!updated) {
+      throw new AppError("NOT_FOUND", "Pengaturan pos layanan tidak ditemukan", 404);
+    }
+    return updated;
+  }
+  /**
+   * Soft-archive completed items (RETURNED_TO_OWNER / DISTRIBUTED)
+   */
+  async cleanCompletedInventory(context, month) {
+    const result = await officerInventoryRepository.cleanCompletedInventory(context.postId, month);
+    if (result.archived_count === 0) {
+      throw new AppError(
+        "NO_ARCHIVABLE_ITEMS",
+        "Tidak ada barang selesai (Sudah Diserahkan atau Disalurkan) yang dapat diarsipkan pada periode tersebut.",
+        409
+      );
+    }
+    return result;
+  }
 };
 var officerInventoryService = new OfficerInventoryService();
 
@@ -97730,7 +98469,9 @@ var inventoryQuerySchema = external_exports.object({
   q: external_exports.string().optional(),
   sort: external_exports.enum(["received_at_asc", "received_at_desc"]).default("received_at_desc"),
   page: external_exports.coerce.number().int().min(1).default(1),
-  limit: external_exports.coerce.number().int().min(1).max(10).default(10)
+  limit: external_exports.coerce.number().int().min(1).max(100).default(10),
+  include_archived: external_exports.enum(["true", "false"]).optional().transform((v2) => v2 === "true"),
+  archived_only: external_exports.enum(["true", "false"]).optional().transform((v2) => v2 === "true")
 });
 var officerInventoryRoutes = async (app2) => {
   app2.post(
@@ -97760,10 +98501,25 @@ var officerInventoryRoutes = async (app2) => {
     { preHandler: [requireOfficer] },
     async (request, reply) => {
       const parsedQuery = inventoryQuerySchema.safeParse(request.query);
-      const query = parsedQuery.success ? parsedQuery.data : { sort: "received_at_desc", page: 1, limit: 10 };
+      const query = parsedQuery.success ? parsedQuery.data : {
+        sort: "received_at_desc",
+        page: 1,
+        limit: 10,
+        include_archived: false,
+        archived_only: false
+      };
       const result = await officerInventoryService.getInventory(
         request.officerContext,
-        query
+        {
+          status: query.status,
+          category: query.category,
+          q: query.q,
+          sort: query.sort,
+          page: query.page,
+          limit: query.limit,
+          includeArchived: query.include_archived,
+          archivedOnly: query.archived_only
+        }
       );
       return reply.status(200).send(result);
     }
@@ -97828,6 +98584,58 @@ var officerInventoryRoutes = async (app2) => {
         bodyParse.data.is_visible
       );
       return reply.status(200).send({ data: item });
+    }
+  );
+  app2.get(
+    "/officer/post-settings",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const settings = await officerInventoryService.getPostSettings(request.officerContext);
+      return reply.status(200).send({ data: settings });
+    }
+  );
+  app2.patch(
+    "/officer/post-settings",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const parsed2 = postSettingsUpdateSchema.safeParse(request.body);
+      if (!parsed2.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parsed2.error.issues[0]?.message || "Nilai batas simpan tidak valid (1\u2013730 hari)",
+            request_id: request.id,
+            details: parsed2.error.issues
+          }
+        });
+      }
+      const updated = await officerInventoryService.updatePostSettings(
+        request.officerContext,
+        parsed2.data.storage_limit_days
+      );
+      return reply.status(200).send({ data: updated });
+    }
+  );
+  app2.post(
+    "/officer/inventory/clean",
+    { preHandler: [requireOfficer] },
+    async (request, reply) => {
+      const parsed2 = cleanInventoryRequestSchema.safeParse(request.body ?? {});
+      if (!parsed2.success) {
+        return reply.status(422).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parsed2.error.issues[0]?.message || "Format filter arsip tidak valid",
+            request_id: request.id,
+            details: parsed2.error.issues
+          }
+        });
+      }
+      const result = await officerInventoryService.cleanCompletedInventory(
+        request.officerContext,
+        parsed2.data.month
+      );
+      return reply.status(200).send({ data: result });
     }
   );
 };
@@ -97945,6 +98753,10 @@ var OfficerSubmissionsRepository = class {
           currentStatus: submission.status
         };
       }
+      const resolvedPhotoPath = storagePath && storagePath.trim() || submission.reportPhotoPath;
+      if (!resolvedPhotoPath || !resolvedPhotoPath.trim()) {
+        return { success: false, error: "MISSING_PHOTO" };
+      }
       await tx.update(foundSubmissions).set({ status: "RECEIVED" }).where(eq(foundSubmissions.submissionId, submissionId));
       await tx.insert(submissionStatusHistory).values({
         submissionId,
@@ -97953,6 +98765,11 @@ var OfficerSubmissionsRepository = class {
         toStatus: "RECEIVED",
         reason: "Fisik barang telah diverifikasi dan diterima di pos pelayanan"
       });
+      const post = await tx.query.servicePosts.findFirst({
+        where: eq(servicePosts.postId, storagePostId),
+        columns: { storageLimitDays: true }
+      });
+      const snapshotLimitDays = post?.storageLimitDays && post.storageLimitDays > 0 ? post.storageLimitDays : 365;
       const inventoryCode = await generateInventoryCode(tx);
       const [item] = await tx.insert(foundItems).values({
         inventoryCode,
@@ -97965,12 +98782,13 @@ var OfficerSubmissionsRepository = class {
         privateVerificationNotes: privateVerificationNotes ?? null,
         foundLocation: submission.foundLocation,
         foundOn: submission.foundOn,
+        storageLimitDays: snapshotLimitDays,
         status: "STORED",
         isVisible: true
       }).returning();
       const [photo] = await tx.insert(itemPhotos).values({
         itemId: item.itemId,
-        storagePath,
+        storagePath: resolvedPhotoPath,
         isPrimary: true
       }).returning();
       return { success: true, item, photo };
@@ -98271,12 +99089,16 @@ var OfficerSubmissionsService = class {
    * B/I.1.1 & B/I.1.2: Officer physically receives item at post and registers into inventory
    */
   async receiveSubmission(context, submissionId, request) {
-    const [token] = request.item_photo_upload_tokens;
-    const { storagePath } = uploadsService.verifyAndConsumeUploadToken(
-      token,
-      "ITEM_PHOTO",
-      context.user.userId
-    );
+    const token = request.item_photo_upload_tokens?.[0];
+    let storagePath;
+    if (token) {
+      const consumed = uploadsService.verifyAndConsumeUploadToken(
+        token,
+        "ITEM_PHOTO",
+        context.user.userId
+      );
+      storagePath = consumed.storagePath;
+    }
     const result = await officerSubmissionsRepository.receiveSubmission({
       submissionId,
       officerUserId: context.user.userId,
@@ -98297,6 +99119,13 @@ var OfficerSubmissionsService = class {
           "INVALID_STATUS_TRANSITION",
           `Hanya laporan berstatus PENDING_RECEIPT yang dapat diterima fisik (status saat ini: ${result.currentStatus})`,
           409
+        );
+      }
+      if (result.error === "MISSING_PHOTO") {
+        throw new AppError(
+          "MISSING_PHOTO",
+          "Foto barang tidak tersedia pada laporan maupun payload penerimaan",
+          422
         );
       }
     }
@@ -98429,7 +99258,14 @@ var OfficerDispositionRepository = class {
    * B/J.1.0: Returns item to verified owner atomically
    */
   async returnItem(params) {
-    const { itemId, officerUserId, storagePostId, recipientName, verificationSummary } = params;
+    const {
+      itemId,
+      officerUserId,
+      storagePostId,
+      recipientName,
+      recipientIdentifier,
+      verificationSummary
+    } = params;
     return await db.transaction(async (tx) => {
       const existing = await tx.query.foundItems.findFirst({
         where: eq(foundItems.itemId, itemId)
@@ -98455,6 +99291,7 @@ var OfficerDispositionRepository = class {
         itemId,
         returnedByUserId: officerUserId,
         recipientName,
+        recipientIdentifier: recipientIdentifier || null,
         verificationSummary
       }).returning();
       return { success: true, returnRecord: record };
@@ -98503,6 +99340,7 @@ var OfficerDispositionService = class {
       officerUserId: context.user.userId,
       storagePostId: context.postId,
       recipientName: request.recipient_name,
+      recipientIdentifier: request.recipient_identifier?.trim() || null,
       verificationSummary: request.verification_summary
     });
     if (!result.success) {
@@ -98520,15 +99358,10 @@ var OfficerDispositionService = class {
         );
       }
     }
-    const r5 = result.returnRecord;
-    return {
-      return_id: r5.returnId,
-      item_id: r5.itemId,
-      recipient_name: r5.recipientName,
-      verification_summary: r5.verificationSummary,
-      verification_confirmed_at: r5.verificationConfirmedAt instanceof Date ? r5.verificationConfirmedAt.toISOString() : new Date(r5.verificationConfirmedAt).toISOString(),
-      returned_at: r5.returnedAt instanceof Date ? r5.returnedAt.toISOString() : new Date(r5.returnedAt).toISOString()
-    };
+    return mapReturnRecordDto({
+      ...result.returnRecord,
+      returnedBy: { fullName: context.user.fullName }
+    });
   }
   /**
    * B/J.1.2: Distribute item under post policy
@@ -98744,6 +99577,2665 @@ var submissionsRoutes = async (app2) => {
   );
 };
 
+// src/openapi.contract.ts
+var OPENAPI_YAML_CONTRACT = `openapi: 3.0.3\r
+info:\r
+  title: REST API \u2014 UBL Lost and Found\r
+  version: 1.0.0\r
+  description: 'FINAL API contract for CampusFind (UBL Lost and Found). Domain: found items only. Phase 1: Pos Pengajaran. Authentication: Bcrypt + JWT (HS256) server-side verification against Neon PostgreSQL users table (with Neon Auth roadmap for students). App roles: STUDENT and OFFICER. Tagged with (Active - MVP) for deployed endpoints, and (Roadmap - Fase 2) for upcoming student/return workflows.'\r
+servers:\r
+- url: http://localhost:3000/api/v1\r
+  description: Local Fastify development; override in deployed environments\r
+tags:\r
+- name: Public (Active - MVP)\r
+  description: Endpoint publik tanpa autentikasi (Posko kampus, Katalog barang, dan Streaming foto R2)\r
+- name: Auth & Profile (Active - MVP)\r
+  description: Autentikasi petugas posko (Bcrypt verified) dan profil pengguna aktif (JWT HS256)\r
+- name: Uploads R2 (Active - MVP)\r
+  description: Two-Phase upload intent dan verifikasi berkas Cloudflare R2\r
+- name: Officer Operations (Active - MVP)\r
+  description: Operasi pencatatan fisik barang temuan langsung di posko oleh petugas\r
+- name: Student (Roadmap - Fase 2 Mahasiswa)\r
+  description: Endpoint pelaporan mandiri mahasiswa (Direncanakan pada fase pengembangan berikutnya)\r
+- name: Officer Handover & Returns (Roadmap - Fase 2)\r
+  description: Endpoint verifikasi fisik, penyerahan, dan pengembalian barang temuan ke pemilik sah\r
+paths:\r
+  /health:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: Health check & server status\r
+      operationId: GetServerHealth\r
+      responses:\r
+        '200':\r
+          description: Server running ok\r
+          content:\r
+            application/json:\r
+              schema:\r
+                type: object\r
+                properties:\r
+                  status:\r
+                    type: string\r
+                    example: ok\r
+                  timestamp:\r
+                    type: string\r
+                    format: date-time\r
+                  request_id:\r
+                    type: string\r
+  /auth/officer-login:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Login Petugas Posko (Bcrypt verified)\r
+      description: Verifikasi kata sandi petugas menggunakan Bcrypt dan menerbitkan JWT bertanda tangan HMAC-SHA256 (2 jam).\r
+      operationId: OfficerLogin\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              type: object\r
+              required:\r
+              - email\r
+              - password\r
+              properties:\r
+                email:\r
+                  type: string\r
+                  format: email\r
+                  example: lostandfound.budiluhur@gmail.com\r
+                password:\r
+                  type: string\r
+                  example: admin321\r
+      responses:\r
+        '200':\r
+          description: Login berhasil, mengembalikan token JWT dan profil petugas\r
+          content:\r
+            application/json:\r
+              schema:\r
+                type: object\r
+                properties:\r
+                  data:\r
+                    type: object\r
+                    properties:\r
+                      token:\r
+                        type: string\r
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\r
+                      user:\r
+                        $ref: '#/components/schemas/Me'\r
+        '401':\r
+          description: Email atau kata sandi tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: Validasi format gagal\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/student-register/request-otp:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Minta OTP pendaftaran mahasiswa (v1.4.0)\r
+      description: Validasi domain @student.budiluhur.ac.id dan local-part NIM tepat 10 digit, cek duplikat, terapkan cooldown 60 detik, dan kirim kode OTP 6 digit ke email kampus.\r
+      operationId: StudentRegisterRequestOtp\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/StudentRegisterRequestOtpRequest'\r
+      responses:\r
+        '200':\r
+          description: Kode OTP berhasil dikirim dan challenge_token diterbitkan\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/StudentRegisterRequestOtpResponse'\r
+        '400':\r
+          description: Input atau format NIM email kampus tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: Domain email bukan @student.budiluhur.ac.id\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: Email atau NIM mahasiswa sudah terdaftar\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: Cooldown resend OTP 60 detik masih aktif\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '502':\r
+          description: Pengiriman email OTP melalui Resend gagal\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/student-register:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Registrasi akun mahasiswa dengan verifikasi OTP (v1.4.0)\r
+      description: Verifikasi challenge_token dan OTP 6 digit terhadap database, lalu ekstrak NIM 10 digit secara ketat dari email kampus tanpa menerima student_number dari klien.\r
+      operationId: StudentRegister\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/StudentRegisterRequest'\r
+      responses:\r
+        '201':\r
+          description: Akun mahasiswa berhasil dibuat dan token sesi diterbitkan\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/AuthTokenResponse'\r
+        '400':\r
+          description: Input tidak valid, OTP salah, atau challenge_token kedaluwarsa\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: Domain email bukan @student.budiluhur.ac.id\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: Email atau NIM mahasiswa sudah terdaftar\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: Batas percobaan OTP salah terlampaui (maksimal 5x)\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/student-login:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Login Mahasiswa (Bcrypt verified)\r
+      description: Verifikasi email @student.budiluhur.ac.id dan kata sandi mahasiswa menggunakan Bcrypt lalu menerbitkan JWT HS256.\r
+      operationId: StudentLogin\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/StudentLoginRequest'\r
+      responses:\r
+        '200':\r
+          description: Login mahasiswa berhasil\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/AuthTokenResponse'\r
+        '400':\r
+          description: Format input tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: Email atau kata sandi mahasiswa tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: Domain email bukan @student.budiluhur.ac.id\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/forgot-password:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Minta tautan pemulihan kata sandi\r
+      description: Mengirim tautan pemulihan kata sandi berdurasi 30 menit ke email terdaftar melalui Resend.\r
+      operationId: ForgotPassword\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ForgotPasswordRequest'\r
+      responses:\r
+        '200':\r
+          description: Permintaan pemulihan kata sandi diproses\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MessageStatusResponse'\r
+        '400':\r
+          description: Format email tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/reset-password:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Atur ulang kata sandi menggunakan token pemulihan\r
+      description: Memvalidasi token purpose password_reset dan memperbarui kata sandi akun.\r
+      operationId: ResetPassword\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ResetPasswordRequest'\r
+      responses:\r
+        '200':\r
+          description: Kata sandi berhasil diperbarui\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MessageStatusResponse'\r
+        '400':\r
+          description: Token tidak valid/kedaluwarsa atau kata sandi baru tidak memenuhi syarat\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /posts:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: List service posts\r
+      operationId: ListServicePosts\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/PostsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /posts/{post_id}:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: Get service post detail\r
+      operationId: GetServicePostDetail\r
+      parameters:\r
+      - $ref: '#/components/parameters/PostId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/PostResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /items:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: List public found items\r
+      operationId: ListPublicFoundItems\r
+      description: Only status STORED and is_visible true. Filtering precedes sorting and pagination.\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/Q'\r
+      - $ref: '#/components/parameters/Category'\r
+      - $ref: '#/components/parameters/FilterPostId'\r
+      - $ref: '#/components/parameters/ItemSort'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ItemsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /items/{item_id}:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: Get public found item detail\r
+      operationId: GetPublicFoundItemDetail\r
+      description: Hidden or non-STORED item returns 404.\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ItemResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /me:\r
+    get:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Get current CampusFind profile\r
+      operationId: GetCurrentCampusfindProfile\r
+      description: 404 PROFILE_NOT_FOUND when JWT session is valid but user not onboarded. No profile is created\r
+        implicitly.\r
+      security:\r
+      - bearerAuth: []\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MeResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /me/bootstrap:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Create student profile after student signup\r
+      operationId: CreateStudentProfileAfterNeon Auth / JWTSignup\r
+      description: Verified email claim required in JWT. Server derives auth_user_id, email, and strict 10-digit NIM from verified session.\r
+        Always creates STUDENT without overwriting existing accounts; rejects student_number from body. Duplicate user identity\r
+        returns 409 PROFILE_EXISTS.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/BootstrapRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MeResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions:\r
+    post:\r
+      tags:\r
+      - Student (Roadmap - Fase 2 Mahasiswa)\r
+      summary: Submit found item report\r
+      operationId: SubmitFoundItemReport\r
+      description: Student only. One REPORT_PHOTO upload token. Create report and initial history in one transaction.\r
+        Retry may create a second report; client must not auto-retry POST.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/SubmissionCreateRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions/me:\r
+    get:\r
+      tags:\r
+      - Student (Roadmap - Fase 2 Mahasiswa)\r
+      summary: List own found item reports\r
+      operationId: ListOwnFoundItemReports\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/SubmissionStatus'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions/{submission_id}:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Get authorized found report detail\r
+      operationId: GetAuthorizedFoundReportDetail\r
+      description: Only reporter or assigned officer of target post. Unauthorized resource responds 404 to prevent\r
+        enumeration.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionDetailResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions/{submission_id}/cancel:\r
+    post:\r
+      tags:\r
+      - Student (Roadmap - Fase 2 Mahasiswa)\r
+      summary: Cancel own pending report\r
+      operationId: CancelOwnPendingReport\r
+      description: Only PENDING_RECEIPT. History reason required; status and history transactionally updated.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReasonRequest'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/submissions:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: List reports for assigned post\r
+      operationId: ListReportsForAssignedPost\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/SubmissionStatus'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/submissions/{submission_id}/receive:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Receive found report and create inventory\r
+      operationId: ReceiveFoundReportAndCreateInventory\r
+      description: Physical receipt required; assigned post only; pending report only. Creates item and photos,\r
+        updates report and history atomically. First item photo token becomes primary. Concurrent duplicate returns\r
+        409.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReceiveRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/submissions/{submission_id}/reject:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Reject pending found report\r
+      operationId: RejectPendingFoundReport\r
+      description: Assigned post and PENDING_RECEIPT only. Reason nonblank, status and history atomic.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReasonRequest'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/inventory:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: List inventory for assigned post\r
+      operationId: ListInventoryForAssignedPost\r
+      description: Includes hidden and non-STORED items; scoped to officer post.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/ItemStatusFilter'\r
+      - $ref: '#/components/parameters/Q'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryListResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/inventory/overdue:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: List overdue stored inventory\r
+      operationId: ListOverdueStoredInventory\r
+      description: Compute overdue from received_at and storage_limit_days, only STORED; no automatic mutation.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/OverdueListResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2) Operations (Active - MVP)\r
+      summary: Record found item directly\r
+      operationId: RecordFoundItemDirectly\r
+      description: Assigned post inferred from DB; exactly 1 ITEM_PHOTO token; single primary photo. No client-controlled post\r
+        ID.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ItemCreateRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Get authorized inventory detail\r
+      operationId: GetAuthorizedInventoryDetail\r
+      description: Includes private_verification_notes only for assigned post officer.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}/visibility:\r
+    patch:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Set stored item catalog visibility\r
+      operationId: SetStoredItemCatalogVisibility\r
+      description: Only STORED items; changing visibility does not change physical status.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/VisibilityRequest'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}/return:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Return item to verified owner\r
+      operationId: ReturnItemToVerifiedOwner\r
+      description: In-person ownership verification. Creates one item_returns and updates item status RETURNED_TO_OWNER,\r
+        is_visible false atomically. Duplicate/concurrent returns 409. No identity photo required.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReturnRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ReturnResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}/distribute:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Distribute item under post policy\r
+      operationId: DistributeItemUnderPostPolicy\r
+      description: Only STORED; manually sets DISTRIBUTED and is_visible false atomically. No item_returns row.\r
+        No request body.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /uploads/intents:\r
+    post:\r
+      tags:\r
+      - Uploads R2 (Active - MVP)\r
+      summary: Request R2 image upload intent\r
+      operationId: RequestR2ImageUploadIntent\r
+      description: Only STUDENT REPORT_PHOTO or OFFICER ITEM_PHOTO. POST_PHOTO is admin-only offline operation,\r
+        not public API. Max 5 MiB; JPEG, PNG, WebP. Presigned PUT URL expires in 5 minutes.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/UploadIntentRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/UploadIntentResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /uploads/{upload_id}/finalize:\r
+    post:\r
+      tags:\r
+      - Uploads R2 (Active - MVP)\r
+      summary: Finalize verified R2 image upload\r
+      operationId: FinalizeVerifiedR2ImageUpload\r
+      description: Server verifies signed upload intent ownership, object existence, size, MIME and actual content.\r
+        Issues user-bound purpose-bound signed token valid 15 minutes; token can be consumed once through unique\r
+        storage_path constraints in DB.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/UploadId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/UploadFinalizedResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+components:\r
+  securitySchemes:\r
+    bearerAuth:\r
+      type: http\r
+      scheme: bearer\r
+      bearerFormat: JWT\r
+      description: Verified JWT session token (HS256) issued on officer login; user role and assigned service post resolved server-side from Neon PostgreSQL.\r
+  parameters:\r
+    PostId:\r
+      name: post_id\r
+      in: path\r
+      required: true\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+    ItemId:\r
+      name: item_id\r
+      in: path\r
+      required: true\r
+      schema: &id001\r
+        type: string\r
+        format: uuid\r
+    SubmissionId:\r
+      name: submission_id\r
+      in: path\r
+      required: true\r
+      schema: *id001\r
+    UploadId:\r
+      name: upload_id\r
+      in: path\r
+      required: true\r
+      schema: *id001\r
+    Page:\r
+      name: page\r
+      in: query\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+        default: 1\r
+    Limit:\r
+      name: limit\r
+      in: query\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+        maximum: 10\r
+        default: 10\r
+    Q:\r
+      name: q\r
+      in: query\r
+      schema:\r
+        type: string\r
+        maxLength: 120\r
+    Category:\r
+      name: category\r
+      in: query\r
+      schema:\r
+        type: string\r
+        maxLength: 80\r
+    FilterPostId:\r
+      name: post_id\r
+      in: query\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+    ItemSort:\r
+      name: sort\r
+      in: query\r
+      schema:\r
+        type: string\r
+        enum:\r
+        - received_at_desc\r
+        - received_at_asc\r
+        - item_name_asc\r
+        description: Sort stabil; item_id sebagai tie-breaker\r
+    SubmissionStatus:\r
+      name: status\r
+      in: query\r
+      schema:\r
+        $ref: '#/components/schemas/ReportStatus'\r
+    ItemStatusFilter:\r
+      name: status\r
+      in: query\r
+      schema:\r
+        $ref: '#/components/schemas/ItemStatus'\r
+  schemas:\r
+    UserRole:\r
+      type: string\r
+      enum:\r
+      - STUDENT\r
+      - OFFICER\r
+    ReportStatus:\r
+      type: string\r
+      enum:\r
+      - PENDING_RECEIPT\r
+      - RECEIVED\r
+      - REJECTED\r
+      - CANCELLED\r
+    ItemStatus:\r
+      type: string\r
+      enum:\r
+      - STORED\r
+      - RETURNED_TO_OWNER\r
+      - DISTRIBUTED\r
+    ServicePostPhoto:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        photo_id: *id001\r
+        position:\r
+          type: integer\r
+          minimum: 1\r
+          maximum: 3\r
+        is_cover:\r
+          type: boolean\r
+        url:\r
+          type: string\r
+          format: uri\r
+        expires_at: &id002\r
+          type: string\r
+          format: date-time\r
+      required:\r
+      - photo_id\r
+      - position\r
+      - is_cover\r
+      - url\r
+      - expires_at\r
+    ServicePostShort:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        post_id:\r
+          type: integer\r
+        name:\r
+          type: string\r
+      required:\r
+      - post_id\r
+      - name\r
+    ServicePostPublic:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        post_id:\r
+          type: integer\r
+        name:\r
+          type: string\r
+        location_description:\r
+          type: string\r
+          nullable: true\r
+        opening_hours:\r
+          type: string\r
+          nullable: true\r
+        directions:\r
+          type: string\r
+          nullable: true\r
+        photos:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/ServicePostPhoto'\r
+          maxItems: 3\r
+      required:\r
+      - post_id\r
+      - name\r
+      - location_description\r
+      - opening_hours\r
+      - directions\r
+      - photos\r
+    ItemPhoto:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        photo_id: *id001\r
+        url:\r
+          type: string\r
+          format: uri\r
+        expires_at: *id002\r
+        is_primary:\r
+          type: boolean\r
+      required:\r
+      - photo_id\r
+      - url\r
+      - expires_at\r
+      - is_primary\r
+    FoundItemPublic:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_id: *id001\r
+        inventory_code: &id003\r
+          type: string\r
+        item_name: &id004\r
+          type: string\r
+        category: &id005\r
+          type: string\r
+        public_description: &id006\r
+          type: string\r
+        found_location: &id007\r
+          type: string\r
+          nullable: true\r
+        found_on: &id008\r
+          type: string\r
+          format: date\r
+          nullable: true\r
+        received_at: *id002\r
+        post: &id009\r
+          $ref: '#/components/schemas/ServicePostShort'\r
+        photos: &id010\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/ItemPhoto'\r
+          minItems: 1\r
+          maxItems: 1\r
+      required:\r
+      - item_id\r
+      - inventory_code\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - received_at\r
+      - post\r
+      - photos\r
+    FoundSubmission:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        submission_id: *id001\r
+        report_code: &id011\r
+          type: string\r
+        target_post_id: &id012\r
+          type: integer\r
+        item_name: &id013\r
+          type: string\r
+        category: &id014\r
+          type: string\r
+        public_description: &id015\r
+          type: string\r
+        found_location: &id016\r
+          type: string\r
+        found_on: &id017\r
+          type: string\r
+          format: date\r
+        status: &id018\r
+          $ref: '#/components/schemas/ReportStatus'\r
+        submitted_at: *id002\r
+        report_photo_url: &id019\r
+          type: string\r
+          format: uri\r
+        report_photo_expires_at: *id002\r
+      required:\r
+      - submission_id\r
+      - report_code\r
+      - target_post_id\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - status\r
+      - submitted_at\r
+      - report_photo_url\r
+      - report_photo_expires_at\r
+    InventoryOfficer:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_id: *id001\r
+        inventory_code: *id003\r
+        item_name: *id004\r
+        category: *id005\r
+        public_description: *id006\r
+        found_location: *id007\r
+        found_on: *id008\r
+        received_at: *id002\r
+        post: *id009\r
+        photos: *id010\r
+        status: &id020\r
+          $ref: '#/components/schemas/ItemStatus'\r
+        is_visible: &id021\r
+          type: boolean\r
+        storage_post_id: &id022\r
+          type: integer\r
+        source_submission_id: &id023\r
+          type: string\r
+          format: uuid\r
+          nullable: true\r
+        private_verification_notes: &id024\r
+          type: string\r
+          nullable: true\r
+      required:\r
+      - item_id\r
+      - inventory_code\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - received_at\r
+      - post\r
+      - photos\r
+      - status\r
+      - is_visible\r
+      - storage_post_id\r
+      - source_submission_id\r
+      - private_verification_notes\r
+    Me:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        user_id: *id001\r
+        full_name:\r
+          type: string\r
+        email:\r
+          type: string\r
+          format: email\r
+        student_number:\r
+          type: string\r
+          nullable: true\r
+        role:\r
+          $ref: '#/components/schemas/UserRole'\r
+        assigned_post_id:\r
+          type: integer\r
+          nullable: true\r
+        nim_verification_status:\r
+          type: string\r
+          enum:\r
+          - NOT_VERIFIED\r
+      required:\r
+      - user_id\r
+      - full_name\r
+      - email\r
+      - student_number\r
+      - role\r
+      - assigned_post_id\r
+      - nim_verification_status\r
+    StatusHistory:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        history_id: *id001\r
+        from_status:\r
+          $ref: '#/components/schemas/ReportStatus'\r
+          nullable: true\r
+        to_status:\r
+          $ref: '#/components/schemas/ReportStatus'\r
+        reason:\r
+          type: string\r
+          nullable: true\r
+        changed_at: *id002\r
+      required:\r
+      - history_id\r
+      - from_status\r
+      - to_status\r
+      - reason\r
+      - changed_at\r
+    ApiError:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        error:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            code:\r
+              type: string\r
+            message:\r
+              type: string\r
+            request_id:\r
+              type: string\r
+          required:\r
+          - code\r
+          - message\r
+          - request_id\r
+      required:\r
+      - error\r
+    PaginationMeta:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        page:\r
+          type: integer\r
+          minimum: 1\r
+        limit:\r
+          type: integer\r
+          minimum: 1\r
+        total:\r
+          type: integer\r
+          minimum: 0\r
+        total_pages:\r
+          type: integer\r
+          minimum: 0\r
+      required:\r
+      - page\r
+      - limit\r
+      - total\r
+      - total_pages\r
+    ReportWithHistory:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        submission_id: *id001\r
+        report_code: *id011\r
+        target_post_id: *id012\r
+        item_name: *id013\r
+        category: *id014\r
+        public_description: *id015\r
+        found_location: *id016\r
+        found_on: *id017\r
+        status: *id018\r
+        submitted_at: *id002\r
+        report_photo_url: *id019\r
+        report_photo_expires_at: *id002\r
+        history:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/StatusHistory'\r
+      required:\r
+      - submission_id\r
+      - report_code\r
+      - target_post_id\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - status\r
+      - submitted_at\r
+      - report_photo_url\r
+      - report_photo_expires_at\r
+      - history\r
+    OverdueInventory:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_id: *id001\r
+        inventory_code: *id003\r
+        item_name: *id004\r
+        category: *id005\r
+        public_description: *id006\r
+        found_location: *id007\r
+        found_on: *id008\r
+        received_at: *id002\r
+        post: *id009\r
+        photos: *id010\r
+        status: *id020\r
+        is_visible: *id021\r
+        storage_post_id: *id022\r
+        source_submission_id: *id023\r
+        private_verification_notes: *id024\r
+        storage_limit_days:\r
+          type: integer\r
+          minimum: 1\r
+        storage_age_days:\r
+          type: integer\r
+          minimum: 0\r
+        overdue_days:\r
+          type: integer\r
+          minimum: 1\r
+      required:\r
+      - item_id\r
+      - inventory_code\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - received_at\r
+      - post\r
+      - photos\r
+      - status\r
+      - is_visible\r
+      - storage_post_id\r
+      - source_submission_id\r
+      - private_verification_notes\r
+      - storage_limit_days\r
+      - storage_age_days\r
+      - overdue_days\r
+    ReturnRecord:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        return_id: *id001\r
+        item_id: *id001\r
+        recipient_name:\r
+          type: string\r
+        verification_summary:\r
+          type: string\r
+        verification_confirmed_at: *id002\r
+        returned_at: *id002\r
+      required:\r
+      - return_id\r
+      - item_id\r
+      - recipient_name\r
+      - verification_summary\r
+      - verification_confirmed_at\r
+      - returned_at\r
+    UploadIntent:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        upload_id: *id001\r
+        put_url:\r
+          type: string\r
+          format: uri\r
+        expires_at: *id002\r
+        required_headers:\r
+          type: object\r
+          additionalProperties:\r
+            type: string\r
+      required:\r
+      - upload_id\r
+      - put_url\r
+      - expires_at\r
+      - required_headers\r
+    UploadFinalized:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        upload_token:\r
+          type: string\r
+        purpose:\r
+          type: string\r
+          enum:\r
+          - REPORT_PHOTO\r
+          - ITEM_PHOTO\r
+        expires_at: *id002\r
+      required:\r
+      - upload_token\r
+      - purpose\r
+      - expires_at\r
+    BootstrapRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        full_name:\r
+          type: string\r
+          maxLength: 120\r
+          minLength: 1\r
+      required:\r
+      - full_name\r
+    SubmissionCreateRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        target_post_id:\r
+          type: integer\r
+        item_name:\r
+          type: string\r
+          maxLength: 150\r
+          minLength: 1\r
+        category:\r
+          type: string\r
+          maxLength: 80\r
+          minLength: 1\r
+        public_description: &id025\r
+          type: string\r
+          minLength: 1\r
+        found_location: *id025\r
+        found_on: *id017\r
+        report_photo_upload_token: *id025\r
+      required:\r
+      - target_post_id\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - report_photo_upload_token\r
+    ReasonRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        reason:\r
+          type: string\r
+          maxLength: 2000\r
+          minLength: 1\r
+      required:\r
+      - reason\r
+    ItemCreateRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_name:\r
+          type: string\r
+          maxLength: 150\r
+          minLength: 1\r
+        category:\r
+          type: string\r
+          maxLength: 80\r
+          minLength: 1\r
+        public_description: *id025\r
+        private_verification_notes:\r
+          type: string\r
+          nullable: true\r
+        found_location:\r
+          type: string\r
+          nullable: true\r
+        found_on:\r
+          type: string\r
+          format: date\r
+          nullable: true\r
+        item_photo_upload_tokens:\r
+          type: array\r
+          items: *id025\r
+          minItems: 1\r
+          maxItems: 1\r
+      required:\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - item_photo_upload_tokens\r
+    ReceiveRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        public_description: *id025\r
+        private_verification_notes:\r
+          type: string\r
+          nullable: true\r
+        item_photo_upload_tokens:\r
+          type: array\r
+          items: *id025\r
+          minItems: 1\r
+          maxItems: 1\r
+      required:\r
+      - public_description\r
+      - item_photo_upload_tokens\r
+    VisibilityRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        is_visible:\r
+          type: boolean\r
+      required:\r
+      - is_visible\r
+    ReturnRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        recipient_name:\r
+          type: string\r
+          maxLength: 120\r
+          minLength: 1\r
+        verification_summary:\r
+          type: string\r
+          maxLength: 5000\r
+          minLength: 1\r
+      required:\r
+      - recipient_name\r
+      - verification_summary\r
+    UploadIntentRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        purpose:\r
+          type: string\r
+          enum:\r
+          - REPORT_PHOTO\r
+          - ITEM_PHOTO\r
+        content_type:\r
+          type: string\r
+          enum:\r
+          - image/jpeg\r
+          - image/png\r
+          - image/webp\r
+        size_bytes:\r
+          type: integer\r
+          minimum: 1\r
+          maximum: 5242880\r
+      required:\r
+      - purpose\r
+      - content_type\r
+      - size_bytes\r
+    MeResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/Me'\r
+      required:\r
+      - data\r
+    PostResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/ServicePostPublic'\r
+      required:\r
+      - data\r
+    ItemResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/FoundItemPublic'\r
+      required:\r
+      - data\r
+    SubmissionResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/FoundSubmission'\r
+      required:\r
+      - data\r
+    SubmissionDetailResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/ReportWithHistory'\r
+      required:\r
+      - data\r
+    InventoryResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/InventoryOfficer'\r
+      required:\r
+      - data\r
+    OverdueResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/OverdueInventory'\r
+      required:\r
+      - data\r
+    ReturnResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/ReturnRecord'\r
+      required:\r
+      - data\r
+    UploadIntentResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/UploadIntent'\r
+      required:\r
+      - data\r
+    UploadFinalizedResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/UploadFinalized'\r
+      required:\r
+      - data\r
+    PostsResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/ServicePostPublic'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    ItemsResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/FoundItemPublic'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    SubmissionsResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/FoundSubmission'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    InventoryListResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/InventoryOfficer'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    OverdueListResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/OverdueInventory'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    StudentRegisterRequestOtpRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        full_name:\r
+          type: string\r
+          minLength: 2\r
+          maxLength: 120\r
+        email:\r
+          type: string\r
+          format: email\r
+          example: 2411502194@student.budiluhur.ac.id\r
+        password:\r
+          type: string\r
+          minLength: 8\r
+      required:\r
+      - full_name\r
+      - email\r
+      - password\r
+    StudentRegisterRequestOtpResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            challenge_token:\r
+              type: string\r
+            expires_in:\r
+              type: integer\r
+              example: 600\r
+            extracted_nim:\r
+              type: string\r
+              example: "2411502194"\r
+            message:\r
+              type: string\r
+          required:\r
+          - challenge_token\r
+          - expires_in\r
+          - extracted_nim\r
+          - message\r
+      required:\r
+      - data\r
+    StudentRegisterRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        full_name:\r
+          type: string\r
+          minLength: 2\r
+          maxLength: 120\r
+        email:\r
+          type: string\r
+          format: email\r
+          example: 2411502194@student.budiluhur.ac.id\r
+        password:\r
+          type: string\r
+          minLength: 8\r
+        otp:\r
+          type: string\r
+          pattern: ^\\d{6}$\r
+          example: "123456"\r
+        challenge_token:\r
+          type: string\r
+          minLength: 20\r
+      required:\r
+      - full_name\r
+      - email\r
+      - password\r
+      - otp\r
+      - challenge_token\r
+    StudentLoginRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        email:\r
+          type: string\r
+          format: email\r
+          example: 2411502194@student.budiluhur.ac.id\r
+        password:\r
+          type: string\r
+          minLength: 1\r
+      required:\r
+      - email\r
+      - password\r
+    AuthTokenResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            token:\r
+              type: string\r
+            user:\r
+              $ref: '#/components/schemas/Me'\r
+          required:\r
+          - token\r
+          - user\r
+      required:\r
+      - data\r
+    ForgotPasswordRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        email:\r
+          type: string\r
+          format: email\r
+      required:\r
+      - email\r
+    ResetPasswordRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        token:\r
+          type: string\r
+          minLength: 10\r
+        new_password:\r
+          type: string\r
+          minLength: 8\r
+      required:\r
+      - token\r
+      - new_password\r
+    MessageStatusResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            success:\r
+              type: boolean\r
+            message:\r
+              type: string\r
+          required:\r
+          - success\r
+          - message\r
+      required:\r
+      - data\r
+`;
+
 // src/app.ts
 function buildApp() {
   const app2 = (0, import_fastify.default)({
@@ -98757,7 +102249,7 @@ function buildApp() {
         "*.token"
       ]
     },
-    genReqId: (req) => req.headers["x-request-id"] || (0, import_crypto8.randomUUID)(),
+    genReqId: (req) => req.headers["x-request-id"] || (0, import_crypto9.randomUUID)(),
     requestIdHeader: "x-request-id"
   });
   app2.addContentTypeParser(
@@ -98806,16 +102298,8 @@ function buildApp() {
     });
   });
   app2.get("/openapi.yaml", async (_request, reply) => {
-    const possiblePaths = [
-      import_path.default.resolve(process.cwd(), ".agent-internal/contracts/openapi-v1.0.yaml"),
-      import_path.default.resolve(process.cwd(), "apps/backend/.agent-internal/contracts/openapi-v1.0.yaml")
-    ];
-    const yamlPath = possiblePaths.find((p4) => import_fs.default.existsSync(p4));
-    if (!yamlPath) {
-      return reply.status(404).send({ error: "OpenAPI contract not found" });
-    }
     reply.header("Content-Type", "text/yaml; charset=utf-8");
-    return reply.send(import_fs.default.createReadStream(yamlPath));
+    return reply.send(OPENAPI_YAML_CONTRACT);
   });
   app2.get("/docs", async (_request, reply) => {
     reply.header("Content-Type", "text/html; charset=utf-8");
@@ -98848,6 +102332,8 @@ function buildApp() {
   });
   const healthHandler = async (request) => ({
     status: "ok",
+    version: APP_VERSION,
+    commit: getDeployCommit(),
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     request_id: request.id
   });
@@ -98906,6 +102392,8 @@ async function handler(req, res) {
       res.end(
         JSON.stringify({
           status: "ok",
+          version: APP_VERSION,
+          commit: getDeployCommit(),
           probe: "handler_reached",
           url: req.url,
           timestamp: (/* @__PURE__ */ new Date()).toISOString()

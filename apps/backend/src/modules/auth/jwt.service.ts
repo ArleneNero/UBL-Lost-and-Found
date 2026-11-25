@@ -1,18 +1,29 @@
 import crypto from "crypto";
-import { env } from "../../config/env.js";
+import { resolveRuntimeAuthSecret } from "../../config/env.js";
 import { TokenPayload } from "./auth.types.js";
+
+export interface CreateTokenPayload {
+  sub: string;
+  email?: string;
+  name?: string;
+  purpose?: string;
+}
 
 export class JwtService {
   /**
    * Helper to sign a deterministic JWT with HMAC-SHA256 (HS256).
    */
   createToken(
-    payload: { sub: string; email?: string; name?: string },
+    payload: CreateTokenPayload,
     expiresInSeconds: number = 2 * 3600 // 2 hours (7,200 seconds)
   ): string {
+    const secret = resolveRuntimeAuthSecret();
     const now = Math.floor(Date.now() / 1000);
     const fullPayload: TokenPayload = {
-      ...payload,
+      sub: payload.sub,
+      ...(payload.email !== undefined ? { email: payload.email } : {}),
+      ...(payload.name !== undefined ? { name: payload.name } : {}),
+      ...(payload.purpose !== undefined ? { purpose: payload.purpose } : {}),
       iat: now,
       exp: now + expiresInSeconds,
       iss: "ubl-lostnfound-auth",
@@ -22,7 +33,7 @@ export class JwtService {
     const headerB64 = Buffer.from(JSON.stringify(header)).toString("base64url");
     const payloadB64 = Buffer.from(JSON.stringify(fullPayload)).toString("base64url");
     const signature = crypto
-      .createHmac("sha256", env.AUTH_SECRET)
+      .createHmac("sha256", secret)
       .update(`${headerB64}.${payloadB64}`)
       .digest("base64url");
 
@@ -34,6 +45,7 @@ export class JwtService {
    * Returns TokenPayload if valid, or null if tampered, expired, or malformed.
    */
   verifyToken(token: string): TokenPayload | null {
+    const secret = resolveRuntimeAuthSecret();
     try {
       const parts = token.split(".");
       if (parts.length !== 3) {
@@ -41,8 +53,12 @@ export class JwtService {
       }
 
       const [headerB64, payloadB64, signatureB64] = parts;
+      if (!headerB64 || !payloadB64 || !signatureB64) {
+        return null;
+      }
+
       const expectedSignature = crypto
-        .createHmac("sha256", env.AUTH_SECRET)
+        .createHmac("sha256", secret)
         .update(`${headerB64}.${payloadB64}`)
         .digest("base64url");
 
@@ -58,14 +74,14 @@ export class JwtService {
       }
 
       const payloadStr = Buffer.from(payloadB64, "base64url").toString("utf-8");
-      const payload: TokenPayload = JSON.parse(payloadStr);
+      const payload = JSON.parse(payloadStr) as TokenPayload;
 
-      if (!payload.sub) {
+      if (!payload || typeof payload !== "object" || typeof payload.sub !== "string" || !payload.sub) {
         return null;
       }
 
       // Check expiration
-      if (payload.exp && Math.floor(Date.now() / 1000) > payload.exp) {
+      if (typeof payload.exp === "number" && Math.floor(Date.now() / 1000) > payload.exp) {
         return null;
       }
 

@@ -1,15 +1,84 @@
 import { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { authenticate } from "../../middleware/auth.guard.js";
 import { authService } from "./auth.service.js";
+import { env } from "../../config/env.js";
+import { AppError } from "../../utils/errors.js";
 import {
   Me,
   officerLoginSchema,
   bootstrapRequestSchema,
   studentLoginSchema,
+  studentRegisterRequestOtpSchema,
   studentRegisterSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
 } from "./auth.dto.js";
+
+/**
+ * Resolves a trusted frontend origin for password reset links, preventing Origin/Referer header poisoning.
+ */
+function resolveTrustedFrontendOrigin(
+  originHeader?: string,
+  refererHeader?: string
+): string {
+  const fallbackOrigin = (() => {
+    try {
+      return new URL(env.FRONTEND_ORIGIN).origin;
+    } catch {
+      return "https://lostandfound-budiluhur.web.id";
+    }
+  })();
+
+  const allowedOrigins = new Set<string>([
+    fallbackOrigin,
+    "https://lostandfound-budiluhur.web.id",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+  ]);
+
+  for (const candidate of [originHeader, refererHeader]) {
+    if (!candidate) continue;
+    try {
+      const parsedOrigin = new URL(candidate).origin;
+      if (allowedOrigins.has(parsedOrigin)) {
+        return parsedOrigin;
+      }
+    } catch {
+      // Ignore malformed Origin or Referer headers
+    }
+  }
+
+  return fallbackOrigin;
+}
+
+/**
+ * Maps caught route errors into uniform API envelopes without leaking raw exception details on 500s.
+ */
+function handleAuthCatchError(
+  request: FastifyRequest,
+  reply: FastifyReply,
+  err: unknown,
+  logContext: string
+) {
+  if (err instanceof AppError) {
+    return reply.status(err.statusCode).send({
+      error: {
+        code: err.code,
+        message: err.message,
+        request_id: request.id,
+      },
+    });
+  }
+
+  request.log.error(err, logContext);
+  return reply.status(500).send({
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Terjadi kesalahan internal server",
+      request_id: request.id,
+    },
+  });
+}
 
 export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   /**
@@ -30,11 +99,21 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
 
     const token = authHeader.slice(7).trim();
     const payload = authService.verifyToken(token);
-    if (!payload || !payload.sub) {
+    if (!payload || !payload.sub || payload.purpose) {
       return reply.status(401).send({
         error: {
           code: "UNAUTHORIZED",
           message: "Token autentikasi tidak valid atau sudah kedaluwarsa",
+          request_id: request.id,
+        },
+      });
+    }
+
+    if (typeof payload.email !== "string" || payload.email.trim().length === 0) {
+      return reply.status(401).send({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Token tidak memiliki klaim email yang valid",
           request_id: request.id,
         },
       });
@@ -52,12 +131,10 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       });
     }
 
-    const email = payload.email || `${payload.sub}@student.budiluhur.ac.id`;
     const result = await authService.bootstrapStudent(
       payload.sub,
-      email,
-      parseResult.data.full_name,
-      parseResult.data.student_number
+      payload.email,
+      parseResult.data.full_name
     );
 
     if (!result.success) {
@@ -177,23 +254,57 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         data: loginResult.data,
       });
     } catch (err) {
-      request.log.error(err, "Unhandled error during student login");
-      return reply.status(500).send({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            err instanceof Error
-              ? err.message
-              : "Terjadi kesalahan internal saat masuk sebagai mahasiswa",
-          request_id: request.id,
-        },
-      });
+      return handleAuthCatchError(request, reply, err, "Unhandled error during student login");
     }
   };
 
   /**
-   * B/H.1.4: POST /auth/student-register
-   * Server-Side Student Registration
+   * v1.4.0: POST /auth/student-register/request-otp
+   * Validates strict 10-digit NIM campus email and delivers a 6-digit OTP via Resend
+   */
+  const handleStudentRegisterRequestOtp = async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const parseResult = studentRegisterRequestOtpSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parseResult.error.issues[0]?.message || "Input tidak valid",
+            request_id: request.id,
+          },
+        });
+      }
+
+      const { full_name, email, password } = parseResult.data;
+      const otpResult = await authService.requestStudentRegisterOtp(full_name, email, password);
+
+      if (!otpResult.success) {
+        if (otpResult.retryAfter !== undefined) {
+          reply.header("Retry-After", String(otpResult.retryAfter));
+        }
+        return reply.status(otpResult.statusCode || 400).send({
+          error: {
+            code: otpResult.code,
+            message: otpResult.message,
+            request_id: request.id,
+            ...(otpResult.retryAfter !== undefined
+              ? { retry_after: otpResult.retryAfter }
+              : {}),
+          },
+        });
+      }
+
+      return reply.status(200).send({
+        data: otpResult.data,
+      });
+    } catch (err) {
+      return handleAuthCatchError(request, reply, err, "Unhandled error during student OTP request");
+    }
+  };
+
+  /**
+   * B/H.1.4 (v1.4.0): POST /auth/student-register
+   * Server-Side Student Registration with Stateful Signed OTP & Strict Email NIM Extraction
    */
   const handleStudentRegister = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -208,12 +319,13 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         });
       }
 
-      const { full_name, email, password, student_number } = parseResult.data;
+      const { full_name, email, password, otp, challenge_token } = parseResult.data;
       const registerResult = await authService.studentRegister(
         full_name,
         email,
         password,
-        student_number
+        otp,
+        challenge_token
       );
 
       if (!registerResult.success) {
@@ -230,22 +342,19 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
         data: registerResult.data,
       });
     } catch (err) {
-      request.log.error(err, "Unhandled error during student registration");
-      return reply.status(500).send({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message:
-            err instanceof Error
-              ? err.message
-              : "Terjadi kesalahan internal saat registrasi akun mahasiswa",
-          request_id: request.id,
-        },
-      });
+      return handleAuthCatchError(
+        request,
+        reply,
+        err,
+        "Unhandled error during student registration"
+      );
     }
   };
 
   fastify.post("/auth/student-login", handleStudentLogin);
   fastify.post("/student/login", handleStudentLogin);
+  fastify.post("/auth/student-register/request-otp", handleStudentRegisterRequestOtp);
+  fastify.post("/student/register/request-otp", handleStudentRegisterRequestOtp);
   fastify.post("/auth/student-register", handleStudentRegister);
   fastify.post("/student/register", handleStudentRegister);
 
@@ -265,7 +374,10 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
       });
     }
 
-    const origin = (request.headers.origin as string) || (request.headers.referer as string);
+    const origin = resolveTrustedFrontendOrigin(
+      request.headers.origin as string | undefined,
+      request.headers.referer as string | undefined
+    );
     const result = await authService.requestPasswordReset(parseResult.data.email, origin);
 
     return reply.status(200).send({

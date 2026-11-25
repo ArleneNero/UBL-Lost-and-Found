@@ -199,3 +199,24 @@ export interface OfficerLoginResponseDto {
   token: string;
   user: MeDto;
 }
+
+export interface StudentOtpRequestDto {
+  full_name: string;
+  email: string;
+  password: string;
+}
+
+export interface StudentOtpResponseDto {
+  challenge_token: string;
+  expires_in: number;
+  extracted_nim: string;
+  message?: string;
+}
+
+export interface StudentRegisterRequestDto {
+  full_name: string;
+  email: string;
+  password: string;
+  otp: string;
+  challenge_token: string;
+}

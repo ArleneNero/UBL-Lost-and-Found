@@ -15299,10 +15299,10 @@ var require_codegen = __commonJS({
     }
     exports2.and = and2;
     var orCode = mappend(exports2.operators.OR);
-    function or4(...args) {
+    function or3(...args) {
       return args.reduce(orCode);
     }
-    exports2.or = or4;
+    exports2.or = or3;
     function mappend(op2) {
       return (x2, y2) => x2 === code_1.nil ? y2 : y2 === code_1.nil ? x2 : (0, code_1._)`${par(x2)} ${op2} ${par(y2)}`;
     }
@@ -39942,7 +39942,7 @@ var require_main = __commonJS({
     var fs3 = require("fs");
     var path3 = require("path");
     var os = require("os");
-    var crypto4 = require("crypto");
+    var crypto5 = require("crypto");
     var packageJson = require_package2();
     var version2 = packageJson.version;
     var LINE = /(?:^|^)\s*(?:export\s+)?([\w.-]+)(?:\s*=\s*?|:\s+?)(\s*'(?:\\'|[^'])*'|\s*"(?:\\"|[^"])*"|\s*`(?:\\`|[^`])*`|[^#\r\n]+)?\s*(?:#.*)?(?:$|$)/mg;
@@ -40161,7 +40161,7 @@ var require_main = __commonJS({
       const authTag = ciphertext.subarray(-16);
       ciphertext = ciphertext.subarray(12, -16);
       try {
-        const aesgcm = crypto4.createDecipheriv("aes-256-gcm", key, nonce);
+        const aesgcm = crypto5.createDecipheriv("aes-256-gcm", key, nonce);
         aesgcm.setAuthTag(authTag);
         return `${aesgcm.update(ciphertext)}${aesgcm.final()}`;
       } catch (error2) {
@@ -77097,9 +77097,12 @@ module.exports = __toCommonJS(src_exports);
 // src/app.ts
 var import_fastify = __toESM(require_fastify());
 var import_cors = __toESM(require_cors());
-var import_crypto8 = require("crypto");
+var import_crypto9 = require("crypto");
 var import_fs = __toESM(require("fs"));
 var import_path = __toESM(require("path"));
+
+// src/config/env.ts
+var import_crypto = __toESM(require("crypto"));
 
 // node_modules/zod/v3/external.js
 var external_exports = {};
@@ -81144,6 +81147,18 @@ var NEVER = INVALID;
 
 // src/config/env.ts
 var dotenv = __toESM(require_main());
+
+// src/utils/errors.ts
+var AppError = class extends Error {
+  constructor(code, message, statusCode = 400) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.name = "AppError";
+  }
+};
+
+// src/config/env.ts
 dotenv.config();
 var DEFAULT_DATABASE_URL = "postgresql://neondb_owner:npg_PIJp8m3YwdaU@ep-fragrant-glade-a1oh9lfk-pooler.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
 var DEFAULT_DATABASE_URL_UNPOOLED = "postgresql://neondb_owner:npg_PIJp8m3YwdaU@ep-fragrant-glade-a1oh9lfk.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
@@ -81162,7 +81177,7 @@ var envSchema = external_exports.object({
   R2_PUBLIC_URL: external_exports.string().default(
     process.env.R2_PUBLIC_URL || "https://pub-ec2de406cfec4d6ba5d9a2beb58f023a.r2.dev"
   ),
-  AUTH_SECRET: external_exports.string().default("dev-neon-auth-secret-key-min-32-chars-long!"),
+  AUTH_SECRET: external_exports.string().optional().transform((v2) => (v2 || "").trim()),
   NEON_AUTH_BASE_URL: external_exports.string().optional(),
   RESEND_API_KEY: external_exports.string().default(process.env.RESEND_API_KEY || ""),
   RESEND_FROM_EMAIL: external_exports.string().default(
@@ -81171,9 +81186,40 @@ var envSchema = external_exports.object({
 });
 var parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
-  console.warn("WARNING: Environment validation issues detected:", parsed.error.format());
+  throw new Error(
+    `Invalid environment configuration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`
+  );
 }
-var env = parsed.success ? parsed.data : envSchema.parse({});
+var env = parsed.data;
+var ephemeralDevSecret = null;
+var hasLoggedEphemeralWarning = false;
+function resolveRuntimeAuthSecret() {
+  const configured = (process.env.AUTH_SECRET ?? "").trim();
+  const isPlaceholder = /^(dev-neon-auth-secret|changeme|placeholder|default-secret)/i.test(
+    configured
+  );
+  if (configured.length >= 32 && !isPlaceholder) {
+    return configured;
+  }
+  const runtimeNodeEnv = (process.env.NODE_ENV || env.NODE_ENV || "").trim();
+  if (runtimeNodeEnv === "production") {
+    throw new AppError(
+      "SERVER_MISCONFIGURED",
+      "Konfigurasi keamanan server (AUTH_SECRET) belum diatur.",
+      503
+    );
+  }
+  if (!ephemeralDevSecret) {
+    ephemeralDevSecret = import_crypto.default.randomBytes(32).toString("hex");
+  }
+  if (!hasLoggedEphemeralWarning) {
+    hasLoggedEphemeralWarning = true;
+    console.warn(
+      "WARNING: AUTH_SECRET is missing or insecure (< 32 chars). Using an ephemeral random secret for non-production runtime."
+    );
+  }
+  return ephemeralDevSecret;
+}
 
 // src/config/version.ts
 var import_node_fs = __toESM(require("node:fs"));
@@ -81193,7 +81239,7 @@ function resolveFallbackVersion() {
   }
   return "0.0.0";
 }
-var APP_VERSION = "1.3.0".length > 0 ? "1.3.0" : resolveFallbackVersion();
+var APP_VERSION = "1.4.0".length > 0 ? "1.4.0" : resolveFallbackVersion();
 function getDeployCommit() {
   return process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || "local";
 }
@@ -83819,12 +83865,12 @@ var et = I((zh, tr) => {
     keepalives: 1,
     keepalives_idle: 0
   };
-  var Me2 = Xe(), Ga = Me2.getTypeParser(
+  var Me3 = Xe(), Ga = Me3.getTypeParser(
     20,
     "text"
-  ), $a = Me2.getTypeParser(1016, "text");
+  ), $a = Me3.getTypeParser(1016, "text");
   tr.exports.__defineSetter__("parseInt8", function(r5) {
-    Me2.setTypeParser(20, "text", r5 ? Me2.getTypeParser(23, "text") : Ga), Me2.setTypeParser(1016, "text", r5 ? Me2.getTypeParser(1007, "text") : $a);
+    Me3.setTypeParser(20, "text", r5 ? Me3.getTypeParser(23, "text") : Ga), Me3.setTypeParser(1016, "text", r5 ? Me3.getTypeParser(1007, "text") : $a);
   });
 });
 var tt = I((Zh, Ui) => {
@@ -93566,6 +93612,7 @@ __export(schema_exports, {
   itemReturns: () => itemReturns,
   itemReturnsRelations: () => itemReturnsRelations,
   itemStatusEnum: () => itemStatusEnum,
+  otpChallenges: () => otpChallenges,
   reportStatusEnum: () => reportStatusEnum,
   servicePostPhotos: () => servicePostPhotos,
   servicePostPhotosRelations: () => servicePostPhotosRelations,
@@ -93724,6 +93771,27 @@ var itemReturns = pgTable("item_returns", {
   }).defaultNow().notNull(),
   returnedAt: timestamp("returned_at", { withTimezone: true }).defaultNow().notNull()
 });
+
+// src/db/schema/auth.ts
+var otpChallenges = pgTable(
+  "otp_challenges",
+  {
+    challengeId: uuid("challenge_id").primaryKey().defaultRandom(),
+    email: varchar("email", { length: 180 }).notNull(),
+    otpSalt: text("otp_salt").notNull(),
+    otpHash: text("otp_hash").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(5),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    resendAvailableAt: timestamp("resend_available_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    index("idx_otp_challenges_email_created").on(table.email, table.createdAt)
+  ]
+);
 
 // src/db/schema/relations.ts
 var usersRelations = relations(users, ({ many, one }) => ({
@@ -93997,7 +94065,7 @@ var postsRoutes = async (fastify) => {
 };
 
 // src/modules/items/items.service.ts
-var import_crypto = require("crypto");
+var import_crypto2 = require("crypto");
 
 // src/modules/items/items.repository.ts
 var ItemsRepository = class {
@@ -94126,7 +94194,7 @@ var ItemsService = class {
       },
       photos: [
         {
-          photo_id: row.photoId || (0, import_crypto.randomUUID)(),
+          photo_id: row.photoId || (0, import_crypto2.randomUUID)(),
           url: resolved.url,
           expires_at: resolved.expires_at,
           is_primary: true
@@ -94223,7 +94291,7 @@ var itemsRoutes = async (fastify) => {
 };
 
 // node_modules/bcryptjs/index.js
-var import_crypto2 = __toESM(require("crypto"), 1);
+var import_crypto3 = __toESM(require("crypto"), 1);
 var randomFallback = null;
 function randomBytes(len) {
   try {
@@ -94231,7 +94299,7 @@ function randomBytes(len) {
   } catch {
   }
   try {
-    return import_crypto2.default.randomBytes(len);
+    return import_crypto3.default.randomBytes(len);
   } catch {
   }
   if (!randomFallback) {
@@ -95984,18 +96052,22 @@ var bcryptjs_default = {
 };
 
 // src/modules/auth/auth.service.ts
-var import_crypto4 = __toESM(require("crypto"));
+var import_crypto5 = __toESM(require("crypto"));
 
 // src/modules/auth/jwt.service.ts
-var import_crypto3 = __toESM(require("crypto"));
+var import_crypto4 = __toESM(require("crypto"));
 var JwtService = class {
   /**
    * Helper to sign a deterministic JWT with HMAC-SHA256 (HS256).
    */
   createToken(payload, expiresInSeconds = 2 * 3600) {
+    const secret = resolveRuntimeAuthSecret();
     const now = Math.floor(Date.now() / 1e3);
     const fullPayload = {
-      ...payload,
+      sub: payload.sub,
+      ...payload.email !== void 0 ? { email: payload.email } : {},
+      ...payload.name !== void 0 ? { name: payload.name } : {},
+      ...payload.purpose !== void 0 ? { purpose: payload.purpose } : {},
       iat: now,
       exp: now + expiresInSeconds,
       iss: "ubl-lostnfound-auth"
@@ -96003,7 +96075,7 @@ var JwtService = class {
     const header = { alg: "HS256", typ: "JWT" };
     const headerB64 = Buffer.from(JSON.stringify(header)).toString("base64url");
     const payloadB64 = Buffer.from(JSON.stringify(fullPayload)).toString("base64url");
-    const signature = import_crypto3.default.createHmac("sha256", env.AUTH_SECRET).update(`${headerB64}.${payloadB64}`).digest("base64url");
+    const signature = import_crypto4.default.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
     return `${headerB64}.${payloadB64}.${signature}`;
   }
   /**
@@ -96011,27 +96083,31 @@ var JwtService = class {
    * Returns TokenPayload if valid, or null if tampered, expired, or malformed.
    */
   verifyToken(token) {
+    const secret = resolveRuntimeAuthSecret();
     try {
       const parts = token.split(".");
       if (parts.length !== 3) {
         return null;
       }
       const [headerB64, payloadB64, signatureB64] = parts;
-      const expectedSignature = import_crypto3.default.createHmac("sha256", env.AUTH_SECRET).update(`${headerB64}.${payloadB64}`).digest("base64url");
+      if (!headerB64 || !payloadB64 || !signatureB64) {
+        return null;
+      }
+      const expectedSignature = import_crypto4.default.createHmac("sha256", secret).update(`${headerB64}.${payloadB64}`).digest("base64url");
       const sigBuf = Buffer.from(signatureB64);
       const expectedBuf = Buffer.from(expectedSignature);
       if (sigBuf.length !== expectedBuf.length) {
         return null;
       }
-      if (!import_crypto3.default.timingSafeEqual(sigBuf, expectedBuf)) {
+      if (!import_crypto4.default.timingSafeEqual(sigBuf, expectedBuf)) {
         return null;
       }
       const payloadStr = Buffer.from(payloadB64, "base64url").toString("utf-8");
       const payload = JSON.parse(payloadStr);
-      if (!payload.sub) {
+      if (!payload || typeof payload !== "object" || typeof payload.sub !== "string" || !payload.sub) {
         return null;
       }
-      if (payload.exp && Math.floor(Date.now() / 1e3) > payload.exp) {
+      if (typeof payload.exp === "number" && Math.floor(Date.now() / 1e3) > payload.exp) {
         return null;
       }
       return payload;
@@ -96042,21 +96118,100 @@ var JwtService = class {
 };
 var jwtService = new JwtService();
 
+// src/modules/auth/auth.dto.ts
+var STUDENT_EMAIL_DOMAIN = "@student.budiluhur.ac.id";
+var STRICT_STUDENT_NIM_REGEX = /^\d{10}$/;
+var meSchema = external_exports.object({
+  user_id: external_exports.string().uuid(),
+  full_name: external_exports.string(),
+  email: external_exports.string().email(),
+  student_number: external_exports.string().nullable(),
+  role: external_exports.enum(["STUDENT", "OFFICER"]),
+  assigned_post_id: external_exports.number().int().nullable(),
+  nim_verification_status: external_exports.literal("NOT_VERIFIED")
+});
+var meResponseSchema = external_exports.object({
+  data: meSchema
+});
+var officerLoginSchema = external_exports.object({
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(1, "Kata sandi wajib diisi")
+});
+var officerLoginResponseSchema = external_exports.object({
+  data: external_exports.object({
+    token: external_exports.string(),
+    user: meSchema
+  })
+});
+var bootstrapRequestSchema = external_exports.object({
+  full_name: external_exports.string().trim().min(1, "Nama lengkap tidak boleh kosong").max(120, "Nama lengkap maksimal 120 karakter")
+}).strict();
+var studentLoginSchema = external_exports.object({
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(1, "Kata sandi wajib diisi")
+});
+var studentRegisterRequestOtpSchema = external_exports.object({
+  full_name: external_exports.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(120, "Nama lengkap maksimal 120 karakter"),
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(8, "Kata sandi minimal 8 karakter")
+}).strict();
+var studentRegisterSchema = external_exports.object({
+  full_name: external_exports.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(120, "Nama lengkap maksimal 120 karakter"),
+  email: external_exports.string().trim().email("Format email tidak valid"),
+  password: external_exports.string().min(8, "Kata sandi minimal 8 karakter"),
+  otp: external_exports.string().trim().regex(/^\d{6}$/, "Kode OTP harus tepat 6 angka"),
+  challenge_token: external_exports.string().min(20, "Token tantangan OTP tidak valid")
+}).strict();
+var forgotPasswordSchema = external_exports.object({
+  email: external_exports.string().trim().email("Format email tidak valid")
+});
+var resetPasswordSchema = external_exports.object({
+  token: external_exports.string().min(10, "Token pemulihan tidak valid"),
+  new_password: external_exports.string().min(8, "Kata sandi baru minimal 8 karakter")
+});
+
 // src/services/email.service.ts
+function escapeHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 var EmailService = class {
-  async sendPasswordResetEmail(toEmail, resetUrl, fullName) {
+  /**
+   * Dispatches an HTML email through the Resend HTTP API without logging sensitive body contents.
+   */
+  async dispatchResendEmail(toEmail, subject, html) {
+    const apiKey = (env.RESEND_API_KEY || "").trim();
+    if (!apiKey) {
+      console.error("RESEND_API_KEY is not configured; skipping email dispatch.");
+      return false;
+    }
     try {
       const response = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           from: env.RESEND_FROM_EMAIL,
           to: [toEmail],
-          subject: "Atur Ulang Kata Sandi Akun \u2014 UBL LostnFound",
-          html: `
+          subject,
+          html
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("Resend API error:", errorData);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error("Failed to send email via Resend:", err);
+      return false;
+    }
+  }
+  async sendPasswordResetEmail(toEmail, resetUrl, fullName) {
+    const safeName = escapeHtml(fullName);
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -96080,7 +96235,7 @@ var EmailService = class {
       <p class="subtitle">Layanan Barang Temuan Kampus Universitas Budi Luhur</p>
     </div>
     <div class="body">
-      <p>Halo, <strong>${fullName}</strong>!</p>
+      <p>Halo, <strong>${safeName}</strong>!</p>
       <p>Kami menerima permintaan untuk mengatur ulang kata sandi akun mahasiswa Anda. Klik tombol di bawah ini untuk membuat kata sandi baru:</p>
       <div class="btn-container">
         <a href="${resetUrl}" class="btn">Atur Ulang Kata Sandi</a>
@@ -96097,24 +96252,74 @@ var EmailService = class {
   </div>
 </body>
 </html>
-          `
-        })
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("Resend API error:", errorData);
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.error("Failed to send reset email:", err);
-      return false;
-    }
+    `;
+    return this.dispatchResendEmail(
+      toEmail,
+      "Atur Ulang Kata Sandi Akun \u2014 UBL LostnFound",
+      html
+    );
+  }
+  /**
+   * Sends a 6-digit registration verification OTP email to a student's official campus inbox.
+   */
+  async sendRegistrationOtpEmail(toEmail, otpCode, fullName, nim) {
+    const safeName = escapeHtml(fullName);
+    const safeNim = escapeHtml(nim);
+    const safeOtp = escapeHtml(otpCode);
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f6f8fb; margin: 0; padding: 24px; }
+    .card { max-width: 540px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; }
+    .header { background: #0050c8; padding: 28px 24px; text-align: center; color: #ffffff; }
+    .title { font-size: 20px; font-weight: 700; margin: 0; }
+    .subtitle { font-size: 13px; opacity: 0.85; margin-top: 6px; }
+    .body { padding: 32px 28px; color: #1e293b; line-height: 1.6; font-size: 14px; }
+    .nim-badge { display: inline-block; background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 8px; font-size: 13px; font-weight: 600; margin: 8px 0 16px; }
+    .otp-container { text-align: center; margin: 24px 0; }
+    .otp-code { display: inline-block; background-color: #f8fafc; border: 2px dashed #0050c8; color: #0050c8; font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 800; letter-spacing: 8px; padding: 14px 28px; border-radius: 12px; }
+    .footer { padding: 20px 28px; background: #f8fafc; border-top: 1px solid #f1f5f9; font-size: 12px; color: #64748b; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1 class="title">UBL LostnFound</h1>
+      <p class="subtitle">Layanan Barang Temuan Kampus Universitas Budi Luhur</p>
+    </div>
+    <div class="body">
+      <p>Halo, <strong>${safeName}</strong>!</p>
+      <p>Terima kasih telah mendaftar di UBL LostnFound. Gunakan kode verifikasi OTP berikut untuk menyelesaikan pendaftaran akun mahasiswa Anda:</p>
+      <div>
+        <span class="nim-badge">NIM Terdeteksi: ${safeNim}</span>
+      </div>
+      <div class="otp-container">
+        <span class="otp-code">${safeOtp}</span>
+      </div>
+      <p style="font-size: 12px; color: #64748b;">Kode OTP ini hanya berlaku selama <strong>10 menit</strong> dan bersifat rahasia. Jangan bagikan kode ini kepada siapa pun, termasuk pihak yang mengaku sebagai petugas.</p>
+      <p style="font-size: 12px; color: #64748b;">Jika Anda tidak merasa melakukan pendaftaran akun, abaikan email ini dengan aman.</p>
+    </div>
+    <div class="footer">
+      &copy; ${(/* @__PURE__ */ new Date()).getFullYear()} Universitas Budi Luhur \u2014 Pos Pengajaran Terpadu.
+    </div>
+  </div>
+</body>
+</html>
+    `;
+    return this.dispatchResendEmail(
+      toEmail,
+      "Kode OTP Verifikasi Pendaftaran \u2014 UBL LostnFound",
+      html
+    );
   }
 };
 var emailService = new EmailService();
 
 // src/modules/auth/auth.service.ts
+var UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 var AuthService = class {
   /**
    * Helper to sign a deterministic JWT with HMAC-SHA256 (HS256).
@@ -96129,6 +96334,110 @@ var AuthService = class {
    */
   verifyToken(token) {
     return jwtService.verifyToken(token);
+  }
+  /**
+   * Strictly validates campus student email domain and extracts exact 10-digit NIM from local-part.
+   */
+  extractStrictStudentNim(email) {
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    if (!normalizedEmail.endsWith(STUDENT_EMAIL_DOMAIN)) {
+      return {
+        valid: false,
+        code: "INVALID_STUDENT_DOMAIN",
+        message: "Hanya email resmi mahasiswa (@student.budiluhur.ac.id) yang diizinkan untuk akun mahasiswa",
+        statusCode: 403
+      };
+    }
+    const localPart = normalizedEmail.slice(
+      0,
+      normalizedEmail.length - STUDENT_EMAIL_DOMAIN.length
+    );
+    if (!STRICT_STUDENT_NIM_REGEX.test(localPart)) {
+      const message = /^\d+$/.test(localPart) ? `NIM pada email kampus harus tepat 10 angka (terdeteksi ${localPart.length} angka). Contoh: 2411502194@student.budiluhur.ac.id` : "Bagian sebelum @ pada email kampus harus berupa tepat 10 angka NIM tanpa huruf atau simbol. Contoh: 2411502194@student.budiluhur.ac.id";
+      return {
+        valid: false,
+        code: "INVALID_STUDENT_NIM",
+        message,
+        statusCode: 400
+      };
+    }
+    return {
+      valid: true,
+      normalizedEmail,
+      nim: localPart
+    };
+  }
+  /**
+   * Computes a deterministic HMAC-SHA256 digest binding an OTP code to challengeId, email, and per-challenge salt.
+   */
+  computeOtpHmac(email, otp, challengeId, salt) {
+    return import_crypto5.default.createHmac("sha256", resolveRuntimeAuthSecret()).update(`${challengeId}:${email}:${otp}:${salt}`).digest("hex");
+  }
+  /**
+   * Maps PostgreSQL unique constraint violation (23505) to deterministic 409 API errors.
+   */
+  mapPgUniqueViolation(err) {
+    const candidate = err;
+    const code = candidate?.code ?? candidate?.cause?.code;
+    if (code !== "23505") {
+      return null;
+    }
+    const constraint = (candidate?.constraint ?? candidate?.cause?.constraint ?? "").toLowerCase();
+    const detail = (candidate?.detail ?? candidate?.cause?.detail ?? "").toLowerCase();
+    if (constraint.includes("student_number") || detail.includes("student_number")) {
+      return {
+        success: false,
+        code: "STUDENT_NUMBER_EXISTS",
+        message: "NIM mahasiswa sudah terdaftar",
+        statusCode: 409
+      };
+    }
+    return {
+      success: false,
+      code: "EMAIL_EXISTS",
+      message: "Email mahasiswa sudah terdaftar",
+      statusCode: 409
+    };
+  }
+  /**
+   * Checks whether email or NIM already belongs to another user record in a single query.
+   */
+  async findDuplicateStudent(normalizedEmail, nim, excludeAuthUserId) {
+    const matches = await db.query.users.findMany({
+      where: or2(eq(users.email, normalizedEmail), eq(users.studentNumber, nim))
+    });
+    const filtered = excludeAuthUserId ? matches.filter((u) => u.authUserId !== excludeAuthUserId) : matches;
+    if (filtered.some((u) => u.email === normalizedEmail)) {
+      return {
+        success: false,
+        code: "EMAIL_EXISTS",
+        message: "Email mahasiswa sudah terdaftar",
+        statusCode: 409
+      };
+    }
+    if (filtered.some((u) => u.studentNumber === nim)) {
+      return {
+        success: false,
+        code: "STUDENT_NUMBER_EXISTS",
+        message: "NIM mahasiswa sudah terdaftar",
+        statusCode: 409
+      };
+    }
+    return null;
+  }
+  /**
+   * Maps a student database row into the canonical OpenAPI Me DTO.
+   */
+  toStudentMe(user) {
+    return {
+      user_id: user.userId,
+      full_name: user.fullName,
+      email: user.email,
+      student_number: user.studentNumber,
+      role: user.role,
+      assigned_post_id: null,
+      nim_verification_status: "NOT_VERIFIED"
+    };
   }
   /**
    * B/D.1.1: Resolves local user from Neon PostgreSQL by auth_user_id (Never trusts role from client)
@@ -96217,23 +96526,32 @@ var AuthService = class {
   /**
    * B/H.1.0: POST /me/bootstrap
    * Creates a student profile after verified email authentication.
-   * Derives authUserId and email strictly from verified session.
-   * Returns 409 PROFILE_EXISTS if user already has an active student profile.
+   * Derives authUserId, email, and strict 10-digit NIM strictly from verified session.
+   * Never overwrites existing user accounts or roles.
    */
-  async bootstrapStudent(authUserId, email, fullName, studentNumber) {
-    const normalizedEmail = (email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@student.budiluhur.ac.id")) {
+  async bootstrapStudent(authUserId, email, fullName) {
+    const nimResult = this.extractStrictStudentNim(email);
+    if (!nimResult.valid) {
       return {
         success: false,
-        code: "INVALID_STUDENT_DOMAIN",
-        message: "Hanya email resmi mahasiswa (@student.budiluhur.ac.id) yang diizinkan untuk akun mahasiswa",
-        statusCode: 403
+        code: nimResult.code,
+        message: nimResult.message,
+        statusCode: nimResult.statusCode
       };
     }
+    const { normalizedEmail, nim } = nimResult;
     const existing = await db.query.users.findFirst({
       where: eq(users.authUserId, authUserId)
     });
-    if (existing && existing.studentNumber) {
+    if (existing) {
+      if (existing.role !== "STUDENT") {
+        return {
+          success: false,
+          code: "PROFILE_EXISTS",
+          message: "Akun sudah memiliki profil terdaftar",
+          statusCode: 403
+        };
+      }
       return {
         success: false,
         code: "PROFILE_EXISTS",
@@ -96241,37 +96559,29 @@ var AuthService = class {
         statusCode: 409
       };
     }
-    let user;
-    if (existing) {
-      const [updated] = await db.update(users).set({
-        fullName,
-        studentNumber,
-        role: "STUDENT"
-      }).where(eq(users.userId, existing.userId)).returning();
-      user = updated;
-    } else {
+    const duplicate = await this.findDuplicateStudent(normalizedEmail, nim, authUserId);
+    if (duplicate) {
+      return duplicate;
+    }
+    try {
       const [created] = await db.insert(users).values({
         authUserId,
-        email,
-        fullName,
-        studentNumber,
+        email: normalizedEmail,
+        fullName: fullName.trim(),
+        studentNumber: nim,
         role: "STUDENT"
       }).returning();
-      user = created;
+      return {
+        success: true,
+        data: this.toStudentMe(created)
+      };
+    } catch (err) {
+      const uniqueErr = this.mapPgUniqueViolation(err);
+      if (uniqueErr) {
+        return uniqueErr;
+      }
+      throw err;
     }
-    const meData = {
-      user_id: user.userId,
-      full_name: user.fullName,
-      email: user.email,
-      student_number: user.studentNumber,
-      role: user.role,
-      assigned_post_id: null,
-      nim_verification_status: "NOT_VERIFIED"
-    };
-    return {
-      success: true,
-      data: meData
-    };
   }
   /**
    * Student Login: Zero-Trust Server-Side Credential & Domain Validation
@@ -96282,7 +96592,7 @@ var AuthService = class {
    */
   async studentLogin(email, password) {
     const normalizedEmail = (email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@student.budiluhur.ac.id")) {
+    if (!normalizedEmail.endsWith(STUDENT_EMAIL_DOMAIN)) {
       return {
         success: false,
         code: "INVALID_STUDENT_DOMAIN",
@@ -96315,94 +96625,268 @@ var AuthService = class {
       email: user.email,
       name: user.fullName
     });
-    const studentProfile = {
-      user_id: user.userId,
-      full_name: user.fullName,
-      email: user.email,
-      student_number: user.studentNumber,
-      role: user.role,
-      assigned_post_id: null,
-      nim_verification_status: "NOT_VERIFIED"
-    };
     return {
       success: true,
       data: {
         token,
-        user: studentProfile
+        user: this.toStudentMe(user)
       }
     };
   }
   /**
-   * Student Register: Server-Side Registration with Domain & Duplicate Checks
-   * - Verifies email ends with @student.budiluhur.ac.id
-   * - Checks duplicate email or studentNumber
-   * - Hashes password using bcrypt
-   * - Creates user with role === 'STUDENT'
-   * - Issues JWT token and returns verified student profile
+   * v1.4.0 Step 1: Request Student Registration OTP (Stateful Neon PostgreSQL Challenge)
+   * - Validates campus domain and strict 10-digit NIM local-part
+   * - Checks duplicate email and NIM in DB
+   * - Enforces 60-second server-side resend cooldown per email
+   * - Persists salted HMAC-SHA256 OTP digest in otp_challenges and issues challenge_token (without otpHash/salt)
+   * - Delivers OTP exclusively to student's campus email via Resend
    */
-  async studentRegister(fullName, email, password, studentNumber) {
-    const normalizedEmail = (email || "").trim().toLowerCase();
-    if (!normalizedEmail.endsWith("@student.budiluhur.ac.id")) {
+  async requestStudentRegisterOtp(fullName, email, password) {
+    const nimResult = this.extractStrictStudentNim(email);
+    if (!nimResult.valid) {
       return {
         success: false,
-        code: "INVALID_STUDENT_DOMAIN",
-        message: "Hanya email resmi mahasiswa (@student.budiluhur.ac.id) yang diizinkan untuk akun mahasiswa",
-        statusCode: 403
+        code: nimResult.code,
+        message: nimResult.message,
+        statusCode: nimResult.statusCode
       };
     }
-    const existingEmail = await db.query.users.findFirst({
-      where: eq(users.email, normalizedEmail)
+    if (!password || password.length < 8) {
+      return {
+        success: false,
+        code: "VALIDATION_ERROR",
+        message: "Kata sandi minimal 8 karakter",
+        statusCode: 400
+      };
+    }
+    const { normalizedEmail, nim } = nimResult;
+    const duplicate = await this.findDuplicateStudent(normalizedEmail, nim);
+    if (duplicate) {
+      return duplicate;
+    }
+    const latestChallenge = await db.query.otpChallenges.findFirst({
+      where: eq(otpChallenges.email, normalizedEmail),
+      orderBy: [desc(otpChallenges.createdAt)]
     });
-    if (existingEmail) {
+    const now = /* @__PURE__ */ new Date();
+    if (latestChallenge && !latestChallenge.consumedAt && latestChallenge.resendAvailableAt > now) {
+      const remainingSeconds = Math.max(
+        1,
+        Math.ceil((latestChallenge.resendAvailableAt.getTime() - now.getTime()) / 1e3)
+      );
       return {
         success: false,
-        code: "EMAIL_EXISTS",
-        message: "Email mahasiswa sudah terdaftar",
-        statusCode: 409
+        code: "OTP_COOLDOWN_ACTIVE",
+        message: `Mohon tunggu ${remainingSeconds} detik sebelum meminta kode OTP baru.`,
+        statusCode: 429,
+        retryAfter: remainingSeconds
       };
     }
-    const existingNim = await db.query.users.findFirst({
-      where: eq(users.studentNumber, studentNumber.trim())
-    });
-    if (existingNim) {
-      return {
-        success: false,
-        code: "STUDENT_NUMBER_EXISTS",
-        message: "NIM mahasiswa sudah terdaftar",
-        statusCode: 409
-      };
-    }
-    const passwordHash = await bcryptjs_default.hash(password, 10);
-    const authUserId = `student-${import_crypto4.default.randomUUID()}`;
-    const [created] = await db.insert(users).values({
-      authUserId,
+    const challengeId = import_crypto5.default.randomUUID();
+    const salt = import_crypto5.default.randomBytes(16).toString("hex");
+    const otp = import_crypto5.default.randomInt(1e5, 1e6).toString();
+    const otpHash = this.computeOtpHmac(normalizedEmail, otp, challengeId, salt);
+    const expiresInSeconds = 600;
+    const expiresAt = new Date(now.getTime() + expiresInSeconds * 1e3);
+    const resendAvailableAt = new Date(now.getTime() + 60 * 1e3);
+    const challenge_token = this.createToken(
+      {
+        sub: challengeId,
+        email: normalizedEmail,
+        purpose: "register_otp"
+      },
+      expiresInSeconds
+    );
+    await db.insert(otpChallenges).values({
+      challengeId,
       email: normalizedEmail,
-      fullName: fullName.trim(),
-      studentNumber: studentNumber.trim(),
-      passwordHash,
-      role: "STUDENT"
-    }).returning();
-    const token = this.createToken({
-      sub: created.authUserId,
-      email: created.email,
-      name: created.fullName
+      otpSalt: salt,
+      otpHash,
+      attempts: 0,
+      maxAttempts: 5,
+      expiresAt,
+      resendAvailableAt
     });
-    const studentProfile = {
-      user_id: created.userId,
-      full_name: created.fullName,
-      email: created.email,
-      student_number: created.studentNumber,
-      role: created.role,
-      assigned_post_id: null,
-      nim_verification_status: "NOT_VERIFIED"
-    };
+    const sent = await emailService.sendRegistrationOtpEmail(
+      normalizedEmail,
+      otp,
+      fullName.trim(),
+      nim
+    );
+    if (!sent) {
+      await db.delete(otpChallenges).where(eq(otpChallenges.challengeId, challengeId));
+      return {
+        success: false,
+        code: "EMAIL_DELIVERY_FAILED",
+        message: "Gagal mengirim kode OTP ke email kampus Anda. Pastikan alamat email aktif dan coba lagi.",
+        statusCode: 502
+      };
+    }
+    await db.update(otpChallenges).set({ lockedAt: /* @__PURE__ */ new Date() }).where(
+      and(
+        eq(otpChallenges.email, normalizedEmail),
+        ne(otpChallenges.challengeId, challengeId),
+        isNull(otpChallenges.consumedAt),
+        isNull(otpChallenges.lockedAt)
+      )
+    );
     return {
       success: true,
       data: {
-        token,
-        user: studentProfile
+        challenge_token,
+        expires_in: expiresInSeconds,
+        extracted_nim: nim,
+        message: "Kode OTP 6 digit telah dikirim ke email kampus Anda."
       }
     };
+  }
+  /**
+   * v1.4.0 Step 2: Student Register with Stateful Signed OTP Challenge Verification
+   * - Re-validates campus domain and strict 10-digit NIM extraction from email
+   * - Verifies challenge_token signature, expiry, purpose === 'register_otp', email binding, and UUID sub
+   * - Enforces server-side max 5 attempts lockout and single-use atomic consumption in DB transaction
+   * - Hashes password using bcrypt and persists studentNumber extracted strictly from email
+   */
+  async studentRegister(fullName, email, password, otp, challengeToken) {
+    const nimResult = this.extractStrictStudentNim(email);
+    if (!nimResult.valid) {
+      return {
+        success: false,
+        code: nimResult.code,
+        message: nimResult.message,
+        statusCode: nimResult.statusCode
+      };
+    }
+    const { normalizedEmail, nim } = nimResult;
+    const payload = this.verifyToken(challengeToken);
+    if (!payload || payload.purpose !== "register_otp" || payload.email !== normalizedEmail || !UUID_REGEX.test(payload.sub)) {
+      return {
+        success: false,
+        code: "INVALID_OR_EXPIRED_OTP",
+        message: "Token tantangan OTP tidak valid atau sudah kedaluwarsa. Silakan minta kode OTP baru.",
+        statusCode: 400
+      };
+    }
+    const challenge = await db.query.otpChallenges.findFirst({
+      where: and(
+        eq(otpChallenges.challengeId, payload.sub),
+        eq(otpChallenges.email, normalizedEmail)
+      )
+    });
+    const now = /* @__PURE__ */ new Date();
+    if (!challenge || challenge.consumedAt !== null || challenge.expiresAt <= now) {
+      return {
+        success: false,
+        code: "INVALID_OR_EXPIRED_OTP",
+        message: "Token tantangan OTP tidak valid atau sudah kedaluwarsa. Silakan minta kode OTP baru.",
+        statusCode: 400
+      };
+    }
+    if (challenge.lockedAt !== null || challenge.attempts >= challenge.maxAttempts) {
+      return {
+        success: false,
+        code: "OTP_MAX_ATTEMPTS_EXCEEDED",
+        message: "Terlalu banyak percobaan OTP salah (maksimal 5x). Silakan minta ulang kode OTP baru.",
+        statusCode: 429
+      };
+    }
+    const expectedHash = this.computeOtpHmac(
+      normalizedEmail,
+      otp.trim(),
+      challenge.challengeId,
+      challenge.otpSalt
+    );
+    const storedHashBuf = Buffer.from(challenge.otpHash, "utf8");
+    const expectedHashBuf = Buffer.from(expectedHash, "utf8");
+    if (storedHashBuf.length !== expectedHashBuf.length || !import_crypto5.default.timingSafeEqual(storedHashBuf, expectedHashBuf)) {
+      const [updated] = await db.update(otpChallenges).set({
+        attempts: sql`${otpChallenges.attempts} + 1`,
+        lockedAt: sql`CASE WHEN ${otpChallenges.attempts} + 1 >= ${otpChallenges.maxAttempts} THEN NOW() ELSE ${otpChallenges.lockedAt} END`
+      }).where(
+        and(
+          eq(otpChallenges.challengeId, challenge.challengeId),
+          isNull(otpChallenges.consumedAt),
+          isNull(otpChallenges.lockedAt),
+          lt(otpChallenges.attempts, otpChallenges.maxAttempts)
+        )
+      ).returning();
+      if (!updated || updated.lockedAt !== null || updated.attempts >= updated.maxAttempts) {
+        return {
+          success: false,
+          code: "OTP_MAX_ATTEMPTS_EXCEEDED",
+          message: "Terlalu banyak percobaan OTP salah (maksimal 5x). Silakan minta ulang kode OTP baru.",
+          statusCode: 429
+        };
+      }
+      const remaining = updated.maxAttempts - updated.attempts;
+      return {
+        success: false,
+        code: "INVALID_OTP",
+        message: `Kode OTP tidak sesuai. Sisa percobaan: ${remaining}.`,
+        statusCode: 400
+      };
+    }
+    const duplicate = await this.findDuplicateStudent(normalizedEmail, nim);
+    if (duplicate) {
+      return duplicate;
+    }
+    const passwordHash = await bcryptjs_default.hash(password, 10);
+    try {
+      const created = await db.transaction(async (tx) => {
+        const consumed = await tx.update(otpChallenges).set({ consumedAt: sql`NOW()` }).where(
+          and(
+            eq(otpChallenges.challengeId, challenge.challengeId),
+            eq(otpChallenges.email, normalizedEmail),
+            isNull(otpChallenges.consumedAt),
+            isNull(otpChallenges.lockedAt),
+            gt(otpChallenges.expiresAt, sql`NOW()`),
+            lt(otpChallenges.attempts, otpChallenges.maxAttempts)
+          )
+        ).returning({ challengeId: otpChallenges.challengeId });
+        if (consumed.length === 0) {
+          throw new AppError(
+            "INVALID_OR_EXPIRED_OTP",
+            "Token tantangan OTP tidak valid atau sudah digunakan. Silakan minta kode OTP baru.",
+            400
+          );
+        }
+        const [insertedUser] = await tx.insert(users).values({
+          authUserId: `student-${import_crypto5.default.randomUUID()}`,
+          email: normalizedEmail,
+          fullName: fullName.trim(),
+          studentNumber: nim,
+          passwordHash,
+          role: "STUDENT"
+        }).returning();
+        return insertedUser;
+      });
+      const token = this.createToken({
+        sub: created.authUserId,
+        email: created.email,
+        name: created.fullName
+      });
+      return {
+        success: true,
+        data: {
+          token,
+          user: this.toStudentMe(created)
+        }
+      };
+    } catch (err) {
+      if (err instanceof AppError) {
+        return {
+          success: false,
+          code: err.code,
+          message: err.message,
+          statusCode: err.statusCode
+        };
+      }
+      const uniqueErr = this.mapPgUniqueViolation(err);
+      if (uniqueErr) {
+        return uniqueErr;
+      }
+      throw err;
+    }
   }
   /**
    * Request Password Reset:
@@ -96420,7 +96904,12 @@ var AuthService = class {
       };
     }
     const resetToken = jwtService.createToken(
-      { sub: user.userId, email: user.email, name: "password_reset" },
+      {
+        sub: user.userId,
+        email: user.email,
+        name: user.fullName,
+        purpose: "password_reset"
+      },
       1800
       // 30 minutes
     );
@@ -96449,7 +96938,7 @@ var AuthService = class {
       };
     }
     const payload = jwtService.verifyToken(token);
-    if (!payload || payload.name !== "password_reset" || !payload.sub) {
+    if (!payload || payload.purpose !== "password_reset" || !payload.sub) {
       return {
         success: false,
         code: "INVALID_TOKEN",
@@ -96481,7 +96970,7 @@ async function authenticate(request, reply) {
   }
   const token = authHeader.slice(7).trim();
   const payload = authService.verifyToken(token);
-  if (!payload) {
+  if (!payload || payload.purpose) {
     return reply.status(401).send({
       error: {
         code: "UNAUTHORIZED",
@@ -96558,52 +97047,53 @@ async function requireStudent(request, reply) {
   }
 }
 
-// src/modules/auth/auth.dto.ts
-var meSchema = external_exports.object({
-  user_id: external_exports.string().uuid(),
-  full_name: external_exports.string(),
-  email: external_exports.string().email(),
-  student_number: external_exports.string().nullable(),
-  role: external_exports.enum(["STUDENT", "OFFICER"]),
-  assigned_post_id: external_exports.number().int().nullable(),
-  nim_verification_status: external_exports.literal("NOT_VERIFIED")
-});
-var meResponseSchema = external_exports.object({
-  data: meSchema
-});
-var officerLoginSchema = external_exports.object({
-  email: external_exports.string().trim().email("Format email tidak valid"),
-  password: external_exports.string().min(1, "Kata sandi wajib diisi")
-});
-var officerLoginResponseSchema = external_exports.object({
-  data: external_exports.object({
-    token: external_exports.string(),
-    user: meSchema
-  })
-});
-var bootstrapRequestSchema = external_exports.object({
-  full_name: external_exports.string().trim().min(1, "Nama lengkap tidak boleh kosong").max(120),
-  student_number: external_exports.string().trim().min(1, "NIM tidak boleh kosong").max(30)
-}).strict();
-var studentLoginSchema = external_exports.object({
-  email: external_exports.string().trim().email("Format email tidak valid"),
-  password: external_exports.string().min(1, "Kata sandi wajib diisi")
-});
-var studentRegisterSchema = external_exports.object({
-  full_name: external_exports.string().trim().min(2, "Nama lengkap minimal 2 karakter").max(120),
-  email: external_exports.string().trim().email("Format email tidak valid"),
-  password: external_exports.string().min(8, "Kata sandi minimal 8 karakter"),
-  student_number: external_exports.string().trim().min(5, "NIM minimal 5 karakter").max(30)
-});
-var forgotPasswordSchema = external_exports.object({
-  email: external_exports.string().trim().email("Format email tidak valid")
-});
-var resetPasswordSchema = external_exports.object({
-  token: external_exports.string().min(10, "Token pemulihan tidak valid"),
-  new_password: external_exports.string().min(8, "Kata sandi baru minimal 8 karakter")
-});
-
 // src/modules/auth/auth.routes.ts
+function resolveTrustedFrontendOrigin(originHeader, refererHeader) {
+  const fallbackOrigin = (() => {
+    try {
+      return new URL(env.FRONTEND_ORIGIN).origin;
+    } catch {
+      return "https://lostandfound-budiluhur.web.id";
+    }
+  })();
+  const allowedOrigins = /* @__PURE__ */ new Set([
+    fallbackOrigin,
+    "https://lostandfound-budiluhur.web.id",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ]);
+  for (const candidate of [originHeader, refererHeader]) {
+    if (!candidate)
+      continue;
+    try {
+      const parsedOrigin = new URL(candidate).origin;
+      if (allowedOrigins.has(parsedOrigin)) {
+        return parsedOrigin;
+      }
+    } catch {
+    }
+  }
+  return fallbackOrigin;
+}
+function handleAuthCatchError(request, reply, err, logContext) {
+  if (err instanceof AppError) {
+    return reply.status(err.statusCode).send({
+      error: {
+        code: err.code,
+        message: err.message,
+        request_id: request.id
+      }
+    });
+  }
+  request.log.error(err, logContext);
+  return reply.status(500).send({
+    error: {
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Terjadi kesalahan internal server",
+      request_id: request.id
+    }
+  });
+}
 var authRoutes = async (fastify) => {
   fastify.post("/me/bootstrap", async (request, reply) => {
     const authHeader = request.headers.authorization;
@@ -96618,11 +97108,20 @@ var authRoutes = async (fastify) => {
     }
     const token = authHeader.slice(7).trim();
     const payload = authService.verifyToken(token);
-    if (!payload || !payload.sub) {
+    if (!payload || !payload.sub || payload.purpose) {
       return reply.status(401).send({
         error: {
           code: "UNAUTHORIZED",
           message: "Token autentikasi tidak valid atau sudah kedaluwarsa",
+          request_id: request.id
+        }
+      });
+    }
+    if (typeof payload.email !== "string" || payload.email.trim().length === 0) {
+      return reply.status(401).send({
+        error: {
+          code: "UNAUTHORIZED",
+          message: "Token tidak memiliki klaim email yang valid",
           request_id: request.id
         }
       });
@@ -96638,12 +97137,10 @@ var authRoutes = async (fastify) => {
         }
       });
     }
-    const email = payload.email || `${payload.sub}@student.budiluhur.ac.id`;
     const result = await authService.bootstrapStudent(
       payload.sub,
-      email,
-      parseResult.data.full_name,
-      parseResult.data.student_number
+      payload.email,
+      parseResult.data.full_name
     );
     if (!result.success) {
       return reply.status(result.statusCode || 400).send({
@@ -96733,14 +97230,41 @@ var authRoutes = async (fastify) => {
         data: loginResult.data
       });
     } catch (err) {
-      request.log.error(err, "Unhandled error during student login");
-      return reply.status(500).send({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: err instanceof Error ? err.message : "Terjadi kesalahan internal saat masuk sebagai mahasiswa",
-          request_id: request.id
+      return handleAuthCatchError(request, reply, err, "Unhandled error during student login");
+    }
+  };
+  const handleStudentRegisterRequestOtp = async (request, reply) => {
+    try {
+      const parseResult = studentRegisterRequestOtpSchema.safeParse(request.body);
+      if (!parseResult.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: parseResult.error.issues[0]?.message || "Input tidak valid",
+            request_id: request.id
+          }
+        });
+      }
+      const { full_name, email, password } = parseResult.data;
+      const otpResult = await authService.requestStudentRegisterOtp(full_name, email, password);
+      if (!otpResult.success) {
+        if (otpResult.retryAfter !== void 0) {
+          reply.header("Retry-After", String(otpResult.retryAfter));
         }
+        return reply.status(otpResult.statusCode || 400).send({
+          error: {
+            code: otpResult.code,
+            message: otpResult.message,
+            request_id: request.id,
+            ...otpResult.retryAfter !== void 0 ? { retry_after: otpResult.retryAfter } : {}
+          }
+        });
+      }
+      return reply.status(200).send({
+        data: otpResult.data
       });
+    } catch (err) {
+      return handleAuthCatchError(request, reply, err, "Unhandled error during student OTP request");
     }
   };
   const handleStudentRegister = async (request, reply) => {
@@ -96755,12 +97279,13 @@ var authRoutes = async (fastify) => {
           }
         });
       }
-      const { full_name, email, password, student_number } = parseResult.data;
+      const { full_name, email, password, otp, challenge_token } = parseResult.data;
       const registerResult = await authService.studentRegister(
         full_name,
         email,
         password,
-        student_number
+        otp,
+        challenge_token
       );
       if (!registerResult.success) {
         return reply.status(registerResult.statusCode || 400).send({
@@ -96775,18 +97300,18 @@ var authRoutes = async (fastify) => {
         data: registerResult.data
       });
     } catch (err) {
-      request.log.error(err, "Unhandled error during student registration");
-      return reply.status(500).send({
-        error: {
-          code: "INTERNAL_SERVER_ERROR",
-          message: err instanceof Error ? err.message : "Terjadi kesalahan internal saat registrasi akun mahasiswa",
-          request_id: request.id
-        }
-      });
+      return handleAuthCatchError(
+        request,
+        reply,
+        err,
+        "Unhandled error during student registration"
+      );
     }
   };
   fastify.post("/auth/student-login", handleStudentLogin);
   fastify.post("/student/login", handleStudentLogin);
+  fastify.post("/auth/student-register/request-otp", handleStudentRegisterRequestOtp);
+  fastify.post("/student/register/request-otp", handleStudentRegisterRequestOtp);
   fastify.post("/auth/student-register", handleStudentRegister);
   fastify.post("/student/register", handleStudentRegister);
   fastify.post("/auth/forgot-password", async (request, reply) => {
@@ -96800,7 +97325,10 @@ var authRoutes = async (fastify) => {
         }
       });
     }
-    const origin = request.headers.origin || request.headers.referer;
+    const origin = resolveTrustedFrontendOrigin(
+      request.headers.origin,
+      request.headers.referer
+    );
     const result = await authService.requestPasswordReset(parseResult.data.email, origin);
     return reply.status(200).send({
       data: result
@@ -96869,7 +97397,7 @@ var uploadIdParamSchema = external_exports.object({
 }).strict();
 
 // src/modules/uploads/uploads.service.ts
-var import_crypto7 = require("crypto");
+var import_crypto8 = require("crypto");
 
 // src/modules/uploads/storage/r2.provider.ts
 var import_client_s3 = __toESM(require_dist_cjs16());
@@ -97019,27 +97547,29 @@ var MockStorageProvider = class {
 var mockStorageProvider = new MockStorageProvider();
 
 // src/modules/uploads/token.service.ts
-var import_crypto6 = require("crypto");
+var import_crypto7 = require("crypto");
 
 // src/modules/uploads/token.signer.ts
-var import_crypto5 = require("crypto");
+var import_crypto6 = require("crypto");
 var TokenSigner = class {
   sign(payload) {
+    const secret = resolveRuntimeAuthSecret();
     const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-    const sig = (0, import_crypto5.createHmac)("sha256", env.AUTH_SECRET).update(data).digest("base64url");
+    const sig = (0, import_crypto6.createHmac)("sha256", secret).update(data).digest("base64url");
     return `${data}.${sig}`;
   }
   verify(token) {
+    const secret = resolveRuntimeAuthSecret();
     const parts = token.split(".");
     if (parts.length !== 2)
       return null;
     const [data, sig] = parts;
-    const expectedSig = (0, import_crypto5.createHmac)("sha256", env.AUTH_SECRET).update(data).digest("base64url");
+    const expectedSig = (0, import_crypto6.createHmac)("sha256", secret).update(data).digest("base64url");
     const sigBuf = Buffer.from(sig);
     const expBuf = Buffer.from(expectedSig);
     if (sigBuf.length !== expBuf.length)
       return null;
-    if (!(0, import_crypto5.timingSafeEqual)(sigBuf, expBuf))
+    if (!(0, import_crypto6.timingSafeEqual)(sigBuf, expBuf))
       return null;
     try {
       return JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
@@ -97050,22 +97580,12 @@ var TokenSigner = class {
 };
 var tokenSigner = new TokenSigner();
 
-// src/utils/errors.ts
-var AppError = class extends Error {
-  constructor(code, message, statusCode = 400) {
-    super(message);
-    this.code = code;
-    this.statusCode = statusCode;
-    this.name = "AppError";
-  }
-};
-
 // src/modules/uploads/token.service.ts
 var UploadTokenService = class {
   consumedTokens = /* @__PURE__ */ new Set();
   issueUploadToken(userId, purpose, storagePath, expiresInSeconds = 900) {
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1e3);
-    const tokenId = (0, import_crypto6.randomUUID)();
+    const tokenId = (0, import_crypto7.randomUUID)();
     const payload = {
       tokenId,
       userId,
@@ -97187,7 +97707,7 @@ var UploadsService = class {
   }
   async createUploadIntent(user, purpose, contentType, sizeBytes) {
     assertRoleForPurpose(user, purpose);
-    const uploadId = (0, import_crypto7.randomUUID)();
+    const uploadId = (0, import_crypto8.randomUUID)();
     const storagePath = generateStoragePath(purpose, uploadId, contentType);
     const expiresInSeconds = 300;
     const expiresAt = new Date(Date.now() + expiresInSeconds * 1e3);
@@ -99058,7 +99578,2663 @@ var submissionsRoutes = async (app2) => {
 };
 
 // src/openapi.contract.ts
-var OPENAPI_YAML_CONTRACT = "openapi: 3.0.3\r\ninfo:\r\n  title: REST API \u2014 UBL Lost and Found\r\n  version: 1.0.0\r\n  description: 'FINAL API contract for CampusFind (UBL Lost and Found). Domain: found items only. Phase 1: Pos Pengajaran. Authentication: Bcrypt + JWT (HS256) server-side verification against Neon PostgreSQL users table (with Neon Auth roadmap for students). App roles: STUDENT and OFFICER. Tagged with (Active - MVP) for deployed endpoints, and (Roadmap - Fase 2) for upcoming student/return workflows.'\r\nservers:\r\n- url: http://localhost:3000/api/v1\r\n  description: Local Fastify development; override in deployed environments\r\ntags:\r\n- name: Public (Active - MVP)\r\n  description: Endpoint publik tanpa autentikasi (Posko kampus, Katalog barang, dan Streaming foto R2)\r\n- name: Auth & Profile (Active - MVP)\r\n  description: Autentikasi petugas posko (Bcrypt verified) dan profil pengguna aktif (JWT HS256)\r\n- name: Uploads R2 (Active - MVP)\r\n  description: Two-Phase upload intent dan verifikasi berkas Cloudflare R2\r\n- name: Officer Operations (Active - MVP)\r\n  description: Operasi pencatatan fisik barang temuan langsung di posko oleh petugas\r\n- name: Student (Roadmap - Fase 2 Mahasiswa)\r\n  description: Endpoint pelaporan mandiri mahasiswa (Direncanakan pada fase pengembangan berikutnya)\r\n- name: Officer Handover & Returns (Roadmap - Fase 2)\r\n  description: Endpoint verifikasi fisik, penyerahan, dan pengembalian barang temuan ke pemilik sah\r\npaths:\r\n  /health:\r\n    get:\r\n      tags:\r\n      - Public (Active - MVP)\r\n      summary: Health check & server status\r\n      operationId: GetServerHealth\r\n      responses:\r\n        '200':\r\n          description: Server running ok\r\n          content:\r\n            application/json:\r\n              schema:\r\n                type: object\r\n                properties:\r\n                  status:\r\n                    type: string\r\n                    example: ok\r\n                  timestamp:\r\n                    type: string\r\n                    format: date-time\r\n                  request_id:\r\n                    type: string\r\n  /auth/officer-login:\r\n    post:\r\n      tags:\r\n      - Auth & Profile (Active - MVP)\r\n      summary: Login Petugas Posko (Bcrypt verified)\r\n      description: Verifikasi kata sandi petugas menggunakan Bcrypt dan menerbitkan JWT bertanda tangan HMAC-SHA256 (2 jam).\r\n      operationId: OfficerLogin\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              type: object\r\n              required:\r\n              - email\r\n              - password\r\n              properties:\r\n                email:\r\n                  type: string\r\n                  format: email\r\n                  example: lostandfound.budiluhur@gmail.com\r\n                password:\r\n                  type: string\r\n                  example: admin321\r\n      responses:\r\n        '200':\r\n          description: Login berhasil, mengembalikan token JWT dan profil petugas\r\n          content:\r\n            application/json:\r\n              schema:\r\n                type: object\r\n                properties:\r\n                  data:\r\n                    type: object\r\n                    properties:\r\n                      token:\r\n                        type: string\r\n                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\r\n                      user:\r\n                        $ref: '#/components/schemas/Me'\r\n        '401':\r\n          description: Email atau kata sandi tidak valid\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: Validasi format gagal\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /posts:\r\n    get:\r\n      tags:\r\n      - Public (Active - MVP)\r\n      summary: List service posts\r\n      operationId: ListServicePosts\r\n      parameters:\r\n      - $ref: '#/components/parameters/Page'\r\n      - $ref: '#/components/parameters/Limit'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/PostsResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /posts/{post_id}:\r\n    get:\r\n      tags:\r\n      - Public (Active - MVP)\r\n      summary: Get service post detail\r\n      operationId: GetServicePostDetail\r\n      parameters:\r\n      - $ref: '#/components/parameters/PostId'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/PostResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /items:\r\n    get:\r\n      tags:\r\n      - Public (Active - MVP)\r\n      summary: List public found items\r\n      operationId: ListPublicFoundItems\r\n      description: Only status STORED and is_visible true. Filtering precedes sorting and pagination.\r\n      parameters:\r\n      - $ref: '#/components/parameters/Page'\r\n      - $ref: '#/components/parameters/Limit'\r\n      - $ref: '#/components/parameters/Q'\r\n      - $ref: '#/components/parameters/Category'\r\n      - $ref: '#/components/parameters/FilterPostId'\r\n      - $ref: '#/components/parameters/ItemSort'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ItemsResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /items/{item_id}:\r\n    get:\r\n      tags:\r\n      - Public (Active - MVP)\r\n      summary: Get public found item detail\r\n      operationId: GetPublicFoundItemDetail\r\n      description: Hidden or non-STORED item returns 404.\r\n      parameters:\r\n      - $ref: '#/components/parameters/ItemId'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ItemResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /me:\r\n    get:\r\n      tags:\r\n      - Auth & Profile (Active - MVP)\r\n      summary: Get current CampusFind profile\r\n      operationId: GetCurrentCampusfindProfile\r\n      description: 404 PROFILE_NOT_FOUND when JWT session is valid but user not onboarded. No profile is created\r\n        implicitly.\r\n      security:\r\n      - bearerAuth: []\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/MeResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /me/bootstrap:\r\n    post:\r\n      tags:\r\n      - Auth & Profile (Active - MVP)\r\n      summary: Create student profile after student signup\r\n      operationId: CreateStudentProfileAfterNeon Auth / JWTSignup\r\n      description: Verified verified email required. Server derives auth_user_id and email from verified session.\r\n        Always creates STUDENT; never accepts role, user_id, auth_user_id or email from body. Duplicate user identity\r\n        returns 409 PROFILE_EXISTS. NIM is self-declared and not verified against academic records.\r\n      security:\r\n      - bearerAuth: []\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/BootstrapRequest'\r\n      responses:\r\n        '201':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/MeResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /submissions:\r\n    post:\r\n      tags:\r\n      - Student (Roadmap - Fase 2 Mahasiswa)\r\n      summary: Submit found item report\r\n      operationId: SubmitFoundItemReport\r\n      description: Student only. One REPORT_PHOTO upload token. Create report and initial history in one transaction.\r\n        Retry may create a second report; client must not auto-retry POST.\r\n      security:\r\n      - bearerAuth: []\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/SubmissionCreateRequest'\r\n      responses:\r\n        '201':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/SubmissionResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /submissions/me:\r\n    get:\r\n      tags:\r\n      - Student (Roadmap - Fase 2 Mahasiswa)\r\n      summary: List own found item reports\r\n      operationId: ListOwnFoundItemReports\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/Page'\r\n      - $ref: '#/components/parameters/Limit'\r\n      - $ref: '#/components/parameters/SubmissionStatus'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/SubmissionsResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /submissions/{submission_id}:\r\n    get:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Get authorized found report detail\r\n      operationId: GetAuthorizedFoundReportDetail\r\n      description: Only reporter or assigned officer of target post. Unauthorized resource responds 404 to prevent\r\n        enumeration.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/SubmissionId'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/SubmissionDetailResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /submissions/{submission_id}/cancel:\r\n    post:\r\n      tags:\r\n      - Student (Roadmap - Fase 2 Mahasiswa)\r\n      summary: Cancel own pending report\r\n      operationId: CancelOwnPendingReport\r\n      description: Only PENDING_RECEIPT. History reason required; status and history transactionally updated.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/SubmissionId'\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/ReasonRequest'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/SubmissionResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/submissions:\r\n    get:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: List reports for assigned post\r\n      operationId: ListReportsForAssignedPost\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/Page'\r\n      - $ref: '#/components/parameters/Limit'\r\n      - $ref: '#/components/parameters/SubmissionStatus'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/SubmissionsResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/submissions/{submission_id}/receive:\r\n    post:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Receive found report and create inventory\r\n      operationId: ReceiveFoundReportAndCreateInventory\r\n      description: Physical receipt required; assigned post only; pending report only. Creates item and photos,\r\n        updates report and history atomically. First item photo token becomes primary. Concurrent duplicate returns\r\n        409.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/SubmissionId'\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/ReceiveRequest'\r\n      responses:\r\n        '201':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/InventoryResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/submissions/{submission_id}/reject:\r\n    post:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Reject pending found report\r\n      operationId: RejectPendingFoundReport\r\n      description: Assigned post and PENDING_RECEIPT only. Reason nonblank, status and history atomic.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/SubmissionId'\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/ReasonRequest'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/SubmissionResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/inventory:\r\n    get:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: List inventory for assigned post\r\n      operationId: ListInventoryForAssignedPost\r\n      description: Includes hidden and non-STORED items; scoped to officer post.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/Page'\r\n      - $ref: '#/components/parameters/Limit'\r\n      - $ref: '#/components/parameters/ItemStatusFilter'\r\n      - $ref: '#/components/parameters/Q'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/InventoryListResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/inventory/overdue:\r\n    get:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: List overdue stored inventory\r\n      operationId: ListOverdueStoredInventory\r\n      description: Compute overdue from received_at and storage_limit_days, only STORED; no automatic mutation.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/Page'\r\n      - $ref: '#/components/parameters/Limit'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/OverdueListResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/items:\r\n    post:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2) Operations (Active - MVP)\r\n      summary: Record found item directly\r\n      operationId: RecordFoundItemDirectly\r\n      description: Assigned post inferred from DB; exactly 1 ITEM_PHOTO token; single primary photo. No client-controlled post\r\n        ID.\r\n      security:\r\n      - bearerAuth: []\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/ItemCreateRequest'\r\n      responses:\r\n        '201':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/InventoryResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/items/{item_id}:\r\n    get:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Get authorized inventory detail\r\n      operationId: GetAuthorizedInventoryDetail\r\n      description: Includes private_verification_notes only for assigned post officer.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/ItemId'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/InventoryResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/items/{item_id}/visibility:\r\n    patch:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Set stored item catalog visibility\r\n      operationId: SetStoredItemCatalogVisibility\r\n      description: Only STORED items; changing visibility does not change physical status.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/ItemId'\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/VisibilityRequest'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/InventoryResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/items/{item_id}/return:\r\n    post:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Return item to verified owner\r\n      operationId: ReturnItemToVerifiedOwner\r\n      description: In-person ownership verification. Creates one item_returns and updates item status RETURNED_TO_OWNER,\r\n        is_visible false atomically. Duplicate/concurrent returns 409. No identity photo required.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/ItemId'\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/ReturnRequest'\r\n      responses:\r\n        '201':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ReturnResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /officer/items/{item_id}/distribute:\r\n    post:\r\n      tags:\r\n      - Officer Handover & Returns (Roadmap - Fase 2)\r\n      summary: Distribute item under post policy\r\n      operationId: DistributeItemUnderPostPolicy\r\n      description: Only STORED; manually sets DISTRIBUTED and is_visible false atomically. No item_returns row.\r\n        No request body.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/ItemId'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/InventoryResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /uploads/intents:\r\n    post:\r\n      tags:\r\n      - Uploads R2 (Active - MVP)\r\n      summary: Request R2 image upload intent\r\n      operationId: RequestR2ImageUploadIntent\r\n      description: Only STUDENT REPORT_PHOTO or OFFICER ITEM_PHOTO. POST_PHOTO is admin-only offline operation,\r\n        not public API. Max 5 MiB; JPEG, PNG, WebP. Presigned PUT URL expires in 5 minutes.\r\n      security:\r\n      - bearerAuth: []\r\n      requestBody:\r\n        required: true\r\n        content:\r\n          application/json:\r\n            schema:\r\n              $ref: '#/components/schemas/UploadIntentRequest'\r\n      responses:\r\n        '201':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/UploadIntentResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n  /uploads/{upload_id}/finalize:\r\n    post:\r\n      tags:\r\n      - Uploads R2 (Active - MVP)\r\n      summary: Finalize verified R2 image upload\r\n      operationId: FinalizeVerifiedR2ImageUpload\r\n      description: Server verifies signed upload intent ownership, object existence, size, MIME and actual content.\r\n        Issues user-bound purpose-bound signed token valid 15 minutes; token can be consumed once through unique\r\n        storage_path constraints in DB.\r\n      security:\r\n      - bearerAuth: []\r\n      parameters:\r\n      - $ref: '#/components/parameters/UploadId'\r\n      responses:\r\n        '200':\r\n          description: Success\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/UploadFinalizedResponse'\r\n        '400':\r\n          description: HTTP 400\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '401':\r\n          description: HTTP 401\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '403':\r\n          description: HTTP 403\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '404':\r\n          description: HTTP 404\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '409':\r\n          description: HTTP 409\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '422':\r\n          description: HTTP 422\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '429':\r\n          description: HTTP 429\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\n        '500':\r\n          description: HTTP 500\r\n          content:\r\n            application/json:\r\n              schema:\r\n                $ref: '#/components/schemas/ApiError'\r\ncomponents:\r\n  securitySchemes:\r\n    bearerAuth:\r\n      type: http\r\n      scheme: bearer\r\n      bearerFormat: JWT\r\n      description: Verified JWT session token (HS256) issued on officer login; user role and assigned service post resolved server-side from Neon PostgreSQL.\r\n  parameters:\r\n    PostId:\r\n      name: post_id\r\n      in: path\r\n      required: true\r\n      schema:\r\n        type: integer\r\n        minimum: 1\r\n    ItemId:\r\n      name: item_id\r\n      in: path\r\n      required: true\r\n      schema: &id001\r\n        type: string\r\n        format: uuid\r\n    SubmissionId:\r\n      name: submission_id\r\n      in: path\r\n      required: true\r\n      schema: *id001\r\n    UploadId:\r\n      name: upload_id\r\n      in: path\r\n      required: true\r\n      schema: *id001\r\n    Page:\r\n      name: page\r\n      in: query\r\n      schema:\r\n        type: integer\r\n        minimum: 1\r\n        default: 1\r\n    Limit:\r\n      name: limit\r\n      in: query\r\n      schema:\r\n        type: integer\r\n        minimum: 1\r\n        maximum: 10\r\n        default: 10\r\n    Q:\r\n      name: q\r\n      in: query\r\n      schema:\r\n        type: string\r\n        maxLength: 120\r\n    Category:\r\n      name: category\r\n      in: query\r\n      schema:\r\n        type: string\r\n        maxLength: 80\r\n    FilterPostId:\r\n      name: post_id\r\n      in: query\r\n      schema:\r\n        type: integer\r\n        minimum: 1\r\n    ItemSort:\r\n      name: sort\r\n      in: query\r\n      schema:\r\n        type: string\r\n        enum:\r\n        - received_at_desc\r\n        - received_at_asc\r\n        - item_name_asc\r\n        description: Sort stabil; item_id sebagai tie-breaker\r\n    SubmissionStatus:\r\n      name: status\r\n      in: query\r\n      schema:\r\n        $ref: '#/components/schemas/ReportStatus'\r\n    ItemStatusFilter:\r\n      name: status\r\n      in: query\r\n      schema:\r\n        $ref: '#/components/schemas/ItemStatus'\r\n  schemas:\r\n    UserRole:\r\n      type: string\r\n      enum:\r\n      - STUDENT\r\n      - OFFICER\r\n    ReportStatus:\r\n      type: string\r\n      enum:\r\n      - PENDING_RECEIPT\r\n      - RECEIVED\r\n      - REJECTED\r\n      - CANCELLED\r\n    ItemStatus:\r\n      type: string\r\n      enum:\r\n      - STORED\r\n      - RETURNED_TO_OWNER\r\n      - DISTRIBUTED\r\n    ServicePostPhoto:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        photo_id: *id001\r\n        position:\r\n          type: integer\r\n          minimum: 1\r\n          maximum: 3\r\n        is_cover:\r\n          type: boolean\r\n        url:\r\n          type: string\r\n          format: uri\r\n        expires_at: &id002\r\n          type: string\r\n          format: date-time\r\n      required:\r\n      - photo_id\r\n      - position\r\n      - is_cover\r\n      - url\r\n      - expires_at\r\n    ServicePostShort:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        post_id:\r\n          type: integer\r\n        name:\r\n          type: string\r\n      required:\r\n      - post_id\r\n      - name\r\n    ServicePostPublic:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        post_id:\r\n          type: integer\r\n        name:\r\n          type: string\r\n        location_description:\r\n          type: string\r\n          nullable: true\r\n        opening_hours:\r\n          type: string\r\n          nullable: true\r\n        directions:\r\n          type: string\r\n          nullable: true\r\n        photos:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/ServicePostPhoto'\r\n          maxItems: 3\r\n      required:\r\n      - post_id\r\n      - name\r\n      - location_description\r\n      - opening_hours\r\n      - directions\r\n      - photos\r\n    ItemPhoto:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        photo_id: *id001\r\n        url:\r\n          type: string\r\n          format: uri\r\n        expires_at: *id002\r\n        is_primary:\r\n          type: boolean\r\n      required:\r\n      - photo_id\r\n      - url\r\n      - expires_at\r\n      - is_primary\r\n    FoundItemPublic:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        item_id: *id001\r\n        inventory_code: &id003\r\n          type: string\r\n        item_name: &id004\r\n          type: string\r\n        category: &id005\r\n          type: string\r\n        public_description: &id006\r\n          type: string\r\n        found_location: &id007\r\n          type: string\r\n          nullable: true\r\n        found_on: &id008\r\n          type: string\r\n          format: date\r\n          nullable: true\r\n        received_at: *id002\r\n        post: &id009\r\n          $ref: '#/components/schemas/ServicePostShort'\r\n        photos: &id010\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/ItemPhoto'\r\n          minItems: 1\r\n          maxItems: 1\r\n      required:\r\n      - item_id\r\n      - inventory_code\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - found_location\r\n      - found_on\r\n      - received_at\r\n      - post\r\n      - photos\r\n    FoundSubmission:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        submission_id: *id001\r\n        report_code: &id011\r\n          type: string\r\n        target_post_id: &id012\r\n          type: integer\r\n        item_name: &id013\r\n          type: string\r\n        category: &id014\r\n          type: string\r\n        public_description: &id015\r\n          type: string\r\n        found_location: &id016\r\n          type: string\r\n        found_on: &id017\r\n          type: string\r\n          format: date\r\n        status: &id018\r\n          $ref: '#/components/schemas/ReportStatus'\r\n        submitted_at: *id002\r\n        report_photo_url: &id019\r\n          type: string\r\n          format: uri\r\n        report_photo_expires_at: *id002\r\n      required:\r\n      - submission_id\r\n      - report_code\r\n      - target_post_id\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - found_location\r\n      - found_on\r\n      - status\r\n      - submitted_at\r\n      - report_photo_url\r\n      - report_photo_expires_at\r\n    InventoryOfficer:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        item_id: *id001\r\n        inventory_code: *id003\r\n        item_name: *id004\r\n        category: *id005\r\n        public_description: *id006\r\n        found_location: *id007\r\n        found_on: *id008\r\n        received_at: *id002\r\n        post: *id009\r\n        photos: *id010\r\n        status: &id020\r\n          $ref: '#/components/schemas/ItemStatus'\r\n        is_visible: &id021\r\n          type: boolean\r\n        storage_post_id: &id022\r\n          type: integer\r\n        source_submission_id: &id023\r\n          type: string\r\n          format: uuid\r\n          nullable: true\r\n        private_verification_notes: &id024\r\n          type: string\r\n          nullable: true\r\n      required:\r\n      - item_id\r\n      - inventory_code\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - found_location\r\n      - found_on\r\n      - received_at\r\n      - post\r\n      - photos\r\n      - status\r\n      - is_visible\r\n      - storage_post_id\r\n      - source_submission_id\r\n      - private_verification_notes\r\n    Me:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        user_id: *id001\r\n        full_name:\r\n          type: string\r\n        email:\r\n          type: string\r\n          format: email\r\n        student_number:\r\n          type: string\r\n          nullable: true\r\n        role:\r\n          $ref: '#/components/schemas/UserRole'\r\n        assigned_post_id:\r\n          type: integer\r\n          nullable: true\r\n        nim_verification_status:\r\n          type: string\r\n          enum:\r\n          - NOT_VERIFIED\r\n      required:\r\n      - user_id\r\n      - full_name\r\n      - email\r\n      - student_number\r\n      - role\r\n      - assigned_post_id\r\n      - nim_verification_status\r\n    StatusHistory:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        history_id: *id001\r\n        from_status:\r\n          $ref: '#/components/schemas/ReportStatus'\r\n          nullable: true\r\n        to_status:\r\n          $ref: '#/components/schemas/ReportStatus'\r\n        reason:\r\n          type: string\r\n          nullable: true\r\n        changed_at: *id002\r\n      required:\r\n      - history_id\r\n      - from_status\r\n      - to_status\r\n      - reason\r\n      - changed_at\r\n    ApiError:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        error:\r\n          type: object\r\n          additionalProperties: false\r\n          properties:\r\n            code:\r\n              type: string\r\n            message:\r\n              type: string\r\n            request_id:\r\n              type: string\r\n          required:\r\n          - code\r\n          - message\r\n          - request_id\r\n      required:\r\n      - error\r\n    PaginationMeta:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        page:\r\n          type: integer\r\n          minimum: 1\r\n        limit:\r\n          type: integer\r\n          minimum: 1\r\n        total:\r\n          type: integer\r\n          minimum: 0\r\n        total_pages:\r\n          type: integer\r\n          minimum: 0\r\n      required:\r\n      - page\r\n      - limit\r\n      - total\r\n      - total_pages\r\n    ReportWithHistory:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        submission_id: *id001\r\n        report_code: *id011\r\n        target_post_id: *id012\r\n        item_name: *id013\r\n        category: *id014\r\n        public_description: *id015\r\n        found_location: *id016\r\n        found_on: *id017\r\n        status: *id018\r\n        submitted_at: *id002\r\n        report_photo_url: *id019\r\n        report_photo_expires_at: *id002\r\n        history:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/StatusHistory'\r\n      required:\r\n      - submission_id\r\n      - report_code\r\n      - target_post_id\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - found_location\r\n      - found_on\r\n      - status\r\n      - submitted_at\r\n      - report_photo_url\r\n      - report_photo_expires_at\r\n      - history\r\n    OverdueInventory:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        item_id: *id001\r\n        inventory_code: *id003\r\n        item_name: *id004\r\n        category: *id005\r\n        public_description: *id006\r\n        found_location: *id007\r\n        found_on: *id008\r\n        received_at: *id002\r\n        post: *id009\r\n        photos: *id010\r\n        status: *id020\r\n        is_visible: *id021\r\n        storage_post_id: *id022\r\n        source_submission_id: *id023\r\n        private_verification_notes: *id024\r\n        storage_limit_days:\r\n          type: integer\r\n          minimum: 1\r\n        storage_age_days:\r\n          type: integer\r\n          minimum: 0\r\n        overdue_days:\r\n          type: integer\r\n          minimum: 1\r\n      required:\r\n      - item_id\r\n      - inventory_code\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - found_location\r\n      - found_on\r\n      - received_at\r\n      - post\r\n      - photos\r\n      - status\r\n      - is_visible\r\n      - storage_post_id\r\n      - source_submission_id\r\n      - private_verification_notes\r\n      - storage_limit_days\r\n      - storage_age_days\r\n      - overdue_days\r\n    ReturnRecord:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        return_id: *id001\r\n        item_id: *id001\r\n        recipient_name:\r\n          type: string\r\n        verification_summary:\r\n          type: string\r\n        verification_confirmed_at: *id002\r\n        returned_at: *id002\r\n      required:\r\n      - return_id\r\n      - item_id\r\n      - recipient_name\r\n      - verification_summary\r\n      - verification_confirmed_at\r\n      - returned_at\r\n    UploadIntent:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        upload_id: *id001\r\n        put_url:\r\n          type: string\r\n          format: uri\r\n        expires_at: *id002\r\n        required_headers:\r\n          type: object\r\n          additionalProperties:\r\n            type: string\r\n      required:\r\n      - upload_id\r\n      - put_url\r\n      - expires_at\r\n      - required_headers\r\n    UploadFinalized:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        upload_token:\r\n          type: string\r\n        purpose:\r\n          type: string\r\n          enum:\r\n          - REPORT_PHOTO\r\n          - ITEM_PHOTO\r\n        expires_at: *id002\r\n      required:\r\n      - upload_token\r\n      - purpose\r\n      - expires_at\r\n    BootstrapRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        full_name:\r\n          type: string\r\n          maxLength: 120\r\n          minLength: 1\r\n        student_number:\r\n          type: string\r\n          maxLength: 30\r\n          minLength: 1\r\n      required:\r\n      - full_name\r\n      - student_number\r\n    SubmissionCreateRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        target_post_id:\r\n          type: integer\r\n        item_name:\r\n          type: string\r\n          maxLength: 150\r\n          minLength: 1\r\n        category:\r\n          type: string\r\n          maxLength: 80\r\n          minLength: 1\r\n        public_description: &id025\r\n          type: string\r\n          minLength: 1\r\n        found_location: *id025\r\n        found_on: *id017\r\n        report_photo_upload_token: *id025\r\n      required:\r\n      - target_post_id\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - found_location\r\n      - found_on\r\n      - report_photo_upload_token\r\n    ReasonRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        reason:\r\n          type: string\r\n          maxLength: 2000\r\n          minLength: 1\r\n      required:\r\n      - reason\r\n    ItemCreateRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        item_name:\r\n          type: string\r\n          maxLength: 150\r\n          minLength: 1\r\n        category:\r\n          type: string\r\n          maxLength: 80\r\n          minLength: 1\r\n        public_description: *id025\r\n        private_verification_notes:\r\n          type: string\r\n          nullable: true\r\n        found_location:\r\n          type: string\r\n          nullable: true\r\n        found_on:\r\n          type: string\r\n          format: date\r\n          nullable: true\r\n        item_photo_upload_tokens:\r\n          type: array\r\n          items: *id025\r\n          minItems: 1\r\n          maxItems: 1\r\n      required:\r\n      - item_name\r\n      - category\r\n      - public_description\r\n      - item_photo_upload_tokens\r\n    ReceiveRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        public_description: *id025\r\n        private_verification_notes:\r\n          type: string\r\n          nullable: true\r\n        item_photo_upload_tokens:\r\n          type: array\r\n          items: *id025\r\n          minItems: 1\r\n          maxItems: 1\r\n      required:\r\n      - public_description\r\n      - item_photo_upload_tokens\r\n    VisibilityRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        is_visible:\r\n          type: boolean\r\n      required:\r\n      - is_visible\r\n    ReturnRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        recipient_name:\r\n          type: string\r\n          maxLength: 120\r\n          minLength: 1\r\n        verification_summary:\r\n          type: string\r\n          maxLength: 5000\r\n          minLength: 1\r\n      required:\r\n      - recipient_name\r\n      - verification_summary\r\n    UploadIntentRequest:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        purpose:\r\n          type: string\r\n          enum:\r\n          - REPORT_PHOTO\r\n          - ITEM_PHOTO\r\n        content_type:\r\n          type: string\r\n          enum:\r\n          - image/jpeg\r\n          - image/png\r\n          - image/webp\r\n        size_bytes:\r\n          type: integer\r\n          minimum: 1\r\n          maximum: 5242880\r\n      required:\r\n      - purpose\r\n      - content_type\r\n      - size_bytes\r\n    MeResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/Me'\r\n      required:\r\n      - data\r\n    PostResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/ServicePostPublic'\r\n      required:\r\n      - data\r\n    ItemResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/FoundItemPublic'\r\n      required:\r\n      - data\r\n    SubmissionResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/FoundSubmission'\r\n      required:\r\n      - data\r\n    SubmissionDetailResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/ReportWithHistory'\r\n      required:\r\n      - data\r\n    InventoryResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/InventoryOfficer'\r\n      required:\r\n      - data\r\n    OverdueResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/OverdueInventory'\r\n      required:\r\n      - data\r\n    ReturnResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/ReturnRecord'\r\n      required:\r\n      - data\r\n    UploadIntentResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/UploadIntent'\r\n      required:\r\n      - data\r\n    UploadFinalizedResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          $ref: '#/components/schemas/UploadFinalized'\r\n      required:\r\n      - data\r\n    PostsResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/ServicePostPublic'\r\n        meta:\r\n          $ref: '#/components/schemas/PaginationMeta'\r\n      required:\r\n      - data\r\n      - meta\r\n    ItemsResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/FoundItemPublic'\r\n        meta:\r\n          $ref: '#/components/schemas/PaginationMeta'\r\n      required:\r\n      - data\r\n      - meta\r\n    SubmissionsResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/FoundSubmission'\r\n        meta:\r\n          $ref: '#/components/schemas/PaginationMeta'\r\n      required:\r\n      - data\r\n      - meta\r\n    InventoryListResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/InventoryOfficer'\r\n        meta:\r\n          $ref: '#/components/schemas/PaginationMeta'\r\n      required:\r\n      - data\r\n      - meta\r\n    OverdueListResponse:\r\n      type: object\r\n      additionalProperties: false\r\n      properties:\r\n        data:\r\n          type: array\r\n          items:\r\n            $ref: '#/components/schemas/OverdueInventory'\r\n        meta:\r\n          $ref: '#/components/schemas/PaginationMeta'\r\n      required:\r\n      - data\r\n      - meta\r\n";
+var OPENAPI_YAML_CONTRACT = `openapi: 3.0.3\r
+info:\r
+  title: REST API \u2014 UBL Lost and Found\r
+  version: 1.0.0\r
+  description: 'FINAL API contract for CampusFind (UBL Lost and Found). Domain: found items only. Phase 1: Pos Pengajaran. Authentication: Bcrypt + JWT (HS256) server-side verification against Neon PostgreSQL users table (with Neon Auth roadmap for students). App roles: STUDENT and OFFICER. Tagged with (Active - MVP) for deployed endpoints, and (Roadmap - Fase 2) for upcoming student/return workflows.'\r
+servers:\r
+- url: http://localhost:3000/api/v1\r
+  description: Local Fastify development; override in deployed environments\r
+tags:\r
+- name: Public (Active - MVP)\r
+  description: Endpoint publik tanpa autentikasi (Posko kampus, Katalog barang, dan Streaming foto R2)\r
+- name: Auth & Profile (Active - MVP)\r
+  description: Autentikasi petugas posko (Bcrypt verified) dan profil pengguna aktif (JWT HS256)\r
+- name: Uploads R2 (Active - MVP)\r
+  description: Two-Phase upload intent dan verifikasi berkas Cloudflare R2\r
+- name: Officer Operations (Active - MVP)\r
+  description: Operasi pencatatan fisik barang temuan langsung di posko oleh petugas\r
+- name: Student (Roadmap - Fase 2 Mahasiswa)\r
+  description: Endpoint pelaporan mandiri mahasiswa (Direncanakan pada fase pengembangan berikutnya)\r
+- name: Officer Handover & Returns (Roadmap - Fase 2)\r
+  description: Endpoint verifikasi fisik, penyerahan, dan pengembalian barang temuan ke pemilik sah\r
+paths:\r
+  /health:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: Health check & server status\r
+      operationId: GetServerHealth\r
+      responses:\r
+        '200':\r
+          description: Server running ok\r
+          content:\r
+            application/json:\r
+              schema:\r
+                type: object\r
+                properties:\r
+                  status:\r
+                    type: string\r
+                    example: ok\r
+                  timestamp:\r
+                    type: string\r
+                    format: date-time\r
+                  request_id:\r
+                    type: string\r
+  /auth/officer-login:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Login Petugas Posko (Bcrypt verified)\r
+      description: Verifikasi kata sandi petugas menggunakan Bcrypt dan menerbitkan JWT bertanda tangan HMAC-SHA256 (2 jam).\r
+      operationId: OfficerLogin\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              type: object\r
+              required:\r
+              - email\r
+              - password\r
+              properties:\r
+                email:\r
+                  type: string\r
+                  format: email\r
+                  example: lostandfound.budiluhur@gmail.com\r
+                password:\r
+                  type: string\r
+                  example: admin321\r
+      responses:\r
+        '200':\r
+          description: Login berhasil, mengembalikan token JWT dan profil petugas\r
+          content:\r
+            application/json:\r
+              schema:\r
+                type: object\r
+                properties:\r
+                  data:\r
+                    type: object\r
+                    properties:\r
+                      token:\r
+                        type: string\r
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\r
+                      user:\r
+                        $ref: '#/components/schemas/Me'\r
+        '401':\r
+          description: Email atau kata sandi tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: Validasi format gagal\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/student-register/request-otp:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Minta OTP pendaftaran mahasiswa (v1.4.0)\r
+      description: Validasi domain @student.budiluhur.ac.id dan local-part NIM tepat 10 digit, cek duplikat, terapkan cooldown 60 detik, dan kirim kode OTP 6 digit ke email kampus.\r
+      operationId: StudentRegisterRequestOtp\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/StudentRegisterRequestOtpRequest'\r
+      responses:\r
+        '200':\r
+          description: Kode OTP berhasil dikirim dan challenge_token diterbitkan\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/StudentRegisterRequestOtpResponse'\r
+        '400':\r
+          description: Input atau format NIM email kampus tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: Domain email bukan @student.budiluhur.ac.id\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: Email atau NIM mahasiswa sudah terdaftar\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: Cooldown resend OTP 60 detik masih aktif\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '502':\r
+          description: Pengiriman email OTP melalui Resend gagal\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/student-register:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Registrasi akun mahasiswa dengan verifikasi OTP (v1.4.0)\r
+      description: Verifikasi challenge_token dan OTP 6 digit terhadap database, lalu ekstrak NIM 10 digit secara ketat dari email kampus tanpa menerima student_number dari klien.\r
+      operationId: StudentRegister\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/StudentRegisterRequest'\r
+      responses:\r
+        '201':\r
+          description: Akun mahasiswa berhasil dibuat dan token sesi diterbitkan\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/AuthTokenResponse'\r
+        '400':\r
+          description: Input tidak valid, OTP salah, atau challenge_token kedaluwarsa\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: Domain email bukan @student.budiluhur.ac.id\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: Email atau NIM mahasiswa sudah terdaftar\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: Batas percobaan OTP salah terlampaui (maksimal 5x)\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/student-login:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Login Mahasiswa (Bcrypt verified)\r
+      description: Verifikasi email @student.budiluhur.ac.id dan kata sandi mahasiswa menggunakan Bcrypt lalu menerbitkan JWT HS256.\r
+      operationId: StudentLogin\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/StudentLoginRequest'\r
+      responses:\r
+        '200':\r
+          description: Login mahasiswa berhasil\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/AuthTokenResponse'\r
+        '400':\r
+          description: Format input tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: Email atau kata sandi mahasiswa tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: Domain email bukan @student.budiluhur.ac.id\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/forgot-password:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Minta tautan pemulihan kata sandi\r
+      description: Mengirim tautan pemulihan kata sandi berdurasi 30 menit ke email terdaftar melalui Resend.\r
+      operationId: ForgotPassword\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ForgotPasswordRequest'\r
+      responses:\r
+        '200':\r
+          description: Permintaan pemulihan kata sandi diproses\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MessageStatusResponse'\r
+        '400':\r
+          description: Format email tidak valid\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /auth/reset-password:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Atur ulang kata sandi menggunakan token pemulihan\r
+      description: Memvalidasi token purpose password_reset dan memperbarui kata sandi akun.\r
+      operationId: ResetPassword\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ResetPasswordRequest'\r
+      responses:\r
+        '200':\r
+          description: Kata sandi berhasil diperbarui\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MessageStatusResponse'\r
+        '400':\r
+          description: Token tidak valid/kedaluwarsa atau kata sandi baru tidak memenuhi syarat\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /posts:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: List service posts\r
+      operationId: ListServicePosts\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/PostsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /posts/{post_id}:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: Get service post detail\r
+      operationId: GetServicePostDetail\r
+      parameters:\r
+      - $ref: '#/components/parameters/PostId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/PostResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /items:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: List public found items\r
+      operationId: ListPublicFoundItems\r
+      description: Only status STORED and is_visible true. Filtering precedes sorting and pagination.\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/Q'\r
+      - $ref: '#/components/parameters/Category'\r
+      - $ref: '#/components/parameters/FilterPostId'\r
+      - $ref: '#/components/parameters/ItemSort'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ItemsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /items/{item_id}:\r
+    get:\r
+      tags:\r
+      - Public (Active - MVP)\r
+      summary: Get public found item detail\r
+      operationId: GetPublicFoundItemDetail\r
+      description: Hidden or non-STORED item returns 404.\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ItemResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /me:\r
+    get:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Get current CampusFind profile\r
+      operationId: GetCurrentCampusfindProfile\r
+      description: 404 PROFILE_NOT_FOUND when JWT session is valid but user not onboarded. No profile is created\r
+        implicitly.\r
+      security:\r
+      - bearerAuth: []\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MeResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /me/bootstrap:\r
+    post:\r
+      tags:\r
+      - Auth & Profile (Active - MVP)\r
+      summary: Create student profile after student signup\r
+      operationId: CreateStudentProfileAfterNeon Auth / JWTSignup\r
+      description: Verified email claim required in JWT. Server derives auth_user_id, email, and strict 10-digit NIM from verified session.\r
+        Always creates STUDENT without overwriting existing accounts; rejects student_number from body. Duplicate user identity\r
+        returns 409 PROFILE_EXISTS.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/BootstrapRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/MeResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions:\r
+    post:\r
+      tags:\r
+      - Student (Roadmap - Fase 2 Mahasiswa)\r
+      summary: Submit found item report\r
+      operationId: SubmitFoundItemReport\r
+      description: Student only. One REPORT_PHOTO upload token. Create report and initial history in one transaction.\r
+        Retry may create a second report; client must not auto-retry POST.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/SubmissionCreateRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions/me:\r
+    get:\r
+      tags:\r
+      - Student (Roadmap - Fase 2 Mahasiswa)\r
+      summary: List own found item reports\r
+      operationId: ListOwnFoundItemReports\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/SubmissionStatus'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions/{submission_id}:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Get authorized found report detail\r
+      operationId: GetAuthorizedFoundReportDetail\r
+      description: Only reporter or assigned officer of target post. Unauthorized resource responds 404 to prevent\r
+        enumeration.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionDetailResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /submissions/{submission_id}/cancel:\r
+    post:\r
+      tags:\r
+      - Student (Roadmap - Fase 2 Mahasiswa)\r
+      summary: Cancel own pending report\r
+      operationId: CancelOwnPendingReport\r
+      description: Only PENDING_RECEIPT. History reason required; status and history transactionally updated.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReasonRequest'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/submissions:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: List reports for assigned post\r
+      operationId: ListReportsForAssignedPost\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/SubmissionStatus'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionsResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/submissions/{submission_id}/receive:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Receive found report and create inventory\r
+      operationId: ReceiveFoundReportAndCreateInventory\r
+      description: Physical receipt required; assigned post only; pending report only. Creates item and photos,\r
+        updates report and history atomically. First item photo token becomes primary. Concurrent duplicate returns\r
+        409.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReceiveRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/submissions/{submission_id}/reject:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Reject pending found report\r
+      operationId: RejectPendingFoundReport\r
+      description: Assigned post and PENDING_RECEIPT only. Reason nonblank, status and history atomic.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/SubmissionId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReasonRequest'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/SubmissionResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/inventory:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: List inventory for assigned post\r
+      operationId: ListInventoryForAssignedPost\r
+      description: Includes hidden and non-STORED items; scoped to officer post.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      - $ref: '#/components/parameters/ItemStatusFilter'\r
+      - $ref: '#/components/parameters/Q'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryListResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/inventory/overdue:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: List overdue stored inventory\r
+      operationId: ListOverdueStoredInventory\r
+      description: Compute overdue from received_at and storage_limit_days, only STORED; no automatic mutation.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/Page'\r
+      - $ref: '#/components/parameters/Limit'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/OverdueListResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2) Operations (Active - MVP)\r
+      summary: Record found item directly\r
+      operationId: RecordFoundItemDirectly\r
+      description: Assigned post inferred from DB; exactly 1 ITEM_PHOTO token; single primary photo. No client-controlled post\r
+        ID.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ItemCreateRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}:\r
+    get:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Get authorized inventory detail\r
+      operationId: GetAuthorizedInventoryDetail\r
+      description: Includes private_verification_notes only for assigned post officer.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}/visibility:\r
+    patch:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Set stored item catalog visibility\r
+      operationId: SetStoredItemCatalogVisibility\r
+      description: Only STORED items; changing visibility does not change physical status.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/VisibilityRequest'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}/return:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Return item to verified owner\r
+      operationId: ReturnItemToVerifiedOwner\r
+      description: In-person ownership verification. Creates one item_returns and updates item status RETURNED_TO_OWNER,\r
+        is_visible false atomically. Duplicate/concurrent returns 409. No identity photo required.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/ReturnRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ReturnResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /officer/items/{item_id}/distribute:\r
+    post:\r
+      tags:\r
+      - Officer Handover & Returns (Roadmap - Fase 2)\r
+      summary: Distribute item under post policy\r
+      operationId: DistributeItemUnderPostPolicy\r
+      description: Only STORED; manually sets DISTRIBUTED and is_visible false atomically. No item_returns row.\r
+        No request body.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/ItemId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/InventoryResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /uploads/intents:\r
+    post:\r
+      tags:\r
+      - Uploads R2 (Active - MVP)\r
+      summary: Request R2 image upload intent\r
+      operationId: RequestR2ImageUploadIntent\r
+      description: Only STUDENT REPORT_PHOTO or OFFICER ITEM_PHOTO. POST_PHOTO is admin-only offline operation,\r
+        not public API. Max 5 MiB; JPEG, PNG, WebP. Presigned PUT URL expires in 5 minutes.\r
+      security:\r
+      - bearerAuth: []\r
+      requestBody:\r
+        required: true\r
+        content:\r
+          application/json:\r
+            schema:\r
+              $ref: '#/components/schemas/UploadIntentRequest'\r
+      responses:\r
+        '201':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/UploadIntentResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+  /uploads/{upload_id}/finalize:\r
+    post:\r
+      tags:\r
+      - Uploads R2 (Active - MVP)\r
+      summary: Finalize verified R2 image upload\r
+      operationId: FinalizeVerifiedR2ImageUpload\r
+      description: Server verifies signed upload intent ownership, object existence, size, MIME and actual content.\r
+        Issues user-bound purpose-bound signed token valid 15 minutes; token can be consumed once through unique\r
+        storage_path constraints in DB.\r
+      security:\r
+      - bearerAuth: []\r
+      parameters:\r
+      - $ref: '#/components/parameters/UploadId'\r
+      responses:\r
+        '200':\r
+          description: Success\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/UploadFinalizedResponse'\r
+        '400':\r
+          description: HTTP 400\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '401':\r
+          description: HTTP 401\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '403':\r
+          description: HTTP 403\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '404':\r
+          description: HTTP 404\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '409':\r
+          description: HTTP 409\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '422':\r
+          description: HTTP 422\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '429':\r
+          description: HTTP 429\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+        '500':\r
+          description: HTTP 500\r
+          content:\r
+            application/json:\r
+              schema:\r
+                $ref: '#/components/schemas/ApiError'\r
+components:\r
+  securitySchemes:\r
+    bearerAuth:\r
+      type: http\r
+      scheme: bearer\r
+      bearerFormat: JWT\r
+      description: Verified JWT session token (HS256) issued on officer login; user role and assigned service post resolved server-side from Neon PostgreSQL.\r
+  parameters:\r
+    PostId:\r
+      name: post_id\r
+      in: path\r
+      required: true\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+    ItemId:\r
+      name: item_id\r
+      in: path\r
+      required: true\r
+      schema: &id001\r
+        type: string\r
+        format: uuid\r
+    SubmissionId:\r
+      name: submission_id\r
+      in: path\r
+      required: true\r
+      schema: *id001\r
+    UploadId:\r
+      name: upload_id\r
+      in: path\r
+      required: true\r
+      schema: *id001\r
+    Page:\r
+      name: page\r
+      in: query\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+        default: 1\r
+    Limit:\r
+      name: limit\r
+      in: query\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+        maximum: 10\r
+        default: 10\r
+    Q:\r
+      name: q\r
+      in: query\r
+      schema:\r
+        type: string\r
+        maxLength: 120\r
+    Category:\r
+      name: category\r
+      in: query\r
+      schema:\r
+        type: string\r
+        maxLength: 80\r
+    FilterPostId:\r
+      name: post_id\r
+      in: query\r
+      schema:\r
+        type: integer\r
+        minimum: 1\r
+    ItemSort:\r
+      name: sort\r
+      in: query\r
+      schema:\r
+        type: string\r
+        enum:\r
+        - received_at_desc\r
+        - received_at_asc\r
+        - item_name_asc\r
+        description: Sort stabil; item_id sebagai tie-breaker\r
+    SubmissionStatus:\r
+      name: status\r
+      in: query\r
+      schema:\r
+        $ref: '#/components/schemas/ReportStatus'\r
+    ItemStatusFilter:\r
+      name: status\r
+      in: query\r
+      schema:\r
+        $ref: '#/components/schemas/ItemStatus'\r
+  schemas:\r
+    UserRole:\r
+      type: string\r
+      enum:\r
+      - STUDENT\r
+      - OFFICER\r
+    ReportStatus:\r
+      type: string\r
+      enum:\r
+      - PENDING_RECEIPT\r
+      - RECEIVED\r
+      - REJECTED\r
+      - CANCELLED\r
+    ItemStatus:\r
+      type: string\r
+      enum:\r
+      - STORED\r
+      - RETURNED_TO_OWNER\r
+      - DISTRIBUTED\r
+    ServicePostPhoto:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        photo_id: *id001\r
+        position:\r
+          type: integer\r
+          minimum: 1\r
+          maximum: 3\r
+        is_cover:\r
+          type: boolean\r
+        url:\r
+          type: string\r
+          format: uri\r
+        expires_at: &id002\r
+          type: string\r
+          format: date-time\r
+      required:\r
+      - photo_id\r
+      - position\r
+      - is_cover\r
+      - url\r
+      - expires_at\r
+    ServicePostShort:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        post_id:\r
+          type: integer\r
+        name:\r
+          type: string\r
+      required:\r
+      - post_id\r
+      - name\r
+    ServicePostPublic:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        post_id:\r
+          type: integer\r
+        name:\r
+          type: string\r
+        location_description:\r
+          type: string\r
+          nullable: true\r
+        opening_hours:\r
+          type: string\r
+          nullable: true\r
+        directions:\r
+          type: string\r
+          nullable: true\r
+        photos:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/ServicePostPhoto'\r
+          maxItems: 3\r
+      required:\r
+      - post_id\r
+      - name\r
+      - location_description\r
+      - opening_hours\r
+      - directions\r
+      - photos\r
+    ItemPhoto:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        photo_id: *id001\r
+        url:\r
+          type: string\r
+          format: uri\r
+        expires_at: *id002\r
+        is_primary:\r
+          type: boolean\r
+      required:\r
+      - photo_id\r
+      - url\r
+      - expires_at\r
+      - is_primary\r
+    FoundItemPublic:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_id: *id001\r
+        inventory_code: &id003\r
+          type: string\r
+        item_name: &id004\r
+          type: string\r
+        category: &id005\r
+          type: string\r
+        public_description: &id006\r
+          type: string\r
+        found_location: &id007\r
+          type: string\r
+          nullable: true\r
+        found_on: &id008\r
+          type: string\r
+          format: date\r
+          nullable: true\r
+        received_at: *id002\r
+        post: &id009\r
+          $ref: '#/components/schemas/ServicePostShort'\r
+        photos: &id010\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/ItemPhoto'\r
+          minItems: 1\r
+          maxItems: 1\r
+      required:\r
+      - item_id\r
+      - inventory_code\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - received_at\r
+      - post\r
+      - photos\r
+    FoundSubmission:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        submission_id: *id001\r
+        report_code: &id011\r
+          type: string\r
+        target_post_id: &id012\r
+          type: integer\r
+        item_name: &id013\r
+          type: string\r
+        category: &id014\r
+          type: string\r
+        public_description: &id015\r
+          type: string\r
+        found_location: &id016\r
+          type: string\r
+        found_on: &id017\r
+          type: string\r
+          format: date\r
+        status: &id018\r
+          $ref: '#/components/schemas/ReportStatus'\r
+        submitted_at: *id002\r
+        report_photo_url: &id019\r
+          type: string\r
+          format: uri\r
+        report_photo_expires_at: *id002\r
+      required:\r
+      - submission_id\r
+      - report_code\r
+      - target_post_id\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - status\r
+      - submitted_at\r
+      - report_photo_url\r
+      - report_photo_expires_at\r
+    InventoryOfficer:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_id: *id001\r
+        inventory_code: *id003\r
+        item_name: *id004\r
+        category: *id005\r
+        public_description: *id006\r
+        found_location: *id007\r
+        found_on: *id008\r
+        received_at: *id002\r
+        post: *id009\r
+        photos: *id010\r
+        status: &id020\r
+          $ref: '#/components/schemas/ItemStatus'\r
+        is_visible: &id021\r
+          type: boolean\r
+        storage_post_id: &id022\r
+          type: integer\r
+        source_submission_id: &id023\r
+          type: string\r
+          format: uuid\r
+          nullable: true\r
+        private_verification_notes: &id024\r
+          type: string\r
+          nullable: true\r
+      required:\r
+      - item_id\r
+      - inventory_code\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - received_at\r
+      - post\r
+      - photos\r
+      - status\r
+      - is_visible\r
+      - storage_post_id\r
+      - source_submission_id\r
+      - private_verification_notes\r
+    Me:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        user_id: *id001\r
+        full_name:\r
+          type: string\r
+        email:\r
+          type: string\r
+          format: email\r
+        student_number:\r
+          type: string\r
+          nullable: true\r
+        role:\r
+          $ref: '#/components/schemas/UserRole'\r
+        assigned_post_id:\r
+          type: integer\r
+          nullable: true\r
+        nim_verification_status:\r
+          type: string\r
+          enum:\r
+          - NOT_VERIFIED\r
+      required:\r
+      - user_id\r
+      - full_name\r
+      - email\r
+      - student_number\r
+      - role\r
+      - assigned_post_id\r
+      - nim_verification_status\r
+    StatusHistory:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        history_id: *id001\r
+        from_status:\r
+          $ref: '#/components/schemas/ReportStatus'\r
+          nullable: true\r
+        to_status:\r
+          $ref: '#/components/schemas/ReportStatus'\r
+        reason:\r
+          type: string\r
+          nullable: true\r
+        changed_at: *id002\r
+      required:\r
+      - history_id\r
+      - from_status\r
+      - to_status\r
+      - reason\r
+      - changed_at\r
+    ApiError:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        error:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            code:\r
+              type: string\r
+            message:\r
+              type: string\r
+            request_id:\r
+              type: string\r
+          required:\r
+          - code\r
+          - message\r
+          - request_id\r
+      required:\r
+      - error\r
+    PaginationMeta:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        page:\r
+          type: integer\r
+          minimum: 1\r
+        limit:\r
+          type: integer\r
+          minimum: 1\r
+        total:\r
+          type: integer\r
+          minimum: 0\r
+        total_pages:\r
+          type: integer\r
+          minimum: 0\r
+      required:\r
+      - page\r
+      - limit\r
+      - total\r
+      - total_pages\r
+    ReportWithHistory:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        submission_id: *id001\r
+        report_code: *id011\r
+        target_post_id: *id012\r
+        item_name: *id013\r
+        category: *id014\r
+        public_description: *id015\r
+        found_location: *id016\r
+        found_on: *id017\r
+        status: *id018\r
+        submitted_at: *id002\r
+        report_photo_url: *id019\r
+        report_photo_expires_at: *id002\r
+        history:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/StatusHistory'\r
+      required:\r
+      - submission_id\r
+      - report_code\r
+      - target_post_id\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - status\r
+      - submitted_at\r
+      - report_photo_url\r
+      - report_photo_expires_at\r
+      - history\r
+    OverdueInventory:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_id: *id001\r
+        inventory_code: *id003\r
+        item_name: *id004\r
+        category: *id005\r
+        public_description: *id006\r
+        found_location: *id007\r
+        found_on: *id008\r
+        received_at: *id002\r
+        post: *id009\r
+        photos: *id010\r
+        status: *id020\r
+        is_visible: *id021\r
+        storage_post_id: *id022\r
+        source_submission_id: *id023\r
+        private_verification_notes: *id024\r
+        storage_limit_days:\r
+          type: integer\r
+          minimum: 1\r
+        storage_age_days:\r
+          type: integer\r
+          minimum: 0\r
+        overdue_days:\r
+          type: integer\r
+          minimum: 1\r
+      required:\r
+      - item_id\r
+      - inventory_code\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - received_at\r
+      - post\r
+      - photos\r
+      - status\r
+      - is_visible\r
+      - storage_post_id\r
+      - source_submission_id\r
+      - private_verification_notes\r
+      - storage_limit_days\r
+      - storage_age_days\r
+      - overdue_days\r
+    ReturnRecord:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        return_id: *id001\r
+        item_id: *id001\r
+        recipient_name:\r
+          type: string\r
+        verification_summary:\r
+          type: string\r
+        verification_confirmed_at: *id002\r
+        returned_at: *id002\r
+      required:\r
+      - return_id\r
+      - item_id\r
+      - recipient_name\r
+      - verification_summary\r
+      - verification_confirmed_at\r
+      - returned_at\r
+    UploadIntent:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        upload_id: *id001\r
+        put_url:\r
+          type: string\r
+          format: uri\r
+        expires_at: *id002\r
+        required_headers:\r
+          type: object\r
+          additionalProperties:\r
+            type: string\r
+      required:\r
+      - upload_id\r
+      - put_url\r
+      - expires_at\r
+      - required_headers\r
+    UploadFinalized:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        upload_token:\r
+          type: string\r
+        purpose:\r
+          type: string\r
+          enum:\r
+          - REPORT_PHOTO\r
+          - ITEM_PHOTO\r
+        expires_at: *id002\r
+      required:\r
+      - upload_token\r
+      - purpose\r
+      - expires_at\r
+    BootstrapRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        full_name:\r
+          type: string\r
+          maxLength: 120\r
+          minLength: 1\r
+      required:\r
+      - full_name\r
+    SubmissionCreateRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        target_post_id:\r
+          type: integer\r
+        item_name:\r
+          type: string\r
+          maxLength: 150\r
+          minLength: 1\r
+        category:\r
+          type: string\r
+          maxLength: 80\r
+          minLength: 1\r
+        public_description: &id025\r
+          type: string\r
+          minLength: 1\r
+        found_location: *id025\r
+        found_on: *id017\r
+        report_photo_upload_token: *id025\r
+      required:\r
+      - target_post_id\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - found_location\r
+      - found_on\r
+      - report_photo_upload_token\r
+    ReasonRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        reason:\r
+          type: string\r
+          maxLength: 2000\r
+          minLength: 1\r
+      required:\r
+      - reason\r
+    ItemCreateRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        item_name:\r
+          type: string\r
+          maxLength: 150\r
+          minLength: 1\r
+        category:\r
+          type: string\r
+          maxLength: 80\r
+          minLength: 1\r
+        public_description: *id025\r
+        private_verification_notes:\r
+          type: string\r
+          nullable: true\r
+        found_location:\r
+          type: string\r
+          nullable: true\r
+        found_on:\r
+          type: string\r
+          format: date\r
+          nullable: true\r
+        item_photo_upload_tokens:\r
+          type: array\r
+          items: *id025\r
+          minItems: 1\r
+          maxItems: 1\r
+      required:\r
+      - item_name\r
+      - category\r
+      - public_description\r
+      - item_photo_upload_tokens\r
+    ReceiveRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        public_description: *id025\r
+        private_verification_notes:\r
+          type: string\r
+          nullable: true\r
+        item_photo_upload_tokens:\r
+          type: array\r
+          items: *id025\r
+          minItems: 1\r
+          maxItems: 1\r
+      required:\r
+      - public_description\r
+      - item_photo_upload_tokens\r
+    VisibilityRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        is_visible:\r
+          type: boolean\r
+      required:\r
+      - is_visible\r
+    ReturnRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        recipient_name:\r
+          type: string\r
+          maxLength: 120\r
+          minLength: 1\r
+        verification_summary:\r
+          type: string\r
+          maxLength: 5000\r
+          minLength: 1\r
+      required:\r
+      - recipient_name\r
+      - verification_summary\r
+    UploadIntentRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        purpose:\r
+          type: string\r
+          enum:\r
+          - REPORT_PHOTO\r
+          - ITEM_PHOTO\r
+        content_type:\r
+          type: string\r
+          enum:\r
+          - image/jpeg\r
+          - image/png\r
+          - image/webp\r
+        size_bytes:\r
+          type: integer\r
+          minimum: 1\r
+          maximum: 5242880\r
+      required:\r
+      - purpose\r
+      - content_type\r
+      - size_bytes\r
+    MeResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/Me'\r
+      required:\r
+      - data\r
+    PostResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/ServicePostPublic'\r
+      required:\r
+      - data\r
+    ItemResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/FoundItemPublic'\r
+      required:\r
+      - data\r
+    SubmissionResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/FoundSubmission'\r
+      required:\r
+      - data\r
+    SubmissionDetailResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/ReportWithHistory'\r
+      required:\r
+      - data\r
+    InventoryResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/InventoryOfficer'\r
+      required:\r
+      - data\r
+    OverdueResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/OverdueInventory'\r
+      required:\r
+      - data\r
+    ReturnResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/ReturnRecord'\r
+      required:\r
+      - data\r
+    UploadIntentResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/UploadIntent'\r
+      required:\r
+      - data\r
+    UploadFinalizedResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          $ref: '#/components/schemas/UploadFinalized'\r
+      required:\r
+      - data\r
+    PostsResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/ServicePostPublic'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    ItemsResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/FoundItemPublic'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    SubmissionsResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/FoundSubmission'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    InventoryListResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/InventoryOfficer'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    OverdueListResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: array\r
+          items:\r
+            $ref: '#/components/schemas/OverdueInventory'\r
+        meta:\r
+          $ref: '#/components/schemas/PaginationMeta'\r
+      required:\r
+      - data\r
+      - meta\r
+    StudentRegisterRequestOtpRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        full_name:\r
+          type: string\r
+          minLength: 2\r
+          maxLength: 120\r
+        email:\r
+          type: string\r
+          format: email\r
+          example: 2411502194@student.budiluhur.ac.id\r
+        password:\r
+          type: string\r
+          minLength: 8\r
+      required:\r
+      - full_name\r
+      - email\r
+      - password\r
+    StudentRegisterRequestOtpResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            challenge_token:\r
+              type: string\r
+            expires_in:\r
+              type: integer\r
+              example: 600\r
+            extracted_nim:\r
+              type: string\r
+              example: "2411502194"\r
+            message:\r
+              type: string\r
+          required:\r
+          - challenge_token\r
+          - expires_in\r
+          - extracted_nim\r
+          - message\r
+      required:\r
+      - data\r
+    StudentRegisterRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        full_name:\r
+          type: string\r
+          minLength: 2\r
+          maxLength: 120\r
+        email:\r
+          type: string\r
+          format: email\r
+          example: 2411502194@student.budiluhur.ac.id\r
+        password:\r
+          type: string\r
+          minLength: 8\r
+        otp:\r
+          type: string\r
+          pattern: ^\\d{6}$\r
+          example: "123456"\r
+        challenge_token:\r
+          type: string\r
+          minLength: 20\r
+      required:\r
+      - full_name\r
+      - email\r
+      - password\r
+      - otp\r
+      - challenge_token\r
+    StudentLoginRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        email:\r
+          type: string\r
+          format: email\r
+          example: 2411502194@student.budiluhur.ac.id\r
+        password:\r
+          type: string\r
+          minLength: 1\r
+      required:\r
+      - email\r
+      - password\r
+    AuthTokenResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            token:\r
+              type: string\r
+            user:\r
+              $ref: '#/components/schemas/Me'\r
+          required:\r
+          - token\r
+          - user\r
+      required:\r
+      - data\r
+    ForgotPasswordRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        email:\r
+          type: string\r
+          format: email\r
+      required:\r
+      - email\r
+    ResetPasswordRequest:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        token:\r
+          type: string\r
+          minLength: 10\r
+        new_password:\r
+          type: string\r
+          minLength: 8\r
+      required:\r
+      - token\r
+      - new_password\r
+    MessageStatusResponse:\r
+      type: object\r
+      additionalProperties: false\r
+      properties:\r
+        data:\r
+          type: object\r
+          additionalProperties: false\r
+          properties:\r
+            success:\r
+              type: boolean\r
+            message:\r
+              type: string\r
+          required:\r
+          - success\r
+          - message\r
+      required:\r
+      - data\r
+`;
 
 // src/app.ts
 function buildApp() {
@@ -99073,7 +102249,7 @@ function buildApp() {
         "*.token"
       ]
     },
-    genReqId: (req) => req.headers["x-request-id"] || (0, import_crypto8.randomUUID)(),
+    genReqId: (req) => req.headers["x-request-id"] || (0, import_crypto9.randomUUID)(),
     requestIdHeader: "x-request-id"
   });
   app2.addContentTypeParser(

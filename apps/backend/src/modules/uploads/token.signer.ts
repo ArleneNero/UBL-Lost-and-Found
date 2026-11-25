@@ -1,21 +1,23 @@
 import { createHmac, timingSafeEqual } from "crypto";
-import { env } from "../../config/env.js";
+import { resolveRuntimeAuthSecret } from "../../config/env.js";
 
 export class TokenSigner {
   public sign(payload: object): string {
+    const secret = resolveRuntimeAuthSecret();
     const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-    const sig = createHmac("sha256", env.AUTH_SECRET)
+    const sig = createHmac("sha256", secret)
       .update(data)
       .digest("base64url");
     return `${data}.${sig}`;
   }
 
   public verify<T>(token: string): T | null {
+    const secret = resolveRuntimeAuthSecret();
     const parts = token.split(".");
     if (parts.length !== 2) return null;
 
     const [data, sig] = parts;
-    const expectedSig = createHmac("sha256", env.AUTH_SECRET)
+    const expectedSig = createHmac("sha256", secret)
       .update(data)
       .digest("base64url");
 

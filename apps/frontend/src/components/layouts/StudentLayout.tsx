@@ -96,7 +96,7 @@ export const StudentLayout: React.FC = () => {
               </div>
               <div className="flex flex-col text-left">
                 <span className="text-xs font-bold text-[var(--lf-ink)] leading-tight max-w-[120px] truncate">{currentUser?.name || 'Mahasiswa'}</span>
-                <span className="text-[10px] text-[var(--lf-muted)]">NIM: {currentUser?.studentNumber || '2411502194'}</span>
+                <span className="text-[10px] text-[var(--lf-muted)]">NIM: {currentUser?.studentNumber || '-'}</span>
               </div>
             </div>
 

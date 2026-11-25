@@ -1,6 +1,6 @@
 {
   "name": "ubl-lostandfound-monorepo",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -8,7 +8,7 @@
     "apps/frontend"
   ],
   "scripts": {
-    "build": "npm run build --prefix apps/backend && node -e \"const fs = require('fs'); ['index.cjs', 'index.js', 'app.cjs', 'app.js'].forEach(f => fs.copyFileSync('apps/backend/' + f, 'api/' + f));\" && npm run build --prefix apps/frontend",
+    "build": "npm run build --prefix apps/backend && node -e \"const fs = require('fs'); ['index.cjs', 'index.js', 'app.cjs', 'app.js'].forEach(f => fs.copyFileSync('apps/backend/' + f, 'api/' + f)); fs.copyFileSync('apps/backend/index.cjs', 'api/[...routes].cjs');\" && npm run build --prefix apps/frontend",
     "smoke": "node scripts/smoke-test.mjs"
   },
   "dependencies": {

@@ -1,10 +1,24 @@
 import { UserSession } from '@/types/domain';
 
+export interface RequestStudentOtpInput {
+  fullName: string;
+  email: string;
+  password: string;
+}
+
+export interface RequestStudentOtpResult {
+  challengeToken: string;
+  expiresIn: number;
+  extractedNim: string;
+  message?: string;
+}
+
 export interface RegisterStudentInput {
   fullName: string;
   email: string;
   password: string;
-  studentNumber: string;
+  otp: string;
+  challengeToken: string;
 }
 
 export interface IAuthService {
@@ -15,6 +29,7 @@ export interface IAuthService {
     passwordOrName?: string,
     studentNumber?: string
   ): Promise<UserSession>;
-  registerStudent?(input: RegisterStudentInput): Promise<UserSession>;
+  requestStudentRegisterOtp(input: RequestStudentOtpInput): Promise<RequestStudentOtpResult>;
+  registerStudent(input: RegisterStudentInput): Promise<UserSession>;
   logout(): Promise<void>;
 }

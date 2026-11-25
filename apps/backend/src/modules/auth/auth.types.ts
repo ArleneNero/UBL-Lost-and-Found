@@ -14,9 +14,10 @@ export interface OfficerContext {
 }
 
 export interface TokenPayload {
-  sub: string; // auth_user_id (Neon Better Auth User ID)
+  sub: string; // auth_user_id (Neon Better Auth User ID) or challenge_id for OTP challenges
   email?: string;
   name?: string;
+  purpose?: string;
   exp?: number;
   iat?: number;
   iss?: string;

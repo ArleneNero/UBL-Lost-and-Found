@@ -1,5 +1,7 @@
+import crypto from "crypto";
 import { z } from "zod";
 import * as dotenv from "dotenv";
+import { AppError } from "../utils/errors.js";
 
 dotenv.config();
 
@@ -35,7 +37,10 @@ const envSchema = z.object({
     .default(
       process.env.R2_PUBLIC_URL || "https://pub-ec2de406cfec4d6ba5d9a2beb58f023a.r2.dev"
     ),
-  AUTH_SECRET: z.string().default("dev-neon-auth-secret-key-min-32-chars-long!"),
+  AUTH_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v || "").trim()),
   NEON_AUTH_BASE_URL: z.string().optional(),
   RESEND_API_KEY: z
     .string()
@@ -51,8 +56,51 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.warn("WARNING: Environment validation issues detected:", parsed.error.format());
+  throw new Error(
+    `Invalid environment configuration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`
+  );
 }
 
-export const env = parsed.success ? parsed.data : envSchema.parse({});
+export const env = parsed.data;
+
+let ephemeralDevSecret: string | null = null;
+let hasLoggedEphemeralWarning = false;
+
+/**
+ * Resolves the active HMAC signing secret without ever falling back to hardcoded static literals.
+ * - Production: throws 503 SERVER_MISCONFIGURED if AUTH_SECRET is missing, < 32 chars, or a known placeholder.
+ * - Development / Test: generates a process-local random 256-bit ephemeral secret with a one-time warning.
+ */
+export function resolveRuntimeAuthSecret(): string {
+  const configured = (process.env.AUTH_SECRET ?? "").trim();
+  const isPlaceholder = /^(dev-neon-auth-secret|changeme|placeholder|default-secret)/i.test(
+    configured
+  );
+
+  if (configured.length >= 32 && !isPlaceholder) {
+    return configured;
+  }
+
+  const runtimeNodeEnv = (process.env.NODE_ENV || env.NODE_ENV || "").trim();
+  if (runtimeNodeEnv === "production") {
+    throw new AppError(
+      "SERVER_MISCONFIGURED",
+      "Konfigurasi keamanan server (AUTH_SECRET) belum diatur.",
+      503
+    );
+  }
+
+  if (!ephemeralDevSecret) {
+    ephemeralDevSecret = crypto.randomBytes(32).toString("hex");
+  }
+
+  if (!hasLoggedEphemeralWarning) {
+    hasLoggedEphemeralWarning = true;
+    console.warn(
+      "WARNING: AUTH_SECRET is missing or insecure (< 32 chars). Using an ephemeral random secret for non-production runtime."
+    );
+  }
+
+  return ephemeralDevSecret;
+}
 

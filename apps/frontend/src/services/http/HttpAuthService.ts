@@ -1,10 +1,44 @@
-import { IAuthService, RegisterStudentInput } from '../contracts/IAuthService';
+import {
+  IAuthService,
+  RegisterStudentInput,
+  RequestStudentOtpInput,
+  RequestStudentOtpResult,
+} from '../contracts/IAuthService';
 import { UserSession } from '@/types/domain';
-import { ApiDataResponse, OfficerLoginResponseDto, MeDto } from '@/types/api';
+import {
+  ApiDataResponse,
+  OfficerLoginResponseDto,
+  MeDto,
+  StudentOtpRequestDto,
+  StudentOtpResponseDto,
+  StudentRegisterRequestDto,
+} from '@/types/api';
 import { apiClient, setAuthToken, getAuthToken } from './apiClient';
 import { mockStore } from '@/data/mockStore';
 
 export class HttpAuthService implements IAuthService {
+  private applyUserSession(user: MeDto): UserSession {
+    const session: UserSession = {
+      id: user.user_id,
+      name: user.full_name,
+      email: user.email,
+      role: user.role,
+      assignedPostId: user.assigned_post_id,
+      studentNumber: user.student_number,
+    };
+
+    mockStore.getState().currentUser = {
+      userId: session.id,
+      fullName: session.name,
+      email: session.email,
+      role: session.role,
+      assignedPostId: session.assignedPostId ?? 1,
+      studentNumber: session.studentNumber ?? null,
+    };
+
+    return session;
+  }
+
   async getCurrentUser(): Promise<UserSession | null> {
     const token = getAuthToken();
     if (!token) {
@@ -13,27 +47,7 @@ export class HttpAuthService implements IAuthService {
 
     try {
       const res = await apiClient<ApiDataResponse<MeDto>>('/me');
-      const u = res.data;
-      const session: UserSession = {
-        id: u.user_id,
-        name: u.full_name,
-        email: u.email,
-        role: u.role,
-        assignedPostId: u.assigned_post_id,
-        studentNumber: u.student_number,
-      };
-
-      // Sync local store
-      mockStore.getState().currentUser = {
-        userId: session.id,
-        fullName: session.name,
-        email: session.email,
-        role: session.role,
-        assignedPostId: session.assignedPostId ?? 1,
-        studentNumber: session.studentNumber ?? null,
-      };
-
-      return session;
+      return this.applyUserSession(res.data);
     } catch {
       setAuthToken(null);
       mockStore.getState().currentUser = null;
@@ -52,27 +66,7 @@ export class HttpAuthService implements IAuthService {
 
     const { token, user } = res.data;
     setAuthToken(token);
-
-    const session: UserSession = {
-      id: user.user_id,
-      name: user.full_name,
-      email: user.email,
-      role: user.role,
-      assignedPostId: user.assigned_post_id,
-      studentNumber: user.student_number,
-    };
-
-    // Sync local store
-    mockStore.getState().currentUser = {
-      userId: session.id,
-      fullName: session.name,
-      email: session.email,
-      role: session.role,
-      assignedPostId: session.assignedPostId ?? 1,
-      studentNumber: session.studentNumber ?? null,
-    };
-
-    return session;
+    return this.applyUserSession(user);
   }
 
   async loginAsStudent(
@@ -93,66 +87,53 @@ export class HttpAuthService implements IAuthService {
 
     const { token, user } = res.data;
     setAuthToken(token);
+    return this.applyUserSession(user);
+  }
 
-    const session: UserSession = {
-      id: user.user_id,
-      name: user.full_name,
-      email: user.email,
-      role: user.role,
-      assignedPostId: user.assigned_post_id,
-      studentNumber: user.student_number,
+  async requestStudentRegisterOtp(input: RequestStudentOtpInput): Promise<RequestStudentOtpResult> {
+    const payload: StudentOtpRequestDto = {
+      full_name: input.fullName,
+      email: input.email,
+      password: input.password,
     };
 
-    // Sync local store
-    mockStore.getState().currentUser = {
-      userId: session.id,
-      fullName: session.name,
-      email: session.email,
-      role: session.role,
-      assignedPostId: session.assignedPostId ?? 1,
-      studentNumber: session.studentNumber ?? null,
-    };
+    const res = await apiClient<ApiDataResponse<StudentOtpResponseDto>>(
+      '/auth/student-register/request-otp',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
 
-    return session;
+    const data = res.data;
+    return {
+      challengeToken: data.challenge_token,
+      expiresIn: data.expires_in,
+      extractedNim: data.extracted_nim,
+      message: data.message,
+    };
   }
 
   async registerStudent(input: RegisterStudentInput): Promise<UserSession> {
+    const payload: StudentRegisterRequestDto = {
+      full_name: input.fullName,
+      email: input.email,
+      password: input.password,
+      otp: input.otp,
+      challenge_token: input.challengeToken,
+    };
+
     const res = await apiClient<ApiDataResponse<{ token: string; user: MeDto }>>(
       '/auth/student-register',
       {
         method: 'POST',
-        body: JSON.stringify({
-          full_name: input.fullName,
-          email: input.email,
-          password: input.password,
-          student_number: input.studentNumber,
-        }),
+        body: JSON.stringify(payload),
       }
     );
 
     const { token, user } = res.data;
     setAuthToken(token);
-
-    const session: UserSession = {
-      id: user.user_id,
-      name: user.full_name,
-      email: user.email,
-      role: user.role,
-      assignedPostId: user.assigned_post_id,
-      studentNumber: user.student_number,
-    };
-
-    // Sync local store
-    mockStore.getState().currentUser = {
-      userId: session.id,
-      fullName: session.name,
-      email: session.email,
-      role: session.role,
-      assignedPostId: session.assignedPostId ?? 1,
-      studentNumber: session.studentNumber ?? null,
-    };
-
-    return session;
+    return this.applyUserSession(user);
   }
 
   async logout(): Promise<void> {
