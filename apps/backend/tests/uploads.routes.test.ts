@@ -299,7 +299,10 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
       const intentData = JSON.parse(intentRes.body).data;
 
       // 2. Direct PUT simulation (B/E.1.2)
-      const fakeImageBytes = Buffer.from("simulated-jpeg-binary-image-content");
+      const fakeImageBytes = Buffer.concat([
+        Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+        Buffer.from("simulated-jpeg-binary-image-content"),
+      ]);
       // Use storage service simulatePut for exact path
       const parsedUrl = new URL(intentData.put_url);
       const storageKey = parsedUrl.pathname.replace(/^\/[^/]+\//, ""); // remove /bucket/
@@ -324,7 +327,7 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
       expect(diffMinutes).toBeLessThanOrEqual(15.2);
 
       // 4. Token verification & consume (B/E.2.1)
-      const consumed = uploadsService.verifyAndConsumeUploadToken(
+      const consumed = await uploadsService.verifyAndConsumeUploadToken(
         finalizeData.upload_token,
         "ITEM_PHOTO",
         officerUserId
@@ -332,13 +335,13 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
       expect(consumed.storagePath).toBe(storageKey);
 
       // 5. Anti-replay verification (cannot be consumed twice)
-      expect(() =>
+      await expect(
         uploadsService.verifyAndConsumeUploadToken(
           finalizeData.upload_token,
           "ITEM_PHOTO",
           officerUserId
         )
-      ).toThrowError(/anti-replay/i);
+      ).rejects.toThrowError(/anti-replay/i);
     });
 
     it("rejects token when purpose doesn't match consumer (e.g. REPORT_PHOTO used in ITEM_PHOTO flow)", async () => {
@@ -360,7 +363,10 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
       const storageKey = parsedUrl.pathname.replace(/^\/[^/]+\//, "");
       await uploadsService.simulatePut(
         storageKey,
-        Buffer.from("student-report-photo"),
+        Buffer.concat([
+          Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+          Buffer.from("student-report-photo"),
+        ]),
         "image/png"
       );
 
@@ -373,13 +379,13 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
       const finalizeData = JSON.parse(finalizeRes.body).data;
 
       // 4. Verification fails if officer tries to use it as ITEM_PHOTO
-      expect(() =>
+      await expect(
         uploadsService.verifyAndConsumeUploadToken(
           finalizeData.upload_token,
           "ITEM_PHOTO", // Expected ITEM_PHOTO but token has REPORT_PHOTO
           studentUserId
         )
-      ).toThrowError(/Tujuan token tidak sesuai/i);
+      ).rejects.toThrowError(/Tujuan token tidak sesuai/i);
     });
 
     it("generates signed read URL without error (B/E.2.2)", async () => {
@@ -387,6 +393,77 @@ describe("Uploads Routes & Storage Pipeline (Milestone B/E)", () => {
       expect(readUrl).toBeDefined();
       expect(typeof readUrl).toBe("string");
       expect(readUrl.length).toBeGreaterThan(10);
+    });
+
+    it("FIND-06 & FIND-18: enforces ownership, content-type, size, and magic bytes on relay PUT & finalize", async () => {
+      const intentRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/uploads/intents",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          purpose: "ITEM_PHOTO",
+          content_type: "image/png",
+          size_bytes: 2048,
+        },
+      });
+      expect(intentRes.statusCode).toBe(201);
+      const { upload_id } = JSON.parse(intentRes.body).data;
+
+      // Cross-user IDOR relay PUT rejected
+      const idorRes = await app.inject({
+        method: "PUT",
+        url: `/api/v1/uploads/${upload_id}/content`,
+        headers: {
+          authorization: `Bearer ${otherOfficerToken}`,
+          "content-type": "image/png",
+        },
+        payload: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      });
+      expect(idorRes.statusCode).toBe(403);
+
+      // Mismatched Content-Type rejected
+      const mismatchRes = await app.inject({
+        method: "PUT",
+        url: `/api/v1/uploads/${upload_id}/content`,
+        headers: {
+          authorization: `Bearer ${officerToken}`,
+          "content-type": "image/jpeg",
+        },
+        payload: Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+      });
+      expect(mismatchRes.statusCode).toBe(422);
+
+      // Oversized payload rejected
+      const oversizeRes = await app.inject({
+        method: "PUT",
+        url: `/api/v1/uploads/${upload_id}/content`,
+        headers: {
+          authorization: `Bearer ${officerToken}`,
+          "content-type": "image/png",
+        },
+        payload: Buffer.alloc(3000, 0x89),
+      });
+      expect(oversizeRes.statusCode).toBe(422);
+
+      // Forged payload with PNG Content-Type but non-PNG magic bytes fails on finalize
+      const forgedPutRes = await app.inject({
+        method: "PUT",
+        url: `/api/v1/uploads/${upload_id}/content`,
+        headers: {
+          authorization: `Bearer ${officerToken}`,
+          "content-type": "image/png",
+        },
+        payload: Buffer.from("<svg>not-a-png</svg>"),
+      });
+      expect(forgedPutRes.statusCode).toBe(200);
+
+      const badFinalizeRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/uploads/${upload_id}/finalize`,
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(badFinalizeRes.statusCode).toBe(422);
+      expect(JSON.parse(badFinalizeRes.body).error.code).toBe("INVALID_IMAGE_SIGNATURE");
     });
   });
 });

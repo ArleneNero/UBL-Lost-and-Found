@@ -21,6 +21,16 @@ export interface StorageProvider {
   headObject(key: string): Promise<ObjectMetadata>;
 
   /**
+   * Reads the first `byteCount` bytes of an uploaded object for magic-byte inspection
+   */
+  getObjectHeaderBytes?(key: string, byteCount?: number): Promise<Buffer | null>;
+
+  /**
+   * Uploads an object directly through an authenticated backend relay
+   */
+  putObject?(key: string, body: Buffer, contentType: string): Promise<void>;
+
+  /**
    * Generates a temporary signed read URL for accessing private images
    */
   getPresignedReadUrl(
@@ -29,7 +39,7 @@ export interface StorageProvider {
   ): Promise<string>;
 
   /**
-   * Optional helper to simulate direct PUT in tests or local dev
+   * Optional helper to simulate direct PUT in tests only (never implemented on R2StorageProvider)
    */
   simulatePut?(
     key: string,

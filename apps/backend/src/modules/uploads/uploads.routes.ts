@@ -1,6 +1,8 @@
 import type { FastifyPluginAsync } from "fastify";
+import { env } from "../../config/env.js";
 import { authenticate } from "../../middleware/auth.guard.js";
 import {
+  MAX_UPLOAD_SIZE_BYTES,
   uploadIntentRequestSchema,
   uploadIdParamSchema,
   uploadIntentResponseSchema,
@@ -8,6 +10,8 @@ import {
 } from "./uploads.dto.js";
 import { uploadsService } from "./uploads.service.js";
 import { intentRegistry } from "./intent.registry.js";
+import { validateIntentForFinalize } from "./upload.validator.js";
+import { r2Provider } from "./storage/r2.provider.js";
 
 export const uploadsRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -20,7 +24,6 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       preHandler: [authenticate],
     },
     async (request, reply) => {
-      // 1. Validate request body
       const parsed = uploadIntentRequestSchema.safeParse(request.body);
       if (!parsed.success) {
         return reply.status(422).send({
@@ -34,8 +37,6 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const { purpose, content_type, size_bytes } = parsed.data;
-
-      // 2. Create upload intent via uploads service
       const intent = await uploadsService.createUploadIntent(
         request.currentUser!,
         purpose,
@@ -43,10 +44,7 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
         size_bytes
       );
 
-      const response = uploadIntentResponseSchema.parse({
-        data: intent,
-      });
-
+      const response = uploadIntentResponseSchema.parse({ data: intent });
       return reply.status(201).send(response);
     }
   );
@@ -61,7 +59,6 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       preHandler: [authenticate],
     },
     async (request, reply) => {
-      // 1. Validate route params
       const parsedParams = uploadIdParamSchema.safeParse(request.params);
       if (!parsedParams.success) {
         return reply.status(422).send({
@@ -74,29 +71,25 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const { upload_id } = parsedParams.data;
-
-      // 2. Finalize upload via uploads service
       const finalized = await uploadsService.finalizeUpload(
         request.currentUser!,
         upload_id
       );
 
-      const response = uploadFinalizedResponseSchema.parse({
-        data: finalized,
-      });
-
+      const response = uploadFinalizedResponseSchema.parse({ data: finalized });
       return reply.status(200).send(response);
     }
   );
 
   /**
    * PUT /uploads/:upload_id/content
-   * Relay endpoint to upload image when direct client-to-R2 upload is blocked by browser CORS
+   * Authenticated relay endpoint when direct browser-to-R2 PUT is blocked by CORS.
    */
   app.put(
     "/uploads/:upload_id/content",
     {
       preHandler: [authenticate],
+      bodyLimit: MAX_UPLOAD_SIZE_BYTES,
     },
     async (request, reply) => {
       const parsedParams = uploadIdParamSchema.safeParse(request.params);
@@ -111,47 +104,68 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
       }
 
       const { upload_id } = parsedParams.data;
-      const rawIntent = intentRegistry.get(upload_id);
-      if (!rawIntent) {
-        return reply.status(404).send({
+      const rawIntent = await intentRegistry.get(upload_id);
+      const intent = validateIntentForFinalize(rawIntent, request.currentUser!);
+
+      const rawContentType = request.headers["content-type"];
+      const normalizedContentType =
+        typeof rawContentType === "string"
+          ? rawContentType.split(";")[0].trim().toLowerCase()
+          : "";
+
+      if (!normalizedContentType || normalizedContentType !== intent.contentType) {
+        return reply.status(422).send({
           error: {
-            code: "INTENT_NOT_FOUND",
-            message: "Upload intent tidak ditemukan atau sudah kedaluwarsa",
+            code: "CONTENT_TYPE_MISMATCH",
+            message: `Header Content-Type harus tepat ${intent.contentType}`,
             request_id: request.id,
           },
         });
       }
 
-      const body = request.body as Buffer;
-      const contentType = (request.headers["content-type"] as string) || rawIntent.contentType;
+      const body = Buffer.isBuffer(request.body) ? request.body : Buffer.alloc(0);
+      if (body.length === 0) {
+        return reply.status(422).send({
+          error: {
+            code: "EMPTY_UPLOAD",
+            message: "Payload gambar tidak boleh kosong",
+            request_id: request.id,
+          },
+        });
+      }
 
-      await uploadsService.simulatePut(
-        rawIntent.storagePath,
-        Buffer.isBuffer(body) ? body : Buffer.from(body || ""),
-        contentType
-      );
+      if (body.length > intent.sizeBytes) {
+        return reply.status(422).send({
+          error: {
+            code: "PAYLOAD_TOO_LARGE",
+            message: `Ukuran file (${body.length} bytes) melebihi batas intent (${intent.sizeBytes} bytes)`,
+            request_id: request.id,
+          },
+        });
+      }
 
+      await uploadsService.putRelayObject(intent.storagePath, body, intent.contentType);
       return reply.status(200).send({ data: { success: true } });
     }
   );
 
-  /**
-   * Mock PUT endpoint for local testing and direct upload verification
-   */
-  app.put<{ Params: { bucket: string; "*": string } }>(
-    "/mock-r2/:bucket/*",
-    async (request, reply) => {
-      const rawKey = request.params["*"];
-      const contentType = request.headers["content-type"] as string;
-      const body = request.body as Buffer;
+  // Mock PUT endpoint strictly limited to isolated test runs without live R2 credentials
+  if (env.NODE_ENV === "test" && !r2Provider.isConfigured) {
+    app.put<{ Params: { bucket: string; "*": string } }>(
+      "/mock-r2/:bucket/*",
+      async (request, reply) => {
+        const rawKey = request.params["*"];
+        const contentType = request.headers["content-type"] as string;
+        const body = request.body as Buffer;
 
-      await uploadsService.simulatePut(
-        rawKey,
-        Buffer.isBuffer(body) ? body : Buffer.from(body || ""),
-        contentType || "application/octet-stream"
-      );
+        await uploadsService.simulatePut(
+          rawKey,
+          Buffer.isBuffer(body) ? body : Buffer.from(body || ""),
+          contentType || "application/octet-stream"
+        );
 
-      return reply.status(200).send();
-    }
-  );
+        return reply.status(200).send();
+      }
+    );
+  }
 };

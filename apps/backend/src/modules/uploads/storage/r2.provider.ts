@@ -78,6 +78,42 @@ export class R2StorageProvider implements StorageProvider {
     }
   }
 
+  public async getObjectHeaderBytes(key: string, byteCount = 16): Promise<Buffer | null> {
+    if (!this.s3Client) {
+      throw new Error("R2 S3Client belum dikonfigurasi");
+    }
+
+    try {
+      const res = await this.s3Client.send(
+        new GetObjectCommand({
+          Bucket: env.R2_BUCKET_NAME,
+          Key: key,
+          Range: `bytes=0-${Math.max(0, byteCount - 1)}`,
+        })
+      );
+      if (!res.Body) {
+        return null;
+      }
+
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      for await (const chunk of res.Body as AsyncIterable<Uint8Array>) {
+        chunks.push(chunk);
+        totalBytes += chunk.length;
+        if (totalBytes >= byteCount) {
+          break;
+        }
+      }
+      return Buffer.concat(chunks).subarray(0, byteCount);
+    } catch (err: unknown) {
+      const error = err as { name?: string; $metadata?: { httpStatusCode?: number } };
+      if (error?.name === "NoSuchKey" || error?.$metadata?.httpStatusCode === 404) {
+        return null;
+      }
+      throw err;
+    }
+  }
+
   public async getPresignedReadUrl(
     storagePath: string,
     expiresInSeconds: number
@@ -113,7 +149,7 @@ export class R2StorageProvider implements StorageProvider {
       );
       return {
         body: res.Body,
-        contentType: res.ContentType || "image/png",
+        contentType: res.ContentType || "application/octet-stream",
       };
     } catch {
       return null;
@@ -137,14 +173,6 @@ export class R2StorageProvider implements StorageProvider {
         ContentType: contentType,
       })
     );
-  }
-
-  public async simulatePut(
-    key: string,
-    body: Buffer,
-    contentType: string
-  ): Promise<void> {
-    await this.putObject(key, body, contentType);
   }
 }
 

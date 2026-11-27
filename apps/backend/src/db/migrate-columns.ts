@@ -54,6 +54,61 @@ async function migrateColumns() {
   `);
   console.log("✅ otp_challenges columns:", otpCols.rows.map((r) => r.column_name).join(", "));
 
+  console.log("🔧 Running idempotent table migration for upload_intents...");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS upload_intents (
+      upload_id UUID PRIMARY KEY,
+      user_id UUID NOT NULL,
+      purpose TEXT NOT NULL,
+      content_type TEXT NOT NULL,
+      size_bytes INTEGER NOT NULL,
+      storage_path TEXT NOT NULL UNIQUE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      finalized_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_upload_intents_expires
+      ON upload_intents (expires_at);
+    CREATE INDEX IF NOT EXISTS idx_upload_intents_user_created
+      ON upload_intents (user_id, created_at DESC);
+  `);
+
+  console.log("🔧 Running idempotent table migration for consumed_upload_tokens...");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS consumed_upload_tokens (
+      token_id TEXT PRIMARY KEY,
+      user_id UUID NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      consumed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_consumed_upload_tokens_expires
+      ON consumed_upload_tokens (expires_at);
+  `);
+
+  console.log("🔧 Running idempotent table migration for password_reset_tokens...");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      token_id UUID PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+      expires_at TIMESTAMPTZ NOT NULL,
+      consumed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_created
+      ON password_reset_tokens (user_id, created_at DESC);
+  `);
+
+  console.log("🔧 Running idempotent table migration for rate_limit_buckets...");
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rate_limit_buckets (
+      bucket_key TEXT PRIMARY KEY,
+      hits INTEGER NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_rate_limit_buckets_expires
+      ON rate_limit_buckets (expires_at);
+  `);
+
   await pool.end();
 }
 

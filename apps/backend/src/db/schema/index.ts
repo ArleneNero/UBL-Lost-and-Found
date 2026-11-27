@@ -4,4 +4,5 @@ export * from "./posts.js";
 export * from "./submissions.js";
 export * from "./items.js";
 export * from "./auth.js";
+export * from "./uploads.js";
 export * from "./relations.js";

@@ -29,6 +29,22 @@ export class MockStorageProvider implements StorageProvider {
     };
   }
 
+  public async getObjectHeaderBytes(key: string, byteCount = 16): Promise<Buffer | null> {
+    const obj = this.objects.get(key);
+    if (!obj) {
+      return null;
+    }
+    return obj.body.subarray(0, byteCount);
+  }
+
+  public async putObject(
+    key: string,
+    body: Buffer,
+    contentType: string
+  ): Promise<void> {
+    await this.simulatePut(key, body, contentType);
+  }
+
   public async getPresignedReadUrl(
     storagePath: string,
     expiresInSeconds: number

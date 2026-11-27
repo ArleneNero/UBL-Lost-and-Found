@@ -5,63 +5,154 @@ import { AppError } from "../utils/errors.js";
 
 dotenv.config();
 
-const DEFAULT_DATABASE_URL =
-  "postgresql://neondb_owner:npg_PIJp8m3YwdaU@ep-fragrant-glade-a1oh9lfk-pooler.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
+export const TEST_FALLBACK_DATABASE_URL =
+  "postgresql://test:test@localhost:5432/lostfound_test";
 
-const DEFAULT_DATABASE_URL_UNPOOLED =
-  "postgresql://neondb_owner:npg_PIJp8m3YwdaU@ep-fragrant-glade-a1oh9lfk.ap-southeast-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require";
-
-const envSchema = z.object({
+const rawEnvSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().default(3000),
-  FRONTEND_ORIGIN: z.string().default("http://localhost:5173"),
-  DATABASE_URL: z.string().default(process.env.DATABASE_URL || DEFAULT_DATABASE_URL),
+  FRONTEND_ORIGIN: z
+    .string()
+    .optional()
+    .transform((v) => (v || "").trim()),
+  PUBLIC_APP_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v || "").trim()),
+  DATABASE_URL: z
+    .string()
+    .optional()
+    .transform((v) => (v || "").trim()),
   DATABASE_URL_UNPOOLED: z
     .string()
-    .default(process.env.DATABASE_URL_UNPOOLED || DEFAULT_DATABASE_URL_UNPOOLED),
-  R2_BUCKET_NAME: z.string().default("lostandfound-budiluhur"),
+    .optional()
+    .transform((v) => (v || "").trim()),
+  R2_BUCKET_NAME: z
+    .string()
+    .optional()
+    .transform((v) => (v || "").trim() || "lostandfound-budiluhur"),
   CLOUDFLARE_ACCOUNT_ID: z
     .string()
-    .default(process.env.CLOUDFLARE_ACCOUNT_ID || "2a552cb6962e6b3a4309ea71b7c30fd4"),
+    .optional()
+    .transform((v) => (v || "").trim()),
   R2_ACCESS_KEY_ID: z
     .string()
-    .default(process.env.R2_ACCESS_KEY_ID || "d291304a9f9f6dbc0890860d51f3e0e0"),
+    .optional()
+    .transform((v) => (v || "").trim()),
   R2_SECRET_ACCESS_KEY: z
     .string()
-    .default(
-      process.env.R2_SECRET_ACCESS_KEY ||
-        "617f1047a65522e8ed1472d1830d0f7a7c6ad2e151fc2f1a9d7febd20d6e1586"
-    ),
+    .optional()
+    .transform((v) => (v || "").trim()),
   R2_PUBLIC_URL: z
     .string()
-    .default(
-      process.env.R2_PUBLIC_URL || "https://pub-ec2de406cfec4d6ba5d9a2beb58f023a.r2.dev"
-    ),
+    .optional()
+    .transform((v) => (v || "").trim()),
   AUTH_SECRET: z
+    .string()
+    .optional()
+    .transform((v) => (v || "").trim()),
+  STORAGE_SIGNING_SECRET: z
     .string()
     .optional()
     .transform((v) => (v || "").trim()),
   NEON_AUTH_BASE_URL: z.string().optional(),
   RESEND_API_KEY: z
     .string()
-    .default(process.env.RESEND_API_KEY || ""),
+    .optional()
+    .transform((v) => (v || "").trim()),
   RESEND_FROM_EMAIL: z
     .string()
-    .default(
-      process.env.RESEND_FROM_EMAIL ||
-        "UBL LostnFound <noreply@lostandfound-budiluhur.web.id>"
+    .optional()
+    .transform(
+      (v) => (v || "").trim() || "UBL LostnFound <noreply@lostandfound-budiluhur.web.id>"
     ),
 });
 
-const parsed = envSchema.safeParse(process.env);
-
-if (!parsed.success) {
-  throw new Error(
-    `Invalid environment configuration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`
-  );
+export interface AppEnv {
+  NODE_ENV: "development" | "test" | "production";
+  PORT: number;
+  FRONTEND_ORIGIN: string;
+  PUBLIC_APP_URL: string;
+  DATABASE_URL: string;
+  DATABASE_URL_UNPOOLED: string;
+  R2_BUCKET_NAME: string;
+  CLOUDFLARE_ACCOUNT_ID: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+  R2_PUBLIC_URL: string;
+  AUTH_SECRET: string;
+  STORAGE_SIGNING_SECRET: string;
+  NEON_AUTH_BASE_URL?: string;
+  RESEND_API_KEY: string;
+  RESEND_FROM_EMAIL: string;
 }
 
-export const env = parsed.data;
+const PLACEHOLDER_SECRET_REGEX =
+  /^(dev-neon-auth-secret|changeme|placeholder|default-secret)/i;
+
+/**
+ * Checks whether a database URL is the non-routable local placeholder used in DB-less unit tests.
+ */
+export function isMockTestDatabaseUrl(url: string): boolean {
+  return url === TEST_FALLBACK_DATABASE_URL;
+}
+
+/**
+ * Validates and resolves environment configuration.
+ * - In NODE_ENV=test: allows safe non-routable DB/storage placeholders when .env is absent.
+ * - In development/production: fails fast if mandatory DB or R2 variables are missing.
+ */
+export function parseEnv(source: NodeJS.ProcessEnv = process.env): AppEnv {
+  const parsed = rawEnvSchema.safeParse(source);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid environment configuration: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`
+    );
+  }
+
+  const raw = parsed.data;
+  const defaultFrontendOrigin =
+    raw.NODE_ENV === "production"
+      ? "https://lostandfound-budiluhur.web.id"
+      : "http://localhost:5173";
+  const resolvedFrontendOrigin = raw.FRONTEND_ORIGIN || defaultFrontendOrigin;
+
+  if (raw.NODE_ENV === "test") {
+    const dbUrl = raw.DATABASE_URL || TEST_FALLBACK_DATABASE_URL;
+    return {
+      ...raw,
+      FRONTEND_ORIGIN: resolvedFrontendOrigin,
+      DATABASE_URL: dbUrl,
+      DATABASE_URL_UNPOOLED: raw.DATABASE_URL_UNPOOLED || dbUrl,
+    };
+  }
+
+  const missing: string[] = [];
+  if (!raw.DATABASE_URL) missing.push("DATABASE_URL");
+  if (!raw.DATABASE_URL_UNPOOLED) missing.push("DATABASE_URL_UNPOOLED");
+  if (!raw.CLOUDFLARE_ACCOUNT_ID) missing.push("CLOUDFLARE_ACCOUNT_ID");
+  if (!raw.R2_ACCESS_KEY_ID) missing.push("R2_ACCESS_KEY_ID");
+  if (!raw.R2_SECRET_ACCESS_KEY) missing.push("R2_SECRET_ACCESS_KEY");
+
+  if (raw.NODE_ENV === "production") {
+    if (raw.AUTH_SECRET.length < 32 || PLACEHOLDER_SECRET_REGEX.test(raw.AUTH_SECRET)) {
+      missing.push("AUTH_SECRET (>= 32 random chars)");
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing or invalid required environment variables for NODE_ENV=${raw.NODE_ENV}: ${missing.join(", ")}`
+    );
+  }
+
+  return {
+    ...raw,
+    FRONTEND_ORIGIN: resolvedFrontendOrigin,
+  };
+}
+
+export const env: AppEnv = parseEnv();
 
 let ephemeralDevSecret: string | null = null;
 let hasLoggedEphemeralWarning = false;
@@ -73,9 +164,7 @@ let hasLoggedEphemeralWarning = false;
  */
 export function resolveRuntimeAuthSecret(): string {
   const configured = (process.env.AUTH_SECRET ?? "").trim();
-  const isPlaceholder = /^(dev-neon-auth-secret|changeme|placeholder|default-secret)/i.test(
-    configured
-  );
+  const isPlaceholder = PLACEHOLDER_SECRET_REGEX.test(configured);
 
   if (configured.length >= 32 && !isPlaceholder) {
     return configured;
@@ -104,3 +193,19 @@ export function resolveRuntimeAuthSecret(): string {
   return ephemeralDevSecret;
 }
 
+/**
+ * Resolves the HMAC secret dedicated to signing `/storage/*` media access URLs.
+ * Uses STORAGE_SIGNING_SECRET when provided (>= 32 chars), or derives a domain-separated key
+ * from resolveRuntimeAuthSecret() so production never falls back to a static literal.
+ */
+export function getStorageSigningSecret(): string {
+  const dedicated = (process.env.STORAGE_SIGNING_SECRET ?? "").trim();
+  if (dedicated.length >= 32 && !PLACEHOLDER_SECRET_REGEX.test(dedicated)) {
+    return dedicated;
+  }
+
+  return crypto
+    .createHmac("sha256", resolveRuntimeAuthSecret())
+    .update("ubl-storage-signing-v1")
+    .digest("hex");
+}

@@ -1,5 +1,7 @@
 import { randomUUID } from "crypto";
 import { env } from "../../config/env.js";
+import type { DbClient, DbTransaction } from "../../db/index.js";
+import { AppError } from "../../utils/errors.js";
 import type { AuthUser } from "../auth/auth.types.js";
 import type {
   UploadPurpose,
@@ -15,14 +17,17 @@ import { intentRegistry } from "./intent.registry.js";
 import { generateStoragePath } from "./upload-path.util.js";
 import {
   assertRoleForPurpose,
+  validateImageMagicBytes,
   validateIntentForFinalize,
   validateObjectMetadata,
 } from "./upload.validator.js";
 
 export class UploadsService {
   private storage: StorageProvider;
+  private readonly isCustomStorage: boolean;
 
   constructor(customStorage?: StorageProvider) {
+    this.isCustomStorage = Boolean(customStorage);
     this.storage =
       customStorage ||
       (env.NODE_ENV !== "test" && r2Provider.isConfigured
@@ -50,7 +55,7 @@ export class UploadsService {
       expiresInSeconds
     );
 
-    intentRegistry.save({
+    await intentRegistry.save({
       uploadId,
       userId: user.userId,
       purpose,
@@ -58,6 +63,7 @@ export class UploadsService {
       contentType,
       sizeBytes,
       expiresAt: expiresAt.getTime(),
+      finalizedAt: null,
     });
 
     return {
@@ -69,11 +75,25 @@ export class UploadsService {
   }
 
   public async finalizeUpload(user: AuthUser, uploadId: string): Promise<UploadFinalized> {
-    const rawIntent = intentRegistry.get(uploadId);
+    const rawIntent = await intentRegistry.get(uploadId);
     const intent = validateIntentForFinalize(rawIntent, user);
 
     const metadata = await this.storage.headObject(intent.storagePath);
     validateObjectMetadata(metadata, intent);
+
+    if (this.storage.getObjectHeaderBytes) {
+      const headerBytes = await this.storage.getObjectHeaderBytes(intent.storagePath, 16);
+      validateImageMagicBytes(headerBytes, intent.contentType);
+    }
+
+    const finalized = await intentRegistry.markFinalized(uploadId, user.userId);
+    if (!finalized) {
+      throw new AppError(
+        "INTENT_ALREADY_FINALIZED",
+        "Upload intent sudah pernah difinalisasi atau kedaluwarsa",
+        409
+      );
+    }
 
     const { uploadToken, expiresAt } = uploadTokenService.issueUploadToken(
       user.userId,
@@ -89,26 +109,61 @@ export class UploadsService {
     };
   }
 
-  public verifyAndConsumeUploadToken(
+  public async verifyAndConsumeUploadToken(
     uploadToken: string,
     expectedPurpose: UploadPurpose,
-    expectedUserId: string
-  ): { storagePath: string } {
-    return uploadTokenService.verifyAndConsume(uploadToken, expectedPurpose, expectedUserId);
+    expectedUserId: string,
+    tx?: DbClient | DbTransaction
+  ): Promise<{ storagePath: string }> {
+    return await uploadTokenService.verifyAndConsume(
+      uploadToken,
+      expectedPurpose,
+      expectedUserId,
+      tx
+    );
   }
 
   public async getSignedReadUrl(storagePath: string, expiresInSeconds = 3600): Promise<string> {
     return await this.storage.getPresignedReadUrl(storagePath, expiresInSeconds);
   }
 
+  /**
+   * Relays an image buffer from an authenticated, intent-verified PUT /uploads/:id/content request.
+   */
+  public async putRelayObject(
+    key: string,
+    body: Buffer,
+    contentType: UploadContentType
+  ): Promise<void> {
+    if (this.storage.putObject) {
+      await this.storage.putObject(key, body, contentType);
+      return;
+    }
+    if (this.storage.simulatePut) {
+      await this.storage.simulatePut(key, body, contentType);
+      return;
+    }
+    throw new AppError("STORAGE_UNAVAILABLE", "Storage provider tidak mendukung relay upload", 500);
+  }
+
+  /**
+   * Test-only upload helper. Disabled for real R2 production storage.
+   */
   public async simulatePut(key: string, body: Buffer, contentType: string): Promise<void> {
+    if (!this.isCustomStorage && (env.NODE_ENV !== "test" || r2Provider.isConfigured)) {
+      throw new AppError(
+        "FORBIDDEN",
+        "simulatePut hanya diizinkan pada lingkungan uji non-produksi",
+        403
+      );
+    }
     if (this.storage.simulatePut) {
       await this.storage.simulatePut(key, body, contentType);
     }
   }
 
-  public clear(): void {
-    intentRegistry.clear();
+  public async clear(): Promise<void> {
+    await intentRegistry.clear();
     mockStorageProvider.clear();
     uploadTokenService.clear();
   }
