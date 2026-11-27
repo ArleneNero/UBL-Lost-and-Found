@@ -33,7 +33,7 @@ export class SubmissionsService {
     }
 
     // 2. Verify and consume upload token (bound to student & purpose REPORT_PHOTO)
-    const { storagePath } = uploadsService.verifyAndConsumeUploadToken(
+    const { storagePath } = await uploadsService.verifyAndConsumeUploadToken(
       request.report_photo_upload_token,
       "REPORT_PHOTO",
       user.userId

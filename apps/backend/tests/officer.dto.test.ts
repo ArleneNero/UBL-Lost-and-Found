@@ -2,10 +2,16 @@ import { describe, it, expect } from "vitest";
 import {
   itemCreateRequestSchema,
   inventoryOfficerDtoSchema,
+  inventoryQuerySchema,
+  distributeRequestSchema,
   receiveRequestSchema,
   returnRequestSchema,
   returnRecordDtoSchema,
 } from "../src/modules/officer/officer.dto.js";
+import {
+  submissionCreateRequestSchema,
+  submissionListQuerySchema,
+} from "../src/modules/submissions/submissions.dto.js";
 
 describe("Officer DTO Contract (OpenAPI v1.0 parity)", () => {
   describe("ItemCreateRequest Schema", () => {
@@ -261,6 +267,28 @@ describe("Officer DTO Contract (OpenAPI v1.0 parity)", () => {
         return_record: record,
       };
       expect(inventoryOfficerDtoSchema.safeParse(dtoWithReturn).success).toBe(true);
+    });
+  });
+
+  describe("Regression Contracts (FIND-20, FIND-24, FIND-28)", () => {
+    it("rejects impossible calendar dates (e.g. 2026-02-31, 2026-02-29) and accepts leap 2024-02-29", () => {
+      const base = { item_name: "Dompet", category: "Aksesori", public_description: "Dompet hitam" };
+      expect(itemCreateRequestSchema.safeParse({ ...base, found_on: "2026-02-31", item_photo_upload_tokens: ["t"] }).success).toBe(false);
+      expect(itemCreateRequestSchema.safeParse({ ...base, found_on: "2026-02-29", item_photo_upload_tokens: ["t"] }).success).toBe(false);
+      expect(itemCreateRequestSchema.safeParse({ ...base, found_on: "2024-02-29", item_photo_upload_tokens: ["t"] }).success).toBe(true);
+      expect(submissionCreateRequestSchema.safeParse({ ...base, target_post_id: 1, found_location: "Lobby", found_on: "2026-02-31", report_photo_upload_token: "t" }).success).toBe(false);
+    });
+
+    it("validates optional distributeRequestSchema notes & strict query schemas", () => {
+      expect(distributeRequestSchema.safeParse({}).success).toBe(true);
+      expect(distributeRequestSchema.safeParse({ notes: null }).success).toBe(true);
+      expect(distributeRequestSchema.safeParse({ notes: "DKM Masjid UBL" }).success).toBe(true);
+      expect(distributeRequestSchema.safeParse({ extra: "bad" }).success).toBe(false);
+      expect(inventoryQuerySchema.safeParse({ status: "INVALID" }).success).toBe(false);
+      expect(inventoryQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
+      expect(submissionListQuerySchema.safeParse({ status: "BOGUS" }).success).toBe(false);
+      expect(submissionListQuerySchema.safeParse({ page: 0 }).success).toBe(false);
+      expect(submissionListQuerySchema.safeParse({ limit: 50 }).success).toBe(true);
     });
   });
 });

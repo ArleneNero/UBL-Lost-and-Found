@@ -69,8 +69,8 @@ export class OfficerRepository {
     return officerDispositionRepository.returnItem(params);
   }
 
-  distributeItem(itemId: string, storagePostId: number) {
-    return officerDispositionRepository.distributeItem(itemId, storagePostId);
+  distributeItem(itemId: string, storagePostId: number, notes?: string | null) {
+    return officerDispositionRepository.distributeItem(itemId, storagePostId, notes);
   }
 
   getOverdueItems(storagePostId: number) {

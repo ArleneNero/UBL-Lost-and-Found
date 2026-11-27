@@ -68,8 +68,8 @@ export class OfficerService {
     return officerDispositionService.returnItem(context, itemId, request);
   }
 
-  distributeItem(context: OfficerContext, itemId: string) {
-    return officerDispositionService.distributeItem(context, itemId);
+  distributeItem(context: OfficerContext, itemId: string, notes?: string | null) {
+    return officerDispositionService.distributeItem(context, itemId, notes);
   }
 
   getOverdue(context: OfficerContext) {

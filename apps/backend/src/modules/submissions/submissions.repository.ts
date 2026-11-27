@@ -116,9 +116,11 @@ export class SubmissionsRepository {
    */
   async cancelSubmission(submissionId: string, reporterUserId: string, reason: string) {
     return await db.transaction(async (tx) => {
-      const existing = await tx.query.foundSubmissions.findFirst({
-        where: eq(foundSubmissions.submissionId, submissionId),
-      });
+      const [existing] = await tx
+        .select()
+        .from(foundSubmissions)
+        .where(eq(foundSubmissions.submissionId, submissionId))
+        .for("update");
 
       if (!existing) {
         return { success: false as const, error: "NOT_FOUND" as const };
@@ -129,7 +131,11 @@ export class SubmissionsRepository {
       }
 
       if (existing.status !== "PENDING_RECEIPT") {
-        return { success: false as const, error: "INVALID_STATUS" as const, currentStatus: existing.status };
+        return {
+          success: false as const,
+          error: "INVALID_STATUS" as const,
+          currentStatus: existing.status,
+        };
       }
 
       const [updated] = await tx
@@ -137,8 +143,26 @@ export class SubmissionsRepository {
         .set({
           status: "CANCELLED",
         })
-        .where(eq(foundSubmissions.submissionId, submissionId))
+        .where(
+          and(
+            eq(foundSubmissions.submissionId, submissionId),
+            eq(foundSubmissions.reporterUserId, reporterUserId),
+            eq(foundSubmissions.status, "PENDING_RECEIPT")
+          )
+        )
         .returning();
+
+      if (!updated) {
+        const [latest] = await tx
+          .select({ status: foundSubmissions.status })
+          .from(foundSubmissions)
+          .where(eq(foundSubmissions.submissionId, submissionId));
+        return {
+          success: false as const,
+          error: "INVALID_STATUS" as const,
+          currentStatus: latest?.status ?? existing.status,
+        };
+      }
 
       await tx.insert(submissionStatusHistory).values({
         submissionId,

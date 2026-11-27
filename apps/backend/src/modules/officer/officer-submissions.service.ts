@@ -7,6 +7,36 @@ import type { InventoryOfficerDto, ReceiveRequest } from "./officer.dto.js";
 import type { OfficerContext } from "../auth/auth.types.js";
 import type { ReportStatus } from "../submissions/submissions.dto.js";
 
+function throwSubmissionActionError(
+  error: "NOT_FOUND" | "FORBIDDEN" | "INVALID_STATUS" | "MISSING_PHOTO",
+  action: "receive" | "reject",
+  currentStatus?: ReportStatus
+): never {
+  if (error === "NOT_FOUND") {
+    throw new AppError("NOT_FOUND", "Laporan temuan tidak ditemukan", 404);
+  }
+  if (error === "FORBIDDEN") {
+    throw new AppError(
+      "FORBIDDEN",
+      "Akses ditolak: Laporan ini bukan ditujukan ke pos pelayanan Anda",
+      403
+    );
+  }
+  if (error === "MISSING_PHOTO") {
+    throw new AppError(
+      "MISSING_PHOTO",
+      "Foto barang tidak tersedia pada laporan maupun payload penerimaan",
+      422
+    );
+  }
+  const verb = action === "receive" ? "diterima fisik" : "ditolak";
+  throw new AppError(
+    "INVALID_STATUS_TRANSITION",
+    `Hanya laporan berstatus PENDING_RECEIPT yang dapat ${verb} (status saat ini: ${currentStatus})`,
+    409
+  );
+}
+
 export class OfficerSubmissionsService {
   /**
    * B/I.1.0: List submissions targeting this officer's post
@@ -36,11 +66,28 @@ export class OfficerSubmissionsService {
     submissionId: string,
     request: ReceiveRequest
   ): Promise<InventoryOfficerDto> {
-    const token = request.item_photo_upload_tokens?.[0];
-    let storagePath: string | undefined;
+    // FIND-27: Verify submission existence, post ownership, and PENDING_RECEIPT status
+    // before consuming the officer's single-use photo upload token.
+    const eligibility = await officerSubmissionsRepository.checkSubmissionReceiveEligibility(
+      submissionId,
+      context.postId
+    );
+    if (!eligibility.eligible) {
+      throwSubmissionActionError(
+        eligibility.error,
+        "receive",
+        "currentStatus" in eligibility ? eligibility.currentStatus : undefined
+      );
+    }
 
+    const token = request.item_photo_upload_tokens?.[0];
+    if (!token && !eligibility.hasReportPhoto) {
+      throwSubmissionActionError("MISSING_PHOTO", "receive");
+    }
+
+    let storagePath: string | undefined;
     if (token) {
-      const consumed = uploadsService.verifyAndConsumeUploadToken(
+      const consumed = await uploadsService.verifyAndConsumeUploadToken(
         token,
         "ITEM_PHOTO",
         context.user.userId
@@ -58,26 +105,11 @@ export class OfficerSubmissionsService {
     });
 
     if (!result.success) {
-      if (result.error === "NOT_FOUND") {
-        throw new AppError("NOT_FOUND", "Laporan temuan tidak ditemukan", 404);
-      }
-      if (result.error === "FORBIDDEN") {
-        throw new AppError("FORBIDDEN", "Akses ditolak: Laporan ini bukan ditujukan ke pos pelayanan Anda", 403);
-      }
-      if (result.error === "INVALID_STATUS") {
-        throw new AppError(
-          "INVALID_STATUS_TRANSITION",
-          `Hanya laporan berstatus PENDING_RECEIPT yang dapat diterima fisik (status saat ini: ${result.currentStatus})`,
-          409
-        );
-      }
-      if (result.error === "MISSING_PHOTO") {
-        throw new AppError(
-          "MISSING_PHOTO",
-          "Foto barang tidak tersedia pada laporan maupun payload penerimaan",
-          422
-        );
-      }
+      throwSubmissionActionError(
+        result.error,
+        "receive",
+        "currentStatus" in result ? result.currentStatus : undefined
+      );
     }
 
     return mapToOfficerDto(result.item, result.photo, context);
@@ -95,19 +127,11 @@ export class OfficerSubmissionsService {
     );
 
     if (!result.success) {
-      if (result.error === "NOT_FOUND") {
-        throw new AppError("NOT_FOUND", "Laporan temuan tidak ditemukan", 404);
-      }
-      if (result.error === "FORBIDDEN") {
-        throw new AppError("FORBIDDEN", "Akses ditolak: Laporan ini bukan ditujukan ke pos pelayanan Anda", 403);
-      }
-      if (result.error === "INVALID_STATUS") {
-        throw new AppError(
-          "INVALID_STATUS_TRANSITION",
-          `Hanya laporan berstatus PENDING_RECEIPT yang dapat ditolak (status saat ini: ${result.currentStatus})`,
-          409
-        );
-      }
+      throwSubmissionActionError(
+        result.error,
+        "reject",
+        "currentStatus" in result ? result.currentStatus : undefined
+      );
     }
 
     return submissionsService.mapToSubmissionDto(result.submission);

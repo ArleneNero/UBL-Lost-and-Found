@@ -130,7 +130,10 @@ describe("Officer Item Registration & MVP Gate (Milestone B/F)", () => {
     const intentData = JSON.parse(intentRes.body).data;
 
     // Simulate R2 PUT
-    const fakeImageBytes = Buffer.from("fake-binary-image-data-for-testing");
+    const fakeImageBytes = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+      Buffer.from("fake-binary-image-data-for-testing"),
+    ]);
     const rawKey = intentData.put_url.split("lostandfound-budiluhur/")[1]?.split("?")[0];
     await uploadsService.simulatePut(rawKey, fakeImageBytes, "image/jpeg");
 

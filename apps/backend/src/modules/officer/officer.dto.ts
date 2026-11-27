@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidCalendarDate } from "../submissions/submissions.dto.js";
 
 export const itemCreateRequestSchema = z
   .object({
@@ -10,6 +11,7 @@ export const itemCreateRequestSchema = z
     found_on: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
+      .refine(isValidCalendarDate, "Tanggal kalender tidak valid")
       .nullable()
       .optional(),
     item_photo_upload_tokens: z
@@ -202,3 +204,28 @@ export const cleanInventoryResponseSchema = z
     }),
   })
   .strict();
+
+export const distributeRequestSchema = z
+  .object({
+    notes: z.string().trim().max(2000).nullable().optional(),
+  })
+  .strict();
+export type DistributeRequest = z.infer<typeof distributeRequestSchema>;
+
+export const inventoryQuerySchema = z.object({
+  status: z.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]).optional(),
+  category: z.string().optional(),
+  q: z.string().optional(),
+  sort: z.enum(["received_at_asc", "received_at_desc"]).default("received_at_desc"),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  include_archived: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true"),
+  archived_only: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true"),
+});
+export type InventoryQuery = z.infer<typeof inventoryQuerySchema>;

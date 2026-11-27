@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from "fastify";
 import { requireOfficer } from "../../../middleware/auth.guard.js";
 import {
   itemCreateRequestSchema,
+  inventoryQuerySchema,
   visibilityRequestSchema,
   postSettingsUpdateSchema,
   cleanInventoryRequestSchema,
@@ -11,23 +12,6 @@ import { z } from "zod";
 
 const itemIdParamSchema = z.object({
   item_id: z.string().uuid("Format ID barang harus berupa UUID valid"),
-});
-
-const inventoryQuerySchema = z.object({
-  status: z.enum(["STORED", "RETURNED_TO_OWNER", "DISTRIBUTED"]).optional(),
-  category: z.string().optional(),
-  q: z.string().optional(),
-  sort: z.enum(["received_at_asc", "received_at_desc"]).default("received_at_desc"),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(10),
-  include_archived: z
-    .enum(["true", "false"])
-    .optional()
-    .transform((v) => v === "true"),
-  archived_only: z
-    .enum(["true", "false"])
-    .optional()
-    .transform((v) => v === "true"),
 });
 
 export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
@@ -67,15 +51,19 @@ export const officerInventoryRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: [requireOfficer] },
     async (request, reply) => {
       const parsedQuery = inventoryQuerySchema.safeParse(request.query);
-      const query = parsedQuery.success
-        ? parsedQuery.data
-        : {
-            sort: "received_at_desc" as const,
-            page: 1,
-            limit: 10,
-            include_archived: false,
-            archived_only: false,
-          };
+      if (!parsedQuery.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message:
+              parsedQuery.error.issues[0]?.message || "Parameter query inventaris tidak valid",
+            request_id: request.id,
+            details: parsedQuery.error.issues,
+          },
+        });
+      }
+
+      const query = parsedQuery.data;
 
       const result = await officerInventoryService.getInventory(
         request.officerContext!,

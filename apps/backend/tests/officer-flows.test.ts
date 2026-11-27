@@ -29,6 +29,9 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
   let receivedWithoutTokenItemId: string;
   let directItemId: string;
   let returnWithoutIdentifierItemId: string;
+  let cancelledSubmissionForPrecheckId: string;
+  let preservedTokenItemId: string;
+  let distributedWithNotesItemId: string;
 
   beforeAll(async () => {
     app = buildApp();
@@ -86,6 +89,16 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       await db.delete(itemPhotos).where(eq(itemPhotos.itemId, returnWithoutIdentifierItemId));
       await db.delete(foundItems).where(eq(foundItems.itemId, returnWithoutIdentifierItemId));
     }
+    if (preservedTokenItemId) {
+      await db.delete(itemReturns).where(eq(itemReturns.itemId, preservedTokenItemId));
+      await db.delete(itemPhotos).where(eq(itemPhotos.itemId, preservedTokenItemId));
+      await db.delete(foundItems).where(eq(foundItems.itemId, preservedTokenItemId));
+    }
+    if (distributedWithNotesItemId) {
+      await db.delete(itemReturns).where(eq(itemReturns.itemId, distributedWithNotesItemId));
+      await db.delete(itemPhotos).where(eq(itemPhotos.itemId, distributedWithNotesItemId));
+      await db.delete(foundItems).where(eq(foundItems.itemId, distributedWithNotesItemId));
+    }
     if (submissionToReceiveId) {
       await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, submissionToReceiveId));
       await db.delete(foundSubmissions).where(eq(foundSubmissions.submissionId, submissionToReceiveId));
@@ -97,6 +110,10 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
     if (submissionToRejectId) {
       await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, submissionToRejectId));
       await db.delete(foundSubmissions).where(eq(foundSubmissions.submissionId, submissionToRejectId));
+    }
+    if (cancelledSubmissionForPrecheckId) {
+      await db.delete(submissionStatusHistory).where(eq(submissionStatusHistory.submissionId, cancelledSubmissionForPrecheckId));
+      await db.delete(foundSubmissions).where(eq(foundSubmissions.submissionId, cancelledSubmissionForPrecheckId));
     }
     if (studentUserId) {
       await db.delete(users).where(eq(users.userId, studentUserId));
@@ -120,7 +137,10 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
       },
     });
     const intentData = JSON.parse(intentRes.body).data;
-    const fakeBytes = Buffer.from("fake-binary-photo-data");
+    const fakeBytes = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+      Buffer.from("fake-binary-photo-data"),
+    ]);
     const rawKey = intentData.put_url.split("lostandfound-budiluhur/")[1]?.split("?")[0];
     await uploadsService.simulatePut(rawKey, fakeBytes, "image/jpeg");
 
@@ -700,6 +720,156 @@ describe("Milestone B/I, B/G & B/J — Officer Submissions, Inventory & Disposit
         payload: { month: "2026/11" },
       });
       expect(badRes.statusCode).toBe(422);
+    });
+  });
+
+  describe("Regression Suite (FIND-20, FIND-24, FIND-27, FIND-28)", () => {
+    it("FIND-20: rejects invalid calendar date found_on (2026-02-31) with VALIDATION_ERROR", async () => {
+      const officerRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/items",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          item_name: "Dompet Uji Tanggal",
+          category: "Aksesori",
+          public_description: "Dompet uji validasi tanggal",
+          found_on: "2026-02-31",
+          item_photo_upload_tokens: ["dummy-token"],
+        },
+      });
+      expect(officerRes.statusCode).toBe(422);
+      expect(JSON.parse(officerRes.body).error.code).toBe("VALIDATION_ERROR");
+
+      const studentRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/submissions",
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: {
+          target_post_id: 1,
+          item_name: "Dompet Uji Tanggal",
+          category: "Aksesori",
+          public_description: "Dompet uji validasi tanggal",
+          found_location: "Lobby",
+          found_on: "2026-02-31",
+          report_photo_upload_token: "dummy-token",
+        },
+      });
+      expect(studentRes.statusCode).toBe(400);
+      expect(JSON.parse(studentRes.body).error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("FIND-28: returns 400 VALIDATION_ERROR on invalid query parameters instead of silent fallback", async () => {
+      const resOfficerSub = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/submissions?status=INVALID_STATUS",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(resOfficerSub.statusCode).toBe(400);
+      expect(JSON.parse(resOfficerSub.body).error.code).toBe("VALIDATION_ERROR");
+
+      const resOfficerInv = await app.inject({
+        method: "GET",
+        url: "/api/v1/officer/inventory?limit=999",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(resOfficerInv.statusCode).toBe(400);
+      expect(JSON.parse(resOfficerInv.body).error.code).toBe("VALIDATION_ERROR");
+
+      const resStudentSub = await app.inject({
+        method: "GET",
+        url: "/api/v1/submissions/me?page=0",
+        headers: { authorization: `Bearer ${studentToken}` },
+      });
+      expect(resStudentSub.statusCode).toBe(400);
+      expect(JSON.parse(resStudentSub.body).error.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("FIND-27: preserves single-use ITEM_PHOTO token when receiveSubmission fails pre-check on CANCELLED report", async () => {
+      const reportToken = await createUploadToken(studentToken, "REPORT_PHOTO");
+      const subRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/submissions",
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: {
+          target_post_id: 1,
+          item_name: "Earphone Uji Precheck",
+          category: "Elektronik",
+          public_description: "Earphone putih untuk uji precheck token",
+          found_location: "Kantin",
+          found_on: "2026-11-12",
+          report_photo_upload_token: reportToken,
+        },
+      });
+      expect(subRes.statusCode).toBe(201);
+      cancelledSubmissionForPrecheckId = JSON.parse(subRes.body).data.submission_id;
+
+      const cancelRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/submissions/${cancelledSubmissionForPrecheckId}/cancel`,
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: { reason: "Sudah dikembalikan langsung" },
+      });
+      expect(cancelRes.statusCode).toBe(200);
+
+      const officerPhotoToken = await createUploadToken(officerToken, "ITEM_PHOTO");
+      const receiveCancelledRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/officer/submissions/${cancelledSubmissionForPrecheckId}/receive`,
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          public_description: "Earphone putih",
+          item_photo_upload_tokens: [officerPhotoToken],
+        },
+      });
+      expect(receiveCancelledRes.statusCode).toBe(409);
+      expect(JSON.parse(receiveCancelledRes.body).error.code).toBe("INVALID_STATUS_TRANSITION");
+
+      // Token must remain unconsumed and usable for a valid direct registration
+      const registerRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/items",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          item_name: "Earphone Token Terjaga",
+          category: "Elektronik",
+          public_description: "Membuktikan token tidak hangus oleh precheck gagal",
+          item_photo_upload_tokens: [officerPhotoToken],
+        },
+      });
+      expect(registerRes.statusCode).toBe(201);
+      preservedTokenItemId = JSON.parse(registerRes.body).data.item_id;
+    });
+
+    it("FIND-24: POST /officer/items/:id/distribute saves optional distribution notes into private_verification_notes", async () => {
+      const photoToken = await createUploadToken(officerToken, "ITEM_PHOTO");
+      const createRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/officer/items",
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: {
+          item_name: "Payung Uji Penyaluran",
+          category: "Aksesori",
+          public_description: "Payung hijau untuk uji catatan penyaluran",
+          private_verification_notes: "Catatan awal pos",
+          item_photo_upload_tokens: [photoToken],
+        },
+      });
+      expect(createRes.statusCode).toBe(201);
+      distributedWithNotesItemId = JSON.parse(createRes.body).data.item_id;
+
+      const distRes = await app.inject({
+        method: "POST",
+        url: `/api/v1/officer/items/${distributedWithNotesItemId}/distribute`,
+        headers: { authorization: `Bearer ${officerToken}` },
+        payload: { notes: "Disalurkan ke DKM Masjid Budi Luhur" },
+      });
+      expect(distRes.statusCode).toBe(200);
+      const distBody = JSON.parse(distRes.body).data;
+      expect(distBody.status).toBe("DISTRIBUTED");
+      expect(distBody.is_visible).toBe(false);
+      expect(distBody.private_verification_notes).toBe(
+        "Catatan awal pos\n[DISALURKAN] Disalurkan ke DKM Masjid Budi Luhur"
+      );
     });
   });
 });

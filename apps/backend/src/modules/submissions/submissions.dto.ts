@@ -1,5 +1,22 @@
 ﻿import { z } from "zod";
 
+export function isValidCalendarDate(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+  return (
+    utcDate.getUTCFullYear() === year &&
+    utcDate.getUTCMonth() === month - 1 &&
+    utcDate.getUTCDate() === day
+  );
+}
+
 export const reportStatusSchema = z.enum([
   "PENDING_RECEIPT",
   "RECEIVED",
@@ -8,6 +25,13 @@ export const reportStatusSchema = z.enum([
 ]);
 export type ReportStatus = z.infer<typeof reportStatusSchema>;
 
+export const submissionListQuerySchema = z.object({
+  status: reportStatusSchema.optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+export type SubmissionListQuery = z.infer<typeof submissionListQuerySchema>;
+
 export const submissionCreateRequestSchema = z
   .object({
     target_post_id: z.number().int({ message: "Pos tujuan harus berupa ID integer valid" }),
@@ -15,7 +39,10 @@ export const submissionCreateRequestSchema = z
     category: z.string().trim().min(1, "Kategori tidak boleh kosong").max(80),
     public_description: z.string().trim().min(1, "Deskripsi publik tidak boleh kosong"),
     found_location: z.string().trim().min(1, "Lokasi temuan tidak boleh kosong"),
-    found_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD"),
+    found_on: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal harus YYYY-MM-DD")
+      .refine(isValidCalendarDate, "Tanggal kalender tidak valid"),
     report_photo_upload_token: z.string().trim().min(1, "Token upload foto laporan wajib disertakan"),
   })
   .strict();

@@ -171,10 +171,11 @@ export class OfficerInventoryRepository {
    */
   async updateItemVisibility(itemId: string, storagePostId: number, isVisible: boolean) {
     return await db.transaction(async (tx) => {
-      const existing = await db.query.foundItems.findFirst({
-        where: eq(foundItems.itemId, itemId),
-        with: { photo: true },
-      });
+      const [existing] = await tx
+        .select()
+        .from(foundItems)
+        .where(eq(foundItems.itemId, itemId))
+        .for("update");
 
       if (!existing) {
         return { success: false as const, error: "NOT_FOUND" as const };
@@ -195,10 +196,34 @@ export class OfficerInventoryRepository {
       const [updated] = await tx
         .update(foundItems)
         .set({ isVisible })
-        .where(eq(foundItems.itemId, itemId))
+        .where(
+          and(
+            eq(foundItems.itemId, itemId),
+            eq(foundItems.storagePostId, storagePostId),
+            eq(foundItems.status, "STORED")
+          )
+        )
         .returning();
 
-      return { success: true as const, item: updated, photo: existing.photo || null };
+      if (!updated) {
+        const [latest] = await tx
+          .select({ status: foundItems.status })
+          .from(foundItems)
+          .where(eq(foundItems.itemId, itemId));
+        return {
+          success: false as const,
+          error: "INVALID_STATUS" as const,
+          currentStatus: latest?.status ?? existing.status,
+        };
+      }
+
+      const [photoRow] = await tx
+        .select()
+        .from(itemPhotos)
+        .where(eq(itemPhotos.itemId, itemId));
+      const photo: typeof itemPhotos.$inferSelect | null = photoRow ?? null;
+
+      return { success: true as const, item: updated, photo };
     });
   }
 

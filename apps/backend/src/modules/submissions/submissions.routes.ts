@@ -3,8 +3,8 @@ import { authenticate, requireStudent } from "../../middleware/auth.guard.js";
 import { authService } from "../auth/auth.service.js";
 import {
   submissionCreateRequestSchema,
+  submissionListQuerySchema,
   reasonRequestSchema,
-  reportStatusSchema,
 } from "./submissions.dto.js";
 import { submissionsService } from "./submissions.service.js";
 import { z } from "zod";
@@ -57,18 +57,22 @@ export const submissionsRoutes: FastifyPluginAsync = async (app) => {
       preHandler: [authenticate],
     },
     async (request, reply) => {
-      const querySchema = z.object({
-        status: reportStatusSchema.optional(),
-        page: z.coerce.number().int().min(1).default(1),
-        limit: z.coerce.number().int().min(1).max(10).default(10),
-      });
-
-      const parsedQuery = querySchema.safeParse(request.query);
-      const query = parsedQuery.success ? parsedQuery.data : { page: 1, limit: 10 };
+      const parsedQuery = submissionListQuerySchema.safeParse(request.query);
+      if (!parsedQuery.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message:
+              parsedQuery.error.issues[0]?.message || "Parameter query daftar laporan tidak valid",
+            request_id: request.id,
+            details: parsedQuery.error.issues,
+          },
+        });
+      }
 
       const result = await submissionsService.getReporterSubmissions(
         request.currentUser!,
-        query
+        parsedQuery.data
       );
 
       return reply.status(200).send(result);

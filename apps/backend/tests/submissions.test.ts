@@ -94,7 +94,10 @@ describe("Milestone B/H — Student Bootstrap & Found Submissions", () => {
       },
     });
     const intentData = JSON.parse(intentRes.body).data;
-    const fakeBytes = Buffer.from("fake-binary-report-photo");
+    const fakeBytes = Buffer.concat([
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+      Buffer.from("fake-binary-report-photo"),
+    ]);
     const rawKey = intentData.put_url.split("lostandfound-budiluhur/")[1]?.split("?")[0];
     await uploadsService.simulatePut(rawKey, fakeBytes, "image/jpeg");
 

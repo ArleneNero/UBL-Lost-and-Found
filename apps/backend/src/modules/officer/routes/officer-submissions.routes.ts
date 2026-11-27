@@ -4,18 +4,12 @@ import {
   receiveRequestSchema,
   reasonRequestSchema,
 } from "../officer.dto.js";
-import { reportStatusSchema } from "../../submissions/submissions.dto.js";
+import { submissionListQuerySchema } from "../../submissions/submissions.dto.js";
 import { officerSubmissionsService } from "../officer-submissions.service.js";
 import { z } from "zod";
 
 const submissionIdParamSchema = z.object({
   submission_id: z.string().uuid("Format ID laporan harus berupa UUID valid"),
-});
-
-const submissionsQuerySchema = z.object({
-  status: reportStatusSchema.optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(10).default(10),
 });
 
 export const officerSubmissionsRoutes: FastifyPluginAsync = async (app) => {
@@ -26,12 +20,22 @@ export const officerSubmissionsRoutes: FastifyPluginAsync = async (app) => {
     "/officer/submissions",
     { preHandler: [requireOfficer] },
     async (request, reply) => {
-      const parsedQuery = submissionsQuerySchema.safeParse(request.query);
-      const query = parsedQuery.success ? parsedQuery.data : { page: 1, limit: 10 };
+      const parsedQuery = submissionListQuerySchema.safeParse(request.query);
+      if (!parsedQuery.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message:
+              parsedQuery.error.issues[0]?.message || "Parameter query daftar laporan tidak valid",
+            request_id: request.id,
+            details: parsedQuery.error.issues,
+          },
+        });
+      }
 
       const result = await officerSubmissionsService.getSubmissions(
         request.officerContext!,
-        query
+        parsedQuery.data
       );
 
       return reply.status(200).send(result);

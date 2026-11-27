@@ -1,6 +1,6 @@
 ﻿import type { FastifyPluginAsync } from "fastify";
 import { requireOfficer } from "../../../middleware/auth.guard.js";
-import { returnRequestSchema } from "../officer.dto.js";
+import { returnRequestSchema, distributeRequestSchema } from "../officer.dto.js";
 import { officerDispositionService } from "../officer-disposition.service.js";
 import { z } from "zod";
 
@@ -67,9 +67,26 @@ export const officerDispositionRoutes: FastifyPluginAsync = async (app) => {
         });
       }
 
+      const rawBody =
+        request.body === undefined || request.body === null || request.body === ""
+          ? {}
+          : request.body;
+      const bodyParse = distributeRequestSchema.safeParse(rawBody);
+      if (!bodyParse.success) {
+        return reply.status(400).send({
+          error: {
+            code: "VALIDATION_ERROR",
+            message: "Format catatan penyaluran tidak valid",
+            request_id: request.id,
+            details: bodyParse.error.issues,
+          },
+        });
+      }
+
       const item = await officerDispositionService.distributeItem(
         request.officerContext!,
-        paramParse.data.item_id
+        paramParse.data.item_id,
+        bodyParse.data.notes
       );
 
       return reply.status(200).send({ data: item });

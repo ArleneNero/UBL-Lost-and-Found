@@ -15,7 +15,7 @@ export class OfficerInventoryService {
   ): Promise<InventoryOfficerDto> {
     const [token] = request.item_photo_upload_tokens;
 
-    const { storagePath } = uploadsService.verifyAndConsumeUploadToken(
+    const { storagePath } = await uploadsService.verifyAndConsumeUploadToken(
       token,
       "ITEM_PHOTO",
       context.user.userId

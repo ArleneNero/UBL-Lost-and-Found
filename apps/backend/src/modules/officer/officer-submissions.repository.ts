@@ -1,4 +1,4 @@
-import { db } from "../../db/index.js";
+import { db, type DbTransaction } from "../../db/index.js";
 import {
   foundItems,
   itemPhotos,
@@ -17,6 +17,43 @@ export interface ReceiveSubmissionParams {
   publicDescription: string;
   privateVerificationNotes?: string | null;
   storagePath?: string;
+}
+
+type SubmissionRow = typeof foundSubmissions.$inferSelect;
+
+type LockedSubmissionResult =
+  | { success: true; submission: SubmissionRow }
+  | { success: false; error: "NOT_FOUND" | "FORBIDDEN" }
+  | { success: false; error: "INVALID_STATUS"; currentStatus: ReportStatus };
+
+function validateSubmissionForPost(
+  submission: SubmissionRow | undefined,
+  storagePostId: number
+): LockedSubmissionResult {
+  if (!submission) {
+    return { success: false, error: "NOT_FOUND" };
+  }
+  if (submission.targetPostId !== storagePostId) {
+    return { success: false, error: "FORBIDDEN" };
+  }
+  if (submission.status !== "PENDING_RECEIPT") {
+    return { success: false, error: "INVALID_STATUS", currentStatus: submission.status };
+  }
+  return { success: true, submission };
+}
+
+async function lockPendingSubmissionForUpdate(
+  tx: DbTransaction,
+  submissionId: string,
+  storagePostId: number
+): Promise<LockedSubmissionResult> {
+  const [submission] = await tx
+    .select()
+    .from(foundSubmissions)
+    .where(eq(foundSubmissions.submissionId, submissionId))
+    .for("update");
+
+  return validateSubmissionForPost(submission, storagePostId);
 }
 
 export class OfficerSubmissionsRepository {
@@ -56,6 +93,32 @@ export class OfficerSubmissionsRepository {
   }
 
   /**
+   * FIND-27: Pre-check submission eligibility before consuming single-use upload token
+   */
+  async checkSubmissionReceiveEligibility(submissionId: string, storagePostId: number) {
+    const submission = await db.query.foundSubmissions.findFirst({
+      where: eq(foundSubmissions.submissionId, submissionId),
+    });
+
+    const validation = validateSubmissionForPost(submission, storagePostId);
+    if (!validation.success) {
+      if (validation.error === "INVALID_STATUS") {
+        return {
+          eligible: false as const,
+          error: "INVALID_STATUS" as const,
+          currentStatus: validation.currentStatus,
+        };
+      }
+      return { eligible: false as const, error: validation.error };
+    }
+
+    return {
+      eligible: true as const,
+      hasReportPhoto: Boolean(validation.submission.reportPhotoPath?.trim()),
+    };
+  }
+
+  /**
    * B/I.1.1 & B/I.1.2: Atomically receives physical item, sets submission to RECEIVED, and creates inventory item
    */
   async receiveSubmission(params: ReceiveSubmissionParams) {
@@ -69,36 +132,41 @@ export class OfficerSubmissionsRepository {
     } = params;
 
     return await db.transaction(async (tx) => {
-      const submission = await tx.query.foundSubmissions.findFirst({
-        where: eq(foundSubmissions.submissionId, submissionId),
-      });
-
-      if (!submission) {
-        return { success: false as const, error: "NOT_FOUND" as const };
+      const lockResult = await lockPendingSubmissionForUpdate(tx, submissionId, storagePostId);
+      if (!lockResult.success) {
+        return lockResult;
       }
 
-      if (submission.targetPostId !== storagePostId) {
-        return { success: false as const, error: "FORBIDDEN" as const };
-      }
-
-      if (submission.status !== "PENDING_RECEIPT") {
-        return {
-          success: false as const,
-          error: "INVALID_STATUS" as const,
-          currentStatus: submission.status,
-        };
-      }
-
+      const { submission } = lockResult;
       const resolvedPhotoPath = (storagePath && storagePath.trim()) || submission.reportPhotoPath;
       if (!resolvedPhotoPath || !resolvedPhotoPath.trim()) {
         return { success: false as const, error: "MISSING_PHOTO" as const };
       }
 
-      // 1. Update submission status to RECEIVED
-      await tx
+      // 1. Update submission status to RECEIVED with atomic status precondition
+      const [updatedSubmission] = await tx
         .update(foundSubmissions)
         .set({ status: "RECEIVED" })
-        .where(eq(foundSubmissions.submissionId, submissionId));
+        .where(
+          and(
+            eq(foundSubmissions.submissionId, submissionId),
+            eq(foundSubmissions.targetPostId, storagePostId),
+            eq(foundSubmissions.status, "PENDING_RECEIPT")
+          )
+        )
+        .returning();
+
+      if (!updatedSubmission) {
+        const [latest] = await tx
+          .select({ status: foundSubmissions.status })
+          .from(foundSubmissions)
+          .where(eq(foundSubmissions.submissionId, submissionId));
+        return {
+          success: false as const,
+          error: "INVALID_STATUS" as const,
+          currentStatus: latest?.status ?? submission.status,
+        };
+      }
 
       // 2. Append history
       await tx.insert(submissionStatusHistory).values({
@@ -161,31 +229,34 @@ export class OfficerSubmissionsRepository {
     reason: string
   ) {
     return await db.transaction(async (tx) => {
-      const submission = await tx.query.foundSubmissions.findFirst({
-        where: eq(foundSubmissions.submissionId, submissionId),
-      });
-
-      if (!submission) {
-        return { success: false as const, error: "NOT_FOUND" as const };
-      }
-
-      if (submission.targetPostId !== storagePostId) {
-        return { success: false as const, error: "FORBIDDEN" as const };
-      }
-
-      if (submission.status !== "PENDING_RECEIPT") {
-        return {
-          success: false as const,
-          error: "INVALID_STATUS" as const,
-          currentStatus: submission.status,
-        };
+      const lockResult = await lockPendingSubmissionForUpdate(tx, submissionId, storagePostId);
+      if (!lockResult.success) {
+        return lockResult;
       }
 
       const [updated] = await tx
         .update(foundSubmissions)
         .set({ status: "REJECTED" })
-        .where(eq(foundSubmissions.submissionId, submissionId))
+        .where(
+          and(
+            eq(foundSubmissions.submissionId, submissionId),
+            eq(foundSubmissions.targetPostId, storagePostId),
+            eq(foundSubmissions.status, "PENDING_RECEIPT")
+          )
+        )
         .returning();
+
+      if (!updated) {
+        const [latest] = await tx
+          .select({ status: foundSubmissions.status })
+          .from(foundSubmissions)
+          .where(eq(foundSubmissions.submissionId, submissionId));
+        return {
+          success: false as const,
+          error: "INVALID_STATUS" as const,
+          currentStatus: latest?.status ?? lockResult.submission.status,
+        };
+      }
 
       await tx.insert(submissionStatusHistory).values({
         submissionId,
