@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { randomUUID } from "crypto";
 import { buildApp } from "../src/app.js";
 import { parseEnv } from "../src/config/env.js";
@@ -8,7 +8,7 @@ import {
   validateStorageKey,
   verifyStorageSignature,
 } from "../src/utils/photoResolver.js";
-import { R2StorageProvider } from "../src/modules/uploads/storage/r2.provider.js";
+import { R2StorageProvider, r2Provider } from "../src/modules/uploads/storage/r2.provider.js";
 import {
   validateImageMagicBytes,
   validateIntentForFinalize,
@@ -283,6 +283,7 @@ describe("Uploads, Storage & Infra Security Regression Suite (DB-free unit)", ()
     const prevAuthSecret = process.env.AUTH_SECRET;
     process.env.NODE_ENV = "production";
     process.env.AUTH_SECRET = "prod-secret-minimum-32-characters-long-12345";
+    vi.spyOn(r2Provider, "getObjectStream").mockResolvedValue(null);
 
     const app = buildApp({ enableRateLimit: false });
     await app.ready();
@@ -307,6 +308,7 @@ describe("Uploads, Storage & Infra Security Regression Suite (DB-free unit)", ()
       expect(corsEvilRes.headers["access-control-allow-origin"]).toBeUndefined();
     } finally {
       await app.close();
+      vi.restoreAllMocks();
       if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
       else process.env.NODE_ENV = prevNodeEnv;
       if (prevAuthSecret === undefined) delete process.env.AUTH_SECRET;

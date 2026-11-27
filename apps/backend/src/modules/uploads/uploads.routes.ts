@@ -11,7 +11,6 @@ import {
 import { uploadsService } from "./uploads.service.js";
 import { intentRegistry } from "./intent.registry.js";
 import { validateIntentForFinalize } from "./upload.validator.js";
-import { r2Provider } from "./storage/r2.provider.js";
 
 export const uploadsRoutes: FastifyPluginAsync = async (app) => {
   /**
@@ -149,8 +148,8 @@ export const uploadsRoutes: FastifyPluginAsync = async (app) => {
     }
   );
 
-  // Mock PUT endpoint strictly limited to isolated test runs without live R2 credentials
-  if (env.NODE_ENV === "test" && !r2Provider.isConfigured) {
+  // Mock PUT endpoint strictly limited to isolated test runs using mock storage
+  if (env.NODE_ENV === "test" && !uploadsService.isUsingR2()) {
     app.put<{ Params: { bucket: string; "*": string } }>(
       "/mock-r2/:bucket/*",
       async (request, reply) => {

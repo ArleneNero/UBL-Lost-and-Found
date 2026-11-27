@@ -146,11 +146,15 @@ export class UploadsService {
     throw new AppError("STORAGE_UNAVAILABLE", "Storage provider tidak mendukung relay upload", 500);
   }
 
+  public isUsingR2(): boolean {
+    return this.storage === r2Provider;
+  }
+
   /**
    * Test-only upload helper. Disabled for real R2 production storage.
    */
   public async simulatePut(key: string, body: Buffer, contentType: string): Promise<void> {
-    if (!this.isCustomStorage && (env.NODE_ENV !== "test" || r2Provider.isConfigured)) {
+    if (!this.isCustomStorage && (env.NODE_ENV !== "test" || this.storage === r2Provider)) {
       throw new AppError(
         "FORBIDDEN",
         "simulatePut hanya diizinkan pada lingkungan uji non-produksi",
