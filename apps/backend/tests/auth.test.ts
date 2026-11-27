@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 import Fastify, { FastifyInstance } from "fastify";
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { authenticate, requireOfficer } from "../src/middleware/auth.guard.js";
 import { authService } from "../src/modules/auth/auth.service.js";
 import { authRoutes } from "../src/modules/auth/auth.routes.js";
+import { jwtService, JWT_ISSUER } from "../src/modules/auth/jwt.service.js";
+import { DUMMY_BCRYPT_HASH } from "../src/modules/auth/auth.helpers.js";
+import { GENERIC_PASSWORD_RESET_MESSAGE } from "../src/modules/auth/auth-password-reset.service.js";
+import { AuthProbeLimiter, authProbeLimiter } from "../src/modules/auth/auth-route.helpers.js";
 import { emailService } from "../src/services/email.service.js";
 import { SEED_OFFICER_EMAIL, SEED_OFFICER_PASSWORD } from "../src/db/fixtures/officer.fixture.js";
 import { db, pool } from "../src/db/index.js";
@@ -338,12 +344,16 @@ describe("B/D.1 — Server-Side Auth, Identity Mapping & Scoped Policy", () => {
     const cooldownEmail = `9903${baseSuffix}@student.budiluhur.ac.id`;
     const failDeliveryEmail = `9904${baseSuffix}@student.budiluhur.ac.id`;
     const passwordResetNamedEmail = `9905${baseSuffix}@student.budiluhur.ac.id`;
+    const parallelBurstEmail = `9906${baseSuffix}@student.budiluhur.ac.id`;
+    const resetFlowEmail = `9907${baseSuffix}@student.budiluhur.ac.id`;
     const trackedEmails = [
       testStudentRegEmail,
       lockoutEmail,
       cooldownEmail,
       failDeliveryEmail,
       passwordResetNamedEmail,
+      parallelBurstEmail,
+      resetFlowEmail,
     ];
     const testStudentRegPassword = "Password123!";
     let lastCapturedEmail: string | null = null;
@@ -351,6 +361,7 @@ describe("B/D.1 — Server-Side Auth, Identity Mapping & Scoped Policy", () => {
     let lastCapturedNim: string | null = null;
 
     beforeEach(async () => {
+      authProbeLimiter.reset();
       lastCapturedEmail = null;
       lastCapturedOtp = null;
       lastCapturedNim = null;
@@ -367,6 +378,7 @@ describe("B/D.1 — Server-Side Auth, Identity Mapping & Scoped Policy", () => {
 
     afterEach(() => {
       vi.restoreAllMocks();
+      authProbeLimiter.reset();
     });
 
     afterAll(async () => {
@@ -992,6 +1004,377 @@ describe("B/D.1 — Server-Side Auth, Identity Mapping & Scoped Policy", () => {
           process.env.NODE_ENV = prevNodeEnv;
         }
       }
+    });
+
+    it("FIND-04 & FIND-16: should enforce single-use password reset token (reject replay), 60s cooldown, and 404 missing-user guard", async () => {
+      const initialPasswordHash = await bcrypt.hash("InitialPass123!", 10);
+      const [resetUser] = await db
+        .insert(users)
+        .values({
+          authUserId: `test-reset-flow-${baseSuffix}`,
+          fullName: "Mahasiswa Reset Flow",
+          email: resetFlowEmail,
+          studentNumber: `9907${baseSuffix}`,
+          passwordHash: initialPasswordHash,
+          role: "STUDENT",
+        })
+        .returning();
+
+      const capturedUrls: string[] = [];
+      vi.spyOn(emailService, "sendPasswordResetEmail").mockImplementation(
+        async (_toEmail, resetUrl) => {
+          capturedUrls.push(resetUrl);
+          return true;
+        }
+      );
+
+      // 1. First request issues single-use token with jti
+      const firstForgotRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/forgot-password",
+        payload: { email: resetFlowEmail },
+      });
+      expect(firstForgotRes.statusCode).toBe(200);
+      expect(firstForgotRes.json().data.message).toBe(GENERIC_PASSWORD_RESET_MESSAGE);
+      expect(capturedUrls).toHaveLength(1);
+
+      const issuedToken = new URL(capturedUrls[0]).searchParams.get("token");
+      expect(issuedToken).toBeTruthy();
+      const decoded = jwtService.verifyToken(issuedToken!);
+      expect(decoded?.purpose).toBe("password_reset");
+      expect(decoded?.sub).toBe(resetUser.userId);
+      expect(decoded?.jti).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
+
+      // 2. Second request within 60s cooldown returns uniform 200 without sending duplicate email
+      const cooldownForgotRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/forgot-password",
+        payload: { email: resetFlowEmail },
+      });
+      expect(cooldownForgotRes.statusCode).toBe(200);
+      expect(cooldownForgotRes.json().data.message).toBe(GENERIC_PASSWORD_RESET_MESSAGE);
+      expect(capturedUrls).toHaveLength(1);
+
+      // 3. Unknown email returns identical generic message (no enumeration)
+      const unknownForgotRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/forgot-password",
+        payload: { email: "9999999999@student.budiluhur.ac.id" },
+      });
+      expect(unknownForgotRes.statusCode).toBe(200);
+      expect(unknownForgotRes.json().data.message).toBe(GENERIC_PASSWORD_RESET_MESSAGE);
+
+      // 4. First reset-password succeeds and updates password
+      const resetOkRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/reset-password",
+        payload: {
+          token: issuedToken,
+          new_password: "UpdatedPassword123!",
+        },
+      });
+      expect(resetOkRes.statusCode).toBe(200);
+      expect(resetOkRes.json().data.success).toBe(true);
+
+      const loginAfterReset = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/student-login",
+        payload: {
+          email: resetFlowEmail,
+          password: "UpdatedPassword123!",
+        },
+      });
+      expect(loginAfterReset.statusCode).toBe(200);
+
+      // 5. Replay of the exact same reset token must be rejected
+      const replayResetRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/reset-password",
+        payload: {
+          token: issuedToken,
+          new_password: "AnotherPassword123!",
+        },
+      });
+      expect(replayResetRes.statusCode).toBe(400);
+      expect(replayResetRes.json().error.code).toBe("INVALID_TOKEN");
+
+      // 6. Validly signed token with unknown jti must be rejected
+      const untrackedJtiToken = jwtService.createToken(
+        {
+          sub: resetUser.userId,
+          email: resetUser.email,
+          purpose: "password_reset",
+          jti: crypto.randomUUID(),
+        },
+        1800
+      );
+      const untrackedRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/reset-password",
+        payload: {
+          token: untrackedJtiToken,
+          new_password: "AnotherPassword123!",
+        },
+      });
+      expect(untrackedRes.statusCode).toBe(400);
+      expect(untrackedRes.json().error.code).toBe("INVALID_TOKEN");
+
+      // 7. Missing user row update guard must return 404 USER_NOT_FOUND, never 200
+      const fakeJti = crypto.randomUUID();
+      const missingUserToken = jwtService.createToken(
+        {
+          sub: crypto.randomUUID(),
+          purpose: "password_reset",
+          jti: fakeJti,
+        },
+        1800
+      );
+      let updateCallCount = 0;
+      vi.spyOn(db, "transaction").mockImplementationOnce(async (callback) => {
+        const fakeTx = {
+          update: () => ({
+            set: () => ({
+              where: () => ({
+                returning: async () => {
+                  updateCallCount += 1;
+                  return updateCallCount === 1 ? [{ tokenId: fakeJti }] : [];
+                },
+              }),
+            }),
+          }),
+        };
+        return callback(fakeTx as never);
+      });
+      const missingUserRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/reset-password",
+        payload: {
+          token: missingUserToken,
+          new_password: "AnotherPassword123!",
+        },
+      });
+      expect(missingUserRes.statusCode).toBe(404);
+      expect(missingUserRes.json().error.code).toBe("USER_NOT_FOUND");
+    });
+
+    it("FIND-15: should serialize parallel burst request-otp calls via advisory lock and send only one OTP", async () => {
+      const sendSpy = vi.mocked(emailService.sendRegistrationOtpEmail);
+
+      const responses = await Promise.all([
+        app.inject({
+          method: "POST",
+          url: "/api/v1/auth/student-register/request-otp",
+          payload: {
+            full_name: "Burst Test",
+            email: parallelBurstEmail,
+            password: testStudentRegPassword,
+          },
+        }),
+        app.inject({
+          method: "POST",
+          url: "/api/v1/auth/student-register/request-otp",
+          payload: {
+            full_name: "Burst Test",
+            email: parallelBurstEmail,
+            password: testStudentRegPassword,
+          },
+        }),
+        app.inject({
+          method: "POST",
+          url: "/api/v1/auth/student-register/request-otp",
+          payload: {
+            full_name: "Burst Test",
+            email: parallelBurstEmail,
+            password: testStudentRegPassword,
+          },
+        }),
+      ]);
+
+      const statusCodes = responses.map((r) => r.statusCode).sort((a, b) => a - b);
+      expect(statusCodes).toEqual([200, 429, 429]);
+      expect(sendSpy).toHaveBeenCalledTimes(1);
+
+      const rejected = responses.filter((r) => r.statusCode === 429);
+      for (const res of rejected) {
+        expect(res.json().error.code).toBe("OTP_COOLDOWN_ACTIVE");
+      }
+    });
+
+    it("FIND-17: should throttle repeated duplicate NIM/email enumeration probes on request-otp", async () => {
+      const unitLimiter = new AuthProbeLimiter(2, 60_000, 100);
+      expect(unitLimiter.check("10.0.0.1", 1000)).toEqual({ allowed: true });
+      unitLimiter.recordDuplicateProbe("10.0.0.1", 1000);
+      unitLimiter.recordDuplicateProbe("10.0.0.1", 2000);
+      const blocked = unitLimiter.check("10.0.0.1", 3000);
+      expect(blocked.allowed).toBe(false);
+      if (!blocked.allowed) {
+        expect(blocked.retryAfter).toBeGreaterThan(0);
+      }
+      expect(unitLimiter.check("10.0.0.1", 62_000)).toEqual({ allowed: true });
+
+      for (let i = 0; i < 5; i++) {
+        const res = await app.inject({
+          method: "POST",
+          url: "/api/v1/auth/student-register/request-otp",
+          payload: {
+            full_name: "Probe Test",
+            email: "2111509999@student.budiluhur.ac.id",
+            password: "Password123!",
+          },
+        });
+        expect(res.statusCode).toBe(409);
+      }
+
+      const throttledRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/student-register/request-otp",
+        payload: {
+          full_name: "Probe Test",
+          email: "2111509999@student.budiluhur.ac.id",
+          password: "Password123!",
+        },
+      });
+      expect(throttledRes.statusCode).toBe(429);
+      expect(throttledRes.json().error.code).toBe("RATE_LIMIT_EXCEEDED");
+      expect(throttledRes.headers["retry-after"]).toBeDefined();
+    });
+
+    it("FIND-25: should strictly validate JWT header alg/typ, issuer iss, required exp, and propagate 503", () => {
+      const secret = resolveRuntimeAuthSecret();
+      const now = Math.floor(Date.now() / 1000);
+
+      const signCustom = (
+        header: Record<string, unknown>,
+        payload: Record<string, unknown>
+      ): string => {
+        const h = Buffer.from(JSON.stringify(header)).toString("base64url");
+        const p = Buffer.from(JSON.stringify(payload)).toString("base64url");
+        const sig = crypto
+          .createHmac("sha256", secret)
+          .update(`${h}.${p}`)
+          .digest("base64url");
+        return `${h}.${p}.${sig}`;
+      };
+
+      const validPayload = { sub: "user-1", iss: JWT_ISSUER, iat: now, exp: now + 300 };
+      const validHeader = { alg: "HS256", typ: "JWT" };
+
+      expect(jwtService.verifyToken(signCustom(validHeader, validPayload))).not.toBeNull();
+      expect(jwtService.verifyToken(signCustom({ alg: "none", typ: "JWT" }, validPayload))).toBeNull();
+      expect(jwtService.verifyToken(signCustom({ alg: "HS512", typ: "JWT" }, validPayload))).toBeNull();
+      expect(jwtService.verifyToken(signCustom({ alg: "HS256", typ: "JWS" }, validPayload))).toBeNull();
+      expect(jwtService.verifyToken(signCustom({ alg: "HS256" }, validPayload))).toBeNull();
+      expect(
+        jwtService.verifyToken(
+          signCustom(validHeader, { sub: "user-1", iss: "evil-issuer", iat: now, exp: now + 300 })
+        )
+      ).toBeNull();
+      expect(
+        jwtService.verifyToken(signCustom(validHeader, { sub: "user-1", iat: now, exp: now + 300 }))
+      ).toBeNull();
+      expect(
+        jwtService.verifyToken(signCustom(validHeader, { sub: "user-1", iss: JWT_ISSUER, iat: now }))
+      ).toBeNull();
+      expect(
+        jwtService.verifyToken(
+          signCustom(validHeader, { sub: "user-1", iss: JWT_ISSUER, exp: "9999999999" })
+        )
+      ).toBeNull();
+
+      const prevSecret = process.env.AUTH_SECRET;
+      const prevNodeEnv = process.env.NODE_ENV;
+      try {
+        process.env.NODE_ENV = "production";
+        process.env.AUTH_SECRET = "";
+        expect(() => jwtService.verifyToken("a.b.c")).toThrow(AppError);
+      } finally {
+        if (prevSecret === undefined) delete process.env.AUTH_SECRET;
+        else process.env.AUTH_SECRET = prevSecret;
+        if (prevNodeEnv === undefined) delete process.env.NODE_ENV;
+        else process.env.NODE_ENV = prevNodeEnv;
+      }
+    });
+
+    it("FIND-26: should wrap all auth routes with handleAuthCatchError and run dummy bcrypt.compare on login misses", async () => {
+      // 1. Constant-time dummy bcrypt.compare on missing officer & student accounts
+      const compareSpy = vi.spyOn(bcrypt, "compare");
+
+      const officerMiss = await authService.officerLogin(
+        "nonexistent.timing@budiluhur.ac.id",
+        "SomePass123!"
+      );
+      expect(officerMiss.success).toBe(false);
+      expect(compareSpy).toHaveBeenCalledWith("SomePass123!", DUMMY_BCRYPT_HASH);
+
+      compareSpy.mockClear();
+      const studentMiss = await authService.studentLogin(
+        "9876543210@student.budiluhur.ac.id",
+        "StudentPass123!"
+      );
+      expect(studentMiss.success).toBe(false);
+      expect(compareSpy).toHaveBeenCalledWith("StudentPass123!", DUMMY_BCRYPT_HASH);
+      compareSpy.mockRestore();
+
+      // 2. Unhandled errors across all auth routes must be caught without leaking raw messages
+      const secretErr = new Error("sensitive-db-internal-detail");
+      const officerToken = authService.createToken({ sub: "seed-officer-pengajaran-01" });
+      const bootstrapToken = authService.createToken({
+        sub: "catch-test-sub",
+        email: "2411509998@student.budiluhur.ac.id",
+      });
+
+      vi.spyOn(authService, "bootstrapStudent").mockRejectedValueOnce(secretErr);
+      const bootstrapErrRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/me/bootstrap",
+        headers: { authorization: `Bearer ${bootstrapToken}` },
+        payload: { full_name: "Catch Test" },
+      });
+      expect(bootstrapErrRes.statusCode).toBe(500);
+      expect(bootstrapErrRes.json().error.code).toBe("INTERNAL_SERVER_ERROR");
+      expect(bootstrapErrRes.body).not.toContain("sensitive-db-internal-detail");
+
+      vi.spyOn(authService, "getOfficerPost").mockRejectedValueOnce(secretErr);
+      const meErrRes = await app.inject({
+        method: "GET",
+        url: "/api/v1/me",
+        headers: { authorization: `Bearer ${officerToken}` },
+      });
+      expect(meErrRes.statusCode).toBe(500);
+      expect(meErrRes.json().error.code).toBe("INTERNAL_SERVER_ERROR");
+      expect(meErrRes.body).not.toContain("sensitive-db-internal-detail");
+
+      vi.spyOn(authService, "officerLogin").mockRejectedValueOnce(secretErr);
+      const officerLoginErrRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/officer-login",
+        payload: { email: SEED_OFFICER_EMAIL, password: "Password123!" },
+      });
+      expect(officerLoginErrRes.statusCode).toBe(500);
+      expect(officerLoginErrRes.json().error.code).toBe("INTERNAL_SERVER_ERROR");
+      expect(officerLoginErrRes.body).not.toContain("sensitive-db-internal-detail");
+
+      vi.spyOn(authService, "requestPasswordReset").mockRejectedValueOnce(secretErr);
+      const forgotErrRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/forgot-password",
+        payload: { email: "2411509998@student.budiluhur.ac.id" },
+      });
+      expect(forgotErrRes.statusCode).toBe(500);
+      expect(forgotErrRes.json().error.code).toBe("INTERNAL_SERVER_ERROR");
+      expect(forgotErrRes.body).not.toContain("sensitive-db-internal-detail");
+
+      vi.spyOn(authService, "resetPassword").mockRejectedValueOnce(secretErr);
+      const resetErrRes = await app.inject({
+        method: "POST",
+        url: "/api/v1/auth/reset-password",
+        payload: { token: "dummy.reset.token.value", new_password: "NewPassword123!" },
+      });
+      expect(resetErrRes.statusCode).toBe(500);
+      expect(resetErrRes.json().error.code).toBe("INTERNAL_SERVER_ERROR");
+      expect(resetErrRes.body).not.toContain("sensitive-db-internal-detail");
     });
   });
 });

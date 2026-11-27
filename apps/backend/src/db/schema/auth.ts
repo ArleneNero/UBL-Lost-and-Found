@@ -7,6 +7,7 @@ import {
   timestamp,
   index,
 } from "drizzle-orm/pg-core";
+import { users } from "./users.js";
 
 export const otpChallenges = pgTable(
   "otp_challenges",
@@ -25,5 +26,21 @@ export const otpChallenges = pgTable(
   },
   (table) => [
     index("idx_otp_challenges_email_created").on(table.email, table.createdAt),
+  ]
+);
+
+export const passwordResetTokens = pgTable(
+  "password_reset_tokens",
+  {
+    tokenId: uuid("token_id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.userId, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    consumedAt: timestamp("consumed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_password_reset_tokens_user_created").on(table.userId, table.createdAt),
   ]
 );
