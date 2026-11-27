@@ -2,15 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ForgotPasswordForm } from '@/features/auth/components/ForgotPasswordForm';
-import * as apiClientModule from '@/services/http/apiClient';
+import { registry } from '@/services/registry';
 
-describe('ForgotPasswordForm — Token-Gated Reset Flow', () => {
+describe('ForgotPasswordForm — Token-Gated Reset Flow (via IAuthService)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    registry.setMode('in-memory');
   });
 
   it('transitions from REQUEST to SENT without dead-end button and supports changing email', async () => {
-    const apiSpy = vi.spyOn(apiClientModule, 'apiClient').mockResolvedValue({ success: true });
+    const authService = registry.getServices().auth;
+    const reqSpy = vi.spyOn(authService, 'requestPasswordReset').mockResolvedValue();
 
     render(
       <MemoryRouter initialEntries={['/lupa-sandi']}>
@@ -26,10 +28,7 @@ describe('ForgotPasswordForm — Token-Gated Reset Flow', () => {
       expect(screen.getByText('Periksa Kotak Masuk Email Anda')).toBeDefined();
     });
 
-    expect(apiSpy).toHaveBeenCalledWith(
-      '/auth/forgot-password',
-      expect.objectContaining({ method: 'POST' })
-    );
+    expect(reqSpy).toHaveBeenCalledWith('2411502194@student.budiluhur.ac.id');
     expect(screen.queryByText(/Buka Formulir Kata Sandi Baru/i)).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: /Gunakan email lain/i }));
@@ -37,7 +36,8 @@ describe('ForgotPasswordForm — Token-Gated Reset Flow', () => {
   });
 
   it('opens RESET only via URL token, toggles visibility, and resets password', async () => {
-    const apiSpy = vi.spyOn(apiClientModule, 'apiClient').mockResolvedValue({ success: true });
+    const authService = registry.getServices().auth;
+    const resetSpy = vi.spyOn(authService, 'resetPassword').mockResolvedValue();
 
     render(
       <MemoryRouter initialEntries={['/lupa-sandi?token=valid-jwt-123&email=2411502194@student.budiluhur.ac.id']}>
@@ -62,17 +62,12 @@ describe('ForgotPasswordForm — Token-Gated Reset Flow', () => {
       expect(screen.getByText('Kata Sandi Diperbarui')).toBeDefined();
     });
 
-    expect(apiSpy).toHaveBeenCalledWith(
-      '/auth/reset-password',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ token: 'valid-jwt-123', new_password: 'PasswordBaru123' }),
-      })
-    );
+    expect(resetSpy).toHaveBeenCalledWith('valid-jwt-123', 'PasswordBaru123');
   });
 
   it('shows recovery action back to REQUEST when reset token is invalid or expired', async () => {
-    vi.spyOn(apiClientModule, 'apiClient').mockRejectedValue(
+    const authService = registry.getServices().auth;
+    vi.spyOn(authService, 'resetPassword').mockRejectedValue(
       new Error('Tautan pemulihan tidak valid atau sudah kedaluwarsa. Silakan ajukan ulang.')
     );
 

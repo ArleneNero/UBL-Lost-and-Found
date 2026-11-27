@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { KeyRound, AlertCircle } from 'lucide-react';
 import { RoutePaths } from '@/constants/routes';
-import { apiClient } from '@/services/http/apiClient';
+import { registry } from '@/services/registry';
 import { ForgotRequestStep } from './forgot/ForgotRequestStep';
 import { ForgotSentStep } from './forgot/ForgotSentStep';
 import { ForgotResetStep } from './forgot/ForgotResetStep';
@@ -67,10 +67,7 @@ export const ForgotPasswordForm: React.FC = () => {
     setError(null);
     setIsLoading(true);
     try {
-      await apiClient('/auth/forgot-password', {
-        method: 'POST',
-        body: JSON.stringify({ email: cleanEmail }),
-      });
+      await registry.getServices().auth.requestPasswordReset(cleanEmail);
       setEmail(cleanEmail);
       setStep('SENT');
       setTimer(60);
@@ -103,10 +100,7 @@ export const ForgotPasswordForm: React.FC = () => {
 
     setIsLoading(true);
     try {
-      await apiClient('/auth/reset-password', {
-        method: 'POST',
-        body: JSON.stringify({ token: resetToken, new_password: newPassword }),
-      });
+      await registry.getServices().auth.resetPassword(resetToken, newPassword);
       setToken('');
       setSearchParams({}, { replace: true });
       setStep('SUCCESS');

@@ -26,6 +26,8 @@ export interface ReceiveSubmissionInput {
 
 export interface ISubmissionService {
   getSubmissions(params?: GetSubmissionsParams): Promise<PaginatedResult<Submission>>;
+  getMySubmissions(params?: GetSubmissionsParams): Promise<PaginatedResult<Submission>>;
+  getOfficerSubmissions(params?: GetSubmissionsParams): Promise<PaginatedResult<Submission>>;
   getSubmissionById(id: string): Promise<Submission | null>;
   createSubmission(input: CreateSubmissionInput): Promise<Submission>;
   receiveSubmission(id: string, input: ReceiveSubmissionInput): Promise<FoundItem>;

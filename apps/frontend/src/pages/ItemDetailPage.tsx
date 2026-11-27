@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, MapPin, Package, PackageOpen } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { RoutePaths } from '@/constants/routes';
 import { services } from '@/services/registry';
@@ -12,25 +13,53 @@ export const ItemDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [item, setItem] = useState<FoundItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [imgError, setImgError] = useState(false);
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadItem() {
-      if (!id) return;
-      setIsLoading(true);
-      try {
-        const found = await services.items.getPublicItemById(id);
-        if (isMounted) setItem(found);
-      } catch {
-        if (isMounted) setItem(null);
-      } finally {
-        if (isMounted) setIsLoading(false);
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  const loadItem = useCallback(async () => {
+    if (!id) {
+      setItem(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setImgError(false);
+
+    try {
+      const found = await services.items.getPublicItemById(id);
+      if (isMountedRef.current) {
+        setItem(found);
+      }
+    } catch (err) {
+      if (isMountedRef.current) {
+        setItem(null);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Terjadi gangguan jaringan atau server saat memuat detail barang.'
+        );
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
       }
     }
-    loadItem();
-    return () => { isMounted = false; };
   }, [id]);
+
+  useEffect(() => {
+    void loadItem();
+  }, [loadItem]);
 
   if (isLoading) {
     return (
@@ -45,6 +74,18 @@ export const ItemDetailPage: React.FC = () => {
             <Skeleton height={90} width="100%" />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <ErrorState
+          title="Gagal Memuat Detail Barang"
+          description={error}
+          onRetry={() => void loadItem()}
+        />
       </div>
     );
   }

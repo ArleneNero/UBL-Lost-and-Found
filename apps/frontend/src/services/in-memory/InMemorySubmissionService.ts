@@ -10,14 +10,17 @@ import { mockStore } from '@/data/mockStore';
 import { FoundSubmissionDto, InventoryOfficerDto } from '@/types/api';
 
 export class InMemorySubmissionService implements ISubmissionService {
-  async getSubmissions(
+  private querySubmissions(
     params?: GetSubmissionsParams
-  ): Promise<PaginatedResult<Submission>> {
+  ): PaginatedResult<Submission> {
     const page = params?.page || 1;
     const limit = params?.limit || 10;
     const status = params?.status;
 
     let list = [...mockStore.getState().submissions];
+    if (params?.targetPostId) {
+      list = list.filter((s) => s.target_post_id === params.targetPostId);
+    }
     if (status) list = list.filter((s) => s.status === status);
 
     const total = list.length;
@@ -32,6 +35,24 @@ export class InMemorySubmissionService implements ISubmissionService {
       total,
       totalPages,
     };
+  }
+
+  async getSubmissions(
+    params?: GetSubmissionsParams
+  ): Promise<PaginatedResult<Submission>> {
+    return this.querySubmissions(params);
+  }
+
+  async getMySubmissions(
+    params?: GetSubmissionsParams
+  ): Promise<PaginatedResult<Submission>> {
+    return this.querySubmissions(params);
+  }
+
+  async getOfficerSubmissions(
+    params?: GetSubmissionsParams
+  ): Promise<PaginatedResult<Submission>> {
+    return this.querySubmissions(params);
   }
 
   async getSubmissionById(id: string): Promise<Submission | null> {

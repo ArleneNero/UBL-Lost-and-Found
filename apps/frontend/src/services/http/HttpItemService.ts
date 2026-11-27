@@ -17,7 +17,6 @@ import {
   ReturnRequestDto,
 } from '@/types/api';
 import { apiClient, ApiError } from './apiClient';
-import { mockStore } from '@/data/mockStore';
 
 export class HttpItemService implements IItemService {
   /**
@@ -104,11 +103,11 @@ export class HttpItemService implements IItemService {
     }
   }
 
+  /**
+   * Default lookup publik (tanpa ketergantungan pada mockStore).
+   * Pemanggil petugas wajib memakai getOfficerItemById().
+   */
   async getItemById(id: string): Promise<FoundItem | null> {
-    const isOfficer = mockStore.getState().currentUser?.role === 'OFFICER';
-    if (isOfficer) {
-      return this.getOfficerItemById(id);
-    }
     return this.getPublicItemById(id);
   }
 
@@ -184,11 +183,13 @@ export class HttpItemService implements IItemService {
   /**
    * B/J.1.2: Penyaluran barang kedaluwarsa POST /api/v1/officer/items/:id/distribute
    */
-  async distributeItem(id: string, _notes: string): Promise<FoundItem> {
+  async distributeItem(id: string, notes: string): Promise<FoundItem> {
+    const trimmedNotes = notes.trim();
     const res = await apiClient<ApiDataResponse<InventoryOfficerDto>>(
       `/officer/items/${id}/distribute`,
       {
         method: 'POST',
+        body: JSON.stringify(trimmedNotes ? { notes: trimmedNotes } : {}),
       }
     );
 

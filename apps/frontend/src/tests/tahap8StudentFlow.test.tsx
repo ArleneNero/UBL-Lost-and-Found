@@ -64,10 +64,10 @@ describe('Milestone F/D — Modul Mahasiswa (Mock & UI Services)', () => {
       const services = registry.getServices();
       
       // Initial mock has 1 submission
-      const allReports = await services.submissions.getSubmissions();
+      const allReports = await services.submissions.getMySubmissions();
       expect(allReports.items.length).toBeGreaterThan(0);
 
-      const pendingOnly = await services.submissions.getSubmissions({
+      const pendingOnly = await services.submissions.getMySubmissions({
         status: 'PENDING_RECEIPT',
       });
       expect(pendingOnly.items.every((r) => r.status === 'PENDING_RECEIPT')).toBe(true);
@@ -144,7 +144,7 @@ describe('Milestone F/D — Modul Mahasiswa (Mock & UI Services)', () => {
       });
 
       // 2. Petugas melihat laporan di pos pengajaran
-      const officerQueue = await services.submissions.getSubmissions({
+      const officerQueue = await services.submissions.getOfficerSubmissions({
         targetPostId: 1,
         status: 'PENDING_RECEIPT',
       });

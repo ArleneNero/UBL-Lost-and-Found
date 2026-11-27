@@ -13,12 +13,8 @@ import { apiClient, ApiError } from './apiClient';
  */
 export class HttpPostService implements IPostService {
   async getPosts(): Promise<ServicePost[]> {
-    try {
-      const res = await apiClient<ApiListResponse<ServicePostPublicDto>>('/posts');
-      return res.data.map(mapServicePostDtoToDomain);
-    } catch {
-      return [];
-    }
+    const res = await apiClient<ApiListResponse<ServicePostPublicDto>>('/posts');
+    return res.data.map(mapServicePostDtoToDomain);
   }
 
   async getPostById(id: number): Promise<ServicePost | null> {
@@ -29,7 +25,7 @@ export class HttpPostService implements IPostService {
       if (err instanceof ApiError && err.status === 404) {
         return null;
       }
-      return null;
+      throw err;
     }
   }
 }

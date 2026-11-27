@@ -175,6 +175,22 @@ export class InMemoryAuthService implements IAuthService {
     return this.loginAsStudent(emailResult.normalizedEmail, trimmedName, emailResult.nim);
   }
 
+  async requestPasswordReset(email: string): Promise<void> {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.includes('@') || !cleanEmail.endsWith('@student.budiluhur.ac.id')) {
+      throw new Error('Masukkan alamat email resmi mahasiswa Budi Luhur (@student.budiluhur.ac.id).');
+    }
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    if (!token || !token.trim()) {
+      throw new Error('Token pemulihan tidak valid atau sudah kedaluwarsa.');
+    }
+    if (newPassword.length < 8) {
+      throw new Error('Kata sandi baru minimal 8 karakter.');
+    }
+  }
+
   async logout(): Promise<void> {
     mockStore.getState().currentUser = null;
   }

@@ -140,6 +140,11 @@ export const OfficerReportDetailPage: React.FC = () => {
               <p className="text-[11px] text-[var(--lf-muted)]">Barang sudah masuk inventaris pos Pengajaran.</p>
               {createdItem && <Button variant="secondary" size="sm" onClick={() => navigate(`/petugas/inventaris/${createdItem.id}`)} className="w-fit mt-1">Lihat di Inventaris</Button>}
             </div>
+          ) : submission.status === 'CANCELLED' ? (
+            <div className="flex flex-col gap-1 p-3 bg-slate-50 border border-slate-200 rounded-[var(--lf-radius-md)] text-xs text-slate-700">
+              <span className="font-bold">Laporan Dibatalkan oleh Mahasiswa</span>
+              <p className="text-[11px] text-[var(--lf-muted)]">Pelapor telah membatalkan laporan temuan ini sebelum penyerahan fisik ke pos.</p>
+            </div>
           ) : (
             <div className="p-3 bg-[var(--lf-error-soft)] border border-[rgba(217,45,32,0.2)] rounded-[var(--lf-radius-md)] text-xs text-[var(--lf-error)]"><span className="font-bold">Laporan Ditolak oleh Petugas</span></div>
           )}

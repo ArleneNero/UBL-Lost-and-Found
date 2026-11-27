@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Building2, Calendar, MapPin, PlusCircle, Sparkles } from 'lucide-react';
 import { ITEM_CATEGORIES } from '@/constants/categories';
 import { ACTIVE_SERVICE_POST } from '@/constants/locations';
+import { toLocalDateKey } from '@/features/officer/selectors/reportDateSelectors';
 import { ReportPhotoUploader } from './ReportPhotoUploader';
 
 export interface ReportFoundFormValues {
@@ -28,7 +29,7 @@ export const ReportFoundForm: React.FC<ReportFoundFormProps> = ({
   const [itemName, setItemName] = useState('');
   const [category, setCategory] = useState('');
   const [foundLocation, setFoundLocation] = useState('');
-  const [foundDate, setFoundDate] = useState(new Date().toISOString().split('T')[0]);
+  const [foundDate, setFoundDate] = useState(() => toLocalDateKey(new Date().toISOString()));
   const [description, setDescription] = useState('');
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [agreedToPhysicalDrop, setAgreedToPhysicalDrop] = useState(false);
@@ -129,10 +130,11 @@ export const ReportFoundForm: React.FC<ReportFoundFormProps> = ({
 
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-[#111827] mb-1.5">
-              Deskripsi & Ciri-Ciri Barang
+              Deskripsi & Ciri-Ciri Barang <span className="text-red-500">*</span>
             </label>
             <textarea
               rows={3}
+              required
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Jelaskan warna, merk, stiker, gantungan, atau ciri fisik lain yang memudahkan identifikasi pemilik..."

@@ -14,7 +14,7 @@ describe('Tahap 3 — Mock Data, Services & Officer Inventory', () => {
 
   it('provides consistent in-memory mock data across services', async () => {
     const itemsRes = await services.items.getOfficerItems({ limit: 50 });
-    const subsRes = await services.submissions.getSubmissions({ limit: 50 });
+    const subsRes = await services.submissions.getOfficerSubmissions({ limit: 50 });
     const postsRes = await services.posts.getPosts();
 
     expect(itemsRes.items.length).toBeGreaterThan(0);

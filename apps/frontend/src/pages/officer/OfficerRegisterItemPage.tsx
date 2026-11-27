@@ -81,41 +81,46 @@ export const OfficerRegisterItemPage: React.FC = () => {
               {errors.description && <span className="text-xs text-[var(--lf-error)]">{errors.description}</span>}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[var(--lf-border)] items-end">
-              <div>
-                <div className="flex items-center justify-between min-h-[20px] mb-1.5">
-                  <label className="text-xs font-bold text-[var(--lf-ink)]">Tanggal diterima</label>
-                </div>
-                <input
-                  type="date"
-                  value={formData.receivedDate}
-                  onChange={(e) => setFormData({ ...formData, receivedDate: e.target.value })}
-                  className={`${FIELD_INPUT_CLASS} cursor-pointer`}
-                />
+            <div className="space-y-2 pt-2 border-t border-[var(--lf-border)]">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[var(--lf-ink)]">
+                  Waktu Penerimaan Pos (Otomatis Server WIB)
+                </span>
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                  Otomatis
+                </span>
               </div>
-              <div>
-                <div className="flex items-center justify-between min-h-[20px] mb-1.5">
-                  <label className="text-xs font-bold text-[var(--lf-ink)]">Waktu diterima (WIB)</label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const now = new Date();
-                      const hh = String(now.getHours()).padStart(2, '0');
-                      const mm = String(now.getMinutes()).padStart(2, '0');
-                      setFormData({ ...formData, receivedTime: `${hh}:${mm}` });
-                    }}
-                    className="text-[11px] font-semibold text-[var(--lf-action)] hover:underline cursor-pointer"
-                  >
-                    Waktu Sekarang
-                  </button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="received-date-preview" className="block text-[11px] font-semibold text-[var(--lf-muted)] mb-1">
+                    Tanggal diterima (WIB)
+                  </label>
+                  <input
+                    id="received-date-preview"
+                    type="date"
+                    value={formData.receivedDate}
+                    readOnly
+                    disabled
+                    className="w-full px-3.5 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed"
+                  />
                 </div>
-                <input
-                  type="time"
-                  value={formData.receivedTime}
-                  onChange={(e) => setFormData({ ...formData, receivedTime: e.target.value })}
-                  className={`${FIELD_INPUT_CLASS} cursor-pointer`}
-                />
+                <div>
+                  <label htmlFor="received-time-preview" className="block text-[11px] font-semibold text-[var(--lf-muted)] mb-1">
+                    Waktu diterima (WIB)
+                  </label>
+                  <input
+                    id="received-time-preview"
+                    type="time"
+                    value={formData.receivedTime}
+                    readOnly
+                    disabled
+                    className="w-full px-3.5 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-600 cursor-not-allowed"
+                  />
+                </div>
               </div>
+              <p className="text-[11px] text-[var(--lf-muted)]">
+                Tanggal &amp; jam penerimaan barang ditetapkan otomatis oleh server (WIB) saat data disimpan.
+              </p>
             </div>
 
             <div className="space-y-2.5 pt-2 border-t border-[var(--lf-border)]">

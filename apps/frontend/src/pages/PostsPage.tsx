@@ -1,7 +1,8 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { MapPin, Clock, Building2, Info, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { ErrorState } from '@/components/ui/ErrorState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { services } from '@/services/registry';
 import { ServicePost } from '@/types/domain';
@@ -14,6 +15,8 @@ export const PostsPage: React.FC = () => {
   const showBackLink = Boolean(searchParams.get('from'));
   const [posts, setPosts] = useState<ServicePost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
   const handleBack = () => {
     const idx = window.history.state?.idx;
@@ -25,19 +28,35 @@ export const PostsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    let isMounted = true;
-    async function loadPosts() {
-      setIsLoading(true);
-      try {
-        const data = await services.posts.getPosts();
-        if (isMounted) setPosts(data);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-    loadPosts();
-    return () => { isMounted = false; };
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
+
+  const loadPosts = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await services.posts.getPosts();
+      if (isMountedRef.current) setPosts(data);
+    } catch (err) {
+      if (isMountedRef.current) {
+        setPosts([]);
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Gagal memuat daftar pos pelayanan. Silakan coba lagi.'
+        );
+      }
+    } finally {
+      if (isMountedRef.current) setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
 
   return (
     <div className="max-w-4xl mx-auto px-4 lg:px-8 py-8 flex flex-col gap-8">
@@ -69,6 +88,12 @@ export const PostsPage: React.FC = () => {
           <Skeleton height={24} width="50%" />
           <Skeleton height={16} width="80%" />
         </div>
+      ) : error ? (
+        <ErrorState
+          title="Gagal Memuat Pos Pelayanan"
+          description={error}
+          onRetry={() => void loadPosts()}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           {posts.map((post) => (

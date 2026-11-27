@@ -19,7 +19,7 @@ export const useStudentReports = (initialStatus: StudentFilterStatus = 'ALL') =>
     setError(null);
     try {
       const submissionService = registry.getServices().submissions;
-      const res = await submissionService.getSubmissions({
+      const res = await submissionService.getMySubmissions({
         status: statusFilter === 'ALL' ? undefined : statusFilter,
         page,
         limit: 10,

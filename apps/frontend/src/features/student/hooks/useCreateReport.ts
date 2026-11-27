@@ -47,6 +47,10 @@ export const useCreateReport = () => {
         throw new Error('Tanggal penemuan wajib diisi');
       }
 
+      if (!formData.description.trim()) {
+        throw new Error('Deskripsi & ciri-ciri barang wajib diisi');
+      }
+
       // Upload mock token
       const uploadService = registry.getServices().upload;
       const uploadRes = await uploadService.uploadPhoto(

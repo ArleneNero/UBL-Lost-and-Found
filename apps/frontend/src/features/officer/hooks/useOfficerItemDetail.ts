@@ -36,7 +36,7 @@ export function useOfficerItemDetail(id: string | undefined): UseOfficerItemDeta
     if (!id) { setError('ID barang tidak valid'); setIsLoading(false); return; }
     setIsLoading(true); setError(null);
     try {
-      const res = await services.items.getItemById(id);
+      const res = await services.items.getOfficerItemById(id);
       if (!res) setError('Barang inventaris tidak ditemukan');
       else setItem(res);
     } catch (err) {

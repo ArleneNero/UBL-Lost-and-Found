@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Submission } from '@/types/domain';
 import { ReportStatus } from '@/types/api';
 import { services } from '@/services/registry';
+import { fetchAllPages } from '@/utils/pagination';
 
 export interface UseOfficerReportsReturn {
   submissions: Submission[];
@@ -60,8 +61,10 @@ export function useOfficerReports(): UseOfficerReportsReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await services.submissions.getSubmissions({ targetPostId: 1, limit: 100 });
-      setSubmissions(res.items);
+      const allSubmissions = await fetchAllPages((page) =>
+        services.submissions.getOfficerSubmissions({ targetPostId: 1, page, limit: 100 })
+      );
+      setSubmissions(allSubmissions);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat laporan');
     } finally {

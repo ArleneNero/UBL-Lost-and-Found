@@ -31,5 +31,7 @@ export interface IAuthService {
   ): Promise<UserSession>;
   requestStudentRegisterOtp(input: RequestStudentOtpInput): Promise<RequestStudentOtpResult>;
   registerStudent(input: RegisterStudentInput): Promise<UserSession>;
+  requestPasswordReset(email: string): Promise<void>;
+  resetPassword(token: string, newPassword: string): Promise<void>;
   logout(): Promise<void>;
 }

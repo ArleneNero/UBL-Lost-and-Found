@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { registry } from '@/services/registry';
 import { UserSession } from '@/types/domain';
+import { fetchAllPages } from '@/utils/pagination';
 
 export const useStudentProfile = () => {
   const [profile, setProfile] = useState<UserSession | null>(null);
@@ -19,8 +20,9 @@ export const useStudentProfile = () => {
         const user = await registry.getServices().auth.getCurrentUser();
         setProfile(user);
 
-        const subRes = await registry.getServices().submissions.getSubmissions();
-        const items = subRes.items;
+        const items = await fetchAllPages((page) =>
+          registry.getServices().submissions.getMySubmissions({ page, limit: 100 })
+        );
 
         setStats({
           totalReports: items.length,

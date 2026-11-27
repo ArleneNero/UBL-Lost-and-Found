@@ -32,6 +32,7 @@ export interface IItemService {
   getOfficerItems(params?: GetOfficerItemsParams): Promise<PaginatedResult<FoundItem>>;
   getItemById(id: string): Promise<FoundItem | null>;
   getPublicItemById(id: string): Promise<FoundItem | null>;
+  getOfficerItemById(id: string): Promise<FoundItem | null>;
   createItem(input: CreateItemInput): Promise<FoundItem>;
   updateVisibility(id: string, isVisible: boolean): Promise<FoundItem>;
   returnItem(

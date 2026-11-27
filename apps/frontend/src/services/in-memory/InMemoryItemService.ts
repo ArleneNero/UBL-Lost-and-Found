@@ -109,6 +109,10 @@ export class InMemoryItemService implements IItemService {
   }
 
   async getItemById(id: string): Promise<FoundItem | null> {
+    return this.getOfficerItemById(id);
+  }
+
+  async getOfficerItemById(id: string): Promise<FoundItem | null> {
     const found = mockStore.getState().items.find((i) => i.item_id === id);
     return found ? mapItemDtoToDomain(found) : null;
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FoundItem } from '@/types/domain';
 import { services } from '@/services/registry';
+import { fetchAllPages } from '@/utils/pagination';
 import {
   selectDashboardMetrics,
   selectRecentItems,
@@ -33,13 +34,13 @@ export function useOfficerDashboard(): UseOfficerDashboardReturn {
     setIsLoading(true);
     setError(null);
     try {
-      const [itemsRes, subsRes] = await Promise.all([
-        services.items.getOfficerItems({ limit: 50 }),
-        services.submissions.getSubmissions({ limit: 50 }),
+      const [allItems, allSubmissions] = await Promise.all([
+        fetchAllPages((page) => services.items.getOfficerItems({ page, limit: 100 })),
+        fetchAllPages((page) => services.submissions.getOfficerSubmissions({ page, limit: 100 })),
       ]);
 
-      setItems(itemsRes.items);
-      const computed = selectDashboardMetrics(itemsRes.items, subsRes.items);
+      setItems(allItems);
+      const computed = selectDashboardMetrics(allItems, allSubmissions);
       setMetrics(computed);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal memuat data dashboard');

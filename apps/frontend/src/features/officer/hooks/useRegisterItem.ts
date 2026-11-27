@@ -1,6 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
 import { FoundItem } from '@/types/domain';
 import { services } from '@/services/registry';
+import { toLocalDateKey } from '../selectors/reportDateSelectors';
+
+const wibTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Jakarta',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
 
 export interface RegisterItemFormData {
   name: string;
@@ -14,17 +22,20 @@ export interface RegisterItemFormData {
   isPhysicallyReceived: boolean;
 }
 
-const getInitialData = (): RegisterItemFormData => ({
-  name: '',
-  category: '',
-  description: '',
-  foundLocation: '',
-  foundDate: '',
-  receivedDate: new Date().toISOString().split('T')[0],
-  receivedTime: `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`,
-  privateNotes: '',
-  isPhysicallyReceived: false,
-});
+const getInitialData = (): RegisterItemFormData => {
+  const now = new Date();
+  return {
+    name: '',
+    category: '',
+    description: '',
+    foundLocation: '',
+    foundDate: '',
+    receivedDate: toLocalDateKey(now.toISOString()),
+    receivedTime: wibTimeFormatter.format(now),
+    privateNotes: '',
+    isPhysicallyReceived: false,
+  };
+};
 
 export function useRegisterItem() {
   const [formData, setFormData] = useState<RegisterItemFormData>(getInitialData);

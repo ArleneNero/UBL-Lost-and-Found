@@ -13,23 +13,15 @@ import {
   InventoryOfficerDto,
 } from '@/types/api';
 import { apiClient, ApiError } from './apiClient';
-import { mockStore } from '@/data/mockStore';
 
 export class HttpSubmissionService implements ISubmissionService {
-  /**
-   * Mengambil daftar laporan temuan:
-   * - Mahasiswa: GET /submissions/me
-   * - Petugas: GET /officer/submissions
-   */
-  async getSubmissions(
+  private async fetchSubmissions(
+    basePath: string,
     params?: GetSubmissionsParams
   ): Promise<PaginatedResult<Submission>> {
-    const isOfficer = mockStore.getState().currentUser?.role === 'OFFICER';
-    const basePath = isOfficer ? '/officer/submissions' : '/submissions/me';
-
     const qp = new URLSearchParams();
     if (params?.page) qp.set('page', String(params.page));
-    if (params?.limit) qp.set('limit', String(Math.min(params.limit, 10)));
+    if (params?.limit) qp.set('limit', String(Math.min(params.limit, 100)));
     if (params?.status) qp.set('status', params.status);
 
     const qs = qp.toString();
@@ -43,6 +35,34 @@ export class HttpSubmissionService implements ISubmissionService {
       page: res.meta.page,
       limit: res.meta.limit,
     };
+  }
+
+  /**
+   * Mengambil daftar laporan milik mahasiswa aktif: GET /submissions/me
+   */
+  async getMySubmissions(
+    params?: GetSubmissionsParams
+  ): Promise<PaginatedResult<Submission>> {
+    return this.fetchSubmissions('/submissions/me', params);
+  }
+
+  /**
+   * Mengambil daftar seluruh laporan masuk untuk petugas pos: GET /officer/submissions
+   */
+  async getOfficerSubmissions(
+    params?: GetSubmissionsParams
+  ): Promise<PaginatedResult<Submission>> {
+    return this.fetchSubmissions('/officer/submissions', params);
+  }
+
+  /**
+   * Alias default ke laporan mahasiswa aktif agar tidak bergantung pada mockStore.
+   * Pemanggil petugas wajib memakai getOfficerSubmissions().
+   */
+  async getSubmissions(
+    params?: GetSubmissionsParams
+  ): Promise<PaginatedResult<Submission>> {
+    return this.getMySubmissions(params);
   }
 
   /**

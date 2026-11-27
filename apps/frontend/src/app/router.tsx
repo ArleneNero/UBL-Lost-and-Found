@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { PublicLayout } from '@/components/layouts/PublicLayout';
 import { OfficerLayout } from '@/components/layouts/OfficerLayout';
 import { StudentRouteGuard } from '@/components/guards/StudentRouteGuard';
+import { OfficerRouteGuard } from '@/components/guards/OfficerRouteGuard';
 import { LandingPage } from '@/pages/LandingPage';
 import { GuestHomePage } from '@/pages/GuestHomePage';
 import { CatalogPage } from '@/pages/CatalogPage';
@@ -56,16 +57,21 @@ export const router = createBrowserRouter([
   // Officer / Petugas Routes
   {
     path: '/petugas',
-    element: <OfficerLayout />,
+    element: <OfficerRouteGuard />,
     children: [
-      { index: true, element: <Navigate to={RoutePaths.OFFICER_DASHBOARD} replace /> },
-      { path: 'dashboard', element: <OfficerDashboardPage /> },
-      { path: 'inventaris', element: <OfficerInventoryPage /> },
-      { path: 'inventaris/:id', element: <OfficerItemDetailPage /> },
-      { path: 'catat-barang', element: <OfficerRegisterItemPage /> },
-      { path: 'laporan', element: <OfficerReportsPage /> },
-      { path: 'laporan/:id', element: <OfficerReportDetailPage /> },
-      { path: 'akun', element: <OfficerAccountPage /> },
+      {
+        element: <OfficerLayout />,
+        children: [
+          { index: true, element: <Navigate to={RoutePaths.OFFICER_DASHBOARD} replace /> },
+          { path: 'dashboard', element: <OfficerDashboardPage /> },
+          { path: 'inventaris', element: <OfficerInventoryPage /> },
+          { path: 'inventaris/:id', element: <OfficerItemDetailPage /> },
+          { path: 'catat-barang', element: <OfficerRegisterItemPage /> },
+          { path: 'laporan', element: <OfficerReportsPage /> },
+          { path: 'laporan/:id', element: <OfficerReportDetailPage /> },
+          { path: 'akun', element: <OfficerAccountPage /> },
+        ],
+      },
     ],
   },
 

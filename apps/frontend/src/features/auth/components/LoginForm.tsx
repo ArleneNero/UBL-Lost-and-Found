@@ -16,30 +16,35 @@ export const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setErrorMessage(null);
 
-    try {
-      let resolvedEmail = email.trim();
-      if (!resolvedEmail) {
-        resolvedEmail = '2411502194@student.budiluhur.ac.id';
-      } else if (!resolvedEmail.includes('@') && /^\d+$/.test(resolvedEmail)) {
-        resolvedEmail = `${resolvedEmail}@student.budiluhur.ac.id`;
-      } else {
-        const normalized = resolvedEmail.toLowerCase();
-        if (!normalized.endsWith('@student.budiluhur.ac.id')) {
-          setErrorMessage('Akun mahasiswa wajib menggunakan email resmi (@student.budiluhur.ac.id).');
-          setIsLoading(false);
-          return;
-        }
-        resolvedEmail = normalized;
-      }
+    const rawIdentifier = email.trim();
+    if (!rawIdentifier) {
+      setErrorMessage('Email kampus atau NIM wajib diisi.');
+      return;
+    }
 
+    if (!password.trim()) {
+      setErrorMessage('Kata sandi wajib diisi.');
+      return;
+    }
+
+    let resolvedEmail: string;
+    if (!rawIdentifier.includes('@') && /^\d+$/.test(rawIdentifier)) {
+      resolvedEmail = `${rawIdentifier}@student.budiluhur.ac.id`;
+    } else {
+      const normalized = rawIdentifier.toLowerCase();
+      if (!normalized.endsWith('@student.budiluhur.ac.id')) {
+        setErrorMessage('Akun mahasiswa wajib menggunakan email resmi (@student.budiluhur.ac.id).');
+        return;
+      }
+      resolvedEmail = normalized;
+    }
+
+    setIsLoading(true);
+    try {
       const authService = registry.getServices().auth;
-      await authService.loginAsStudent(
-        resolvedEmail,
-        password || 'Nero Mahasiswa'
-      );
+      await authService.loginAsStudent(resolvedEmail, password);
       navigate(RoutePaths.GUEST_HOME);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Terjadi kesalahan saat masuk';

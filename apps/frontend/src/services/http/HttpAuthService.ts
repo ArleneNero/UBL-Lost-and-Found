@@ -13,7 +13,7 @@ import {
   StudentOtpResponseDto,
   StudentRegisterRequestDto,
 } from '@/types/api';
-import { apiClient, setAuthToken, getAuthToken } from './apiClient';
+import { apiClient, ApiError, setAuthToken, getAuthToken } from './apiClient';
 import { mockStore } from '@/data/mockStore';
 
 export class HttpAuthService implements IAuthService {
@@ -48,10 +48,16 @@ export class HttpAuthService implements IAuthService {
     try {
       const res = await apiClient<ApiDataResponse<MeDto>>('/me');
       return this.applyUserSession(res.data);
-    } catch {
-      setAuthToken(null);
-      mockStore.getState().currentUser = null;
-      return null;
+    } catch (err) {
+      if (
+        err instanceof ApiError &&
+        (err.status === 401 || err.status === 403 || err.status === 404)
+      ) {
+        setAuthToken(null);
+        mockStore.getState().currentUser = null;
+        return null;
+      }
+      throw err;
     }
   }
 
@@ -134,6 +140,20 @@ export class HttpAuthService implements IAuthService {
     const { token, user } = res.data;
     setAuthToken(token);
     return this.applyUserSession(user);
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    await apiClient('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    await apiClient('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password: newPassword }),
+    });
   }
 
   async logout(): Promise<void> {
