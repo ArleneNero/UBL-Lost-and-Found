@@ -349,14 +349,26 @@ Script `scripts/smoke-test.mjs` (*zero-dependency ESM Node.js*) dijalankan melal
 
 *Ringkasan Produksi (`v1.3.0`):* **6/6 probes PASSED** (`version: "1.3.0"`, `commit: "9056d58"`, `<meta name="app-version" content="1.3.0" />`).
 
+#### D. Eksekusi Produksi (`npm run smoke -- --base-url=https://lostandfound-budiluhur.web.id` — Rilis `v1.5.0` commit `7a398fe`)
+| Probe | Endpoint | Status HTTP | Latensi (ms) | Hasil |
+| :--- | :--- | :---: | :---: | :---: |
+| 1. Health Check & Version | `https://lostandfound-budiluhur.web.id/api/v1/health` | `200` | `1987.5 ms` | **PASS** |
+| 2. Public Service Posts | `https://lostandfound-budiluhur.web.id/api/v1/posts` | `200` | `3879.4 ms` | **PASS** |
+| 3. Public Items (Zero PII Leak) | `https://lostandfound-budiluhur.web.id/api/v1/items?page=1&limit=5` | `200` | `1135.3 ms` | **PASS** |
+| 4. Officer RBAC Guard (Unauth) | `https://lostandfound-budiluhur.web.id/api/v1/officer/inventory` | `401` | `910.5 ms` | **PASS** |
+| 5. OpenAPI YAML Contract | `https://lostandfound-budiluhur.web.id/openapi.yaml` | `200` | `415.0 ms` | **PASS** |
+| 6. Frontend SPA Entrypoint | `https://lostandfound-budiluhur.web.id/` | `200` | `81.9 ms` | **PASS** |
+
+*Ringkasan Produksi (`v1.5.0`):* **6/6 probes PASSED** (`version: "1.5.0"`, `commit: "7a398fe"`, `<meta name="app-version" content="1.5.0" />`), ditambah verifikasi kontrol keamanan live pada produksi (`signed /storage/*` `200`, `unsigned /storage/*` `403`, `PUT /api/v1/mock-r2/*` `404`, traversal `/storage/items/..%2f..%2f..%2fpackage.json` `400`, serta CORS untrusted `Origin: https://evil.example` tanpa header `ACAO` & `PNA`).
+
 ### 6.3 Checklist Deployment Rilis `v1.5.0` (dan Rekam Rilis `v1.2.0` – `v1.4.0`)
 
 - [x] **Sinkronisasi Versi `1.5.0` & Build Monorepo (`ced40e6`):** Root `package.json`, `apps/backend/package.json`, dan `apps/frontend/package.json` diperbarui ke `1.5.0`; `npm run build` Backend (`esbuild` + sinkronisasi `api/*.cjs`, `api/*.js`, `api/[...routes].cjs`, `apps/backend/*.cjs`) & Frontend (`tsc -b && vite build`) selesai dengan exit code `0`.
 - [x] **Migrasi Skema Database Neon PostgreSQL (`v1.5.0`):** `npm run db:migrate --prefix apps/backend` menambahkan 4 tabel aditif (`upload_intents`, `consumed_upload_tokens`, `password_reset_tokens`, `rate_limit_buckets`) beserta indeksnya secara idempoten (melengkapi `v1.4.0` `otp_challenges`, `v1.3.0` `item_returns.recipient_identifier`, & `v1.2.0` `found_items.storage_limit_days` / `archived_at`).
 - [x] **Verifikasi `typecheck` & Test Suite Lintas Workspace (`v1.5.0`):** `typecheck` Backend & Frontend exit code `0`; Backend (`npx vitest run --fileParallelism=false`: **16/16 test files, 187/187 tests PASS**) dan Frontend (`npx vitest run`: **19/19 test files, 132/132 tests PASS**) = **`35/35` files / `319/319` tests PASS**.
 - [x] **Audit Keamanan 30 Temuan & Clean Code (`v1.5.0`):** Seluruh `30/30` temuan (`FIND-01`–`FIND-30`) pada Milestone `#23` (Issues `#33`–`#37`) terverifikasi tertutup 100% dan seluruh source file baru/diubah `< 300 LOC` (maks. `292 LOC`).
-- [x] **Verifikasi Smoke Test Rilis Sebelumnya (`v1.2.0` / `v1.2.1` / `v1.3.0`):** Lokal (`:3000` / `:4173`) `6/6 probes PASSED`, Produksi `v1.2.1` (`685f4c6`) `6/6 probes PASSED`, dan Produksi `v1.3.0` (`9056d58`) `6/6 probes PASSED`.
-- [ ] **Prasyarat Environment Variable & Rotasi Kredensial Vercel (`Production` & `Preview`) untuk `v1.5.0`:** Karena fallback kredensial env dihapus (`FIND-01`), pastikan seluruh variabel wajib (`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `AUTH_SECRET` >= 32 karakter acak, `RESEND_API_KEY`, dan `FRONTEND_ORIGIN`) terkonfigurasi di Vercel Dashboard, serta lakukan rotasi password Neon DB & access key R2 yang pernah tercatat di riwayat repo sebelum `v1.5.0`.
+- [x] **Verifikasi Smoke Test Rilis Sebelumnya (`v1.2.0` / `v1.2.1` / `v1.3.0`) & Live Produksi `v1.5.0`:** Lokal `v1.2.0` `6/6`, Produksi `v1.2.1` `6/6`, Produksi `v1.3.0` `6/6`, dan Produksi `v1.5.0` (`7a398fe`) **`6/6 probes PASSED`** + verifikasi kontrol keamanan live.
+- [x] **Konfigurasi Environment Variables Produksi Vercel (`v1.5.0`):** `AUTH_SECRET`, `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`, `RESEND_API_KEY`, dan `NODE_ENV` terpasang di Vercel Dashboard serta terverifikasi live (`1.5.0`). *(Disarankan rotasi berkala password Neon DB & R2 keys yang pernah tercatat di riwayat Git sebelum `v1.5.0`).*
 
 ### 6.4 Prosedur Rollback (Mitigasi Kegagalan Produksi)
 
